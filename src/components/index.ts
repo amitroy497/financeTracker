@@ -1,3 +1,4 @@
+export * from './Charts';
 export * from './Dashboard';
 export * from './FileInfo';
 export * from './ItemForm';

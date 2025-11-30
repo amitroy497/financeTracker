@@ -54,7 +54,7 @@ export const AssetCards: React.FC<AssetCardsProps> = ({ summary }) => {
 			title: 'Gold ETFs',
 			amount: summary.goldETFs,
 			percentage: getPercentage(summary.goldETFs, summary.totalAssets),
-			color: colors.warning,
+			color: '#FFD700',
 			icon: '🥇',
 		},
 		{
@@ -102,7 +102,7 @@ export const AssetCards: React.FC<AssetCardsProps> = ({ summary }) => {
 				Asset Allocation
 			</Text>
 
-			{assetTypes.map((asset, index) => (
+			{assetTypes.map((asset) => (
 				<TouchableOpacity
 					key={asset.title}
 					style={[

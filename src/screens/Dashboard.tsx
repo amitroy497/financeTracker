@@ -1,5 +1,7 @@
 import {
+	AssetBarChart,
 	AssetCards,
+	AssetPieChart,
 	BankAccounts,
 	EquityETFs,
 	FixedDeposits,
@@ -15,7 +17,7 @@ import { useAuth } from '@/hooks';
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles';
 import { DashboardData } from '@/types';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
 	Alert,
 	RefreshControl,
@@ -44,6 +46,7 @@ export const Dashboard: React.FC = () => {
 		| 'frb'
 		| 'nps'
 	>('overview');
+	const [chartType, setChartType] = useState<'pie' | 'cards' | 'bar'>('pie');
 
 	useEffect(() => {
 		if (user) {
@@ -66,6 +69,102 @@ export const Dashboard: React.FC = () => {
 		}
 	};
 
+	// Prepare data for pie chart
+	const pieChartData = useMemo(() => {
+		if (!dashboardData) return [];
+
+		const { summary } = dashboardData;
+		const total = summary.totalAssets;
+
+		if (total === 0) return [];
+
+		const data = [
+			{
+				x: 'Cash',
+				y: summary.cash,
+				color: colors.success,
+				percentage:
+					total > 0 ? ((summary.cash / total) * 100).toFixed(1) + '%' : '0%',
+			},
+			{
+				x: 'Fixed Deposits',
+				y: summary.fixedDeposits,
+				color: colors.primary,
+				percentage:
+					total > 0
+						? ((summary.fixedDeposits / total) * 100).toFixed(1) + '%'
+						: '0%',
+			},
+			{
+				x: 'Recurring Deposits',
+				y: summary.recurringDeposits,
+				color: colors.info,
+				percentage:
+					total > 0
+						? ((summary.recurringDeposits / total) * 100).toFixed(1) + '%'
+						: '0%',
+			},
+			{
+				x: 'Mutual Funds',
+				y: summary.mutualFunds,
+				color: colors.warning,
+				percentage:
+					total > 0
+						? ((summary.mutualFunds / total) * 100).toFixed(1) + '%'
+						: '0%',
+			},
+			{
+				x: 'Gold ETFs',
+				y: summary.goldETFs,
+				color: '#FFD700',
+				percentage:
+					total > 0
+						? ((summary.goldETFs / total) * 100).toFixed(1) + '%'
+						: '0%',
+			},
+			{
+				x: 'Stocks',
+				y: summary.stocks,
+				color: colors.success,
+				percentage:
+					total > 0 ? ((summary.stocks / total) * 100).toFixed(1) + '%' : '0%',
+			},
+			{
+				x: 'Equity ETFs',
+				y: summary.equityETFs,
+				color: colors.info,
+				percentage:
+					total > 0
+						? ((summary.equityETFs / total) * 100).toFixed(1) + '%'
+						: '0%',
+			},
+			{
+				x: 'PPF',
+				y: summary.ppf,
+				color: colors.primary,
+				percentage:
+					total > 0 ? ((summary.ppf / total) * 100).toFixed(1) + '%' : '0%',
+			},
+			{
+				x: 'Floating Bonds',
+				y: summary.frb,
+				color: colors.secondary,
+				percentage:
+					total > 0 ? ((summary.frb / total) * 100).toFixed(1) + '%' : '0%',
+			},
+			{
+				x: 'NPS',
+				y: summary.nps,
+				color: colors.dark,
+				percentage:
+					total > 0 ? ((summary.nps / total) * 100).toFixed(1) + '%' : '0%',
+			},
+		];
+
+		// Filter out assets with zero value
+		return data.filter((item) => item.y > 0);
+	}, [dashboardData]);
+
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('en-IN', {
 			style: 'currency',
@@ -77,13 +176,103 @@ export const Dashboard: React.FC = () => {
 
 	const renderOverview = () => (
 		<ScrollView showsVerticalScrollIndicator={false}>
-			{/* Asset Summary Cards */}
-			{dashboardData && <AssetCards summary={dashboardData.summary} />}
+			<View
+				style={[
+					styles.card,
+					{
+						flexDirection: 'row',
+						justifyContent: 'center',
+						gap: 8,
+						paddingVertical: 12,
+						marginHorizontal: 6,
+					},
+				]}
+			>
+				<TouchableOpacity
+					style={[
+						styles.button,
+						chartType === 'pie'
+							? styles.buttonPrimary
+							: { backgroundColor: colors.lightGray },
+						{ flex: 1, paddingVertical: 8 },
+					]}
+					onPress={() => setChartType('pie')}
+				>
+					<Text
+						style={[
+							styles.buttonText,
+							chartType === 'pie' ? {} : { color: colors.dark },
+							{ fontSize: 12 },
+						]}
+					>
+						📊 Pie
+					</Text>
+				</TouchableOpacity>
+
+				<TouchableOpacity
+					style={[
+						styles.button,
+						chartType === 'bar'
+							? styles.buttonPrimary
+							: { backgroundColor: colors.lightGray },
+						{ flex: 1, paddingVertical: 8 },
+					]}
+					onPress={() => setChartType('bar')}
+				>
+					<Text
+						style={[
+							styles.buttonText,
+							chartType === 'bar' ? {} : { color: colors.dark },
+							{ fontSize: 12 },
+						]}
+					>
+						📈 Bar
+					</Text>
+				</TouchableOpacity>
+
+				<TouchableOpacity
+					style={[
+						styles.button,
+						chartType === 'cards'
+							? styles.buttonPrimary
+							: { backgroundColor: colors.lightGray },
+						{ flex: 1, paddingVertical: 8 },
+					]}
+					onPress={() => setChartType('cards')}
+				>
+					<Text
+						style={[
+							styles.buttonText,
+							chartType === 'cards' ? {} : { color: colors.dark },
+							{ fontSize: 12 },
+						]}
+					>
+						💳 Cards
+					</Text>
+				</TouchableOpacity>
+			</View>
+
+			{/* Asset Visualization */}
+			{chartType === 'pie' && dashboardData && (
+				<AssetPieChart
+					data={pieChartData}
+					totalAssets={dashboardData.summary.totalAssets}
+					height={320}
+				/>
+			)}
+
+			{chartType === 'bar' && dashboardData && (
+				<AssetBarChart data={pieChartData} height={320} showValues={true} />
+			)}
+
+			{chartType === 'cards' && dashboardData && (
+				<AssetCards summary={dashboardData.summary} />
+			)}
 
 			{/* Quick Stats */}
 			<View style={styles.card}>
 				<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-					Quick Stats
+					Portfolio Summary
 				</Text>
 
 				<View
@@ -123,10 +312,34 @@ export const Dashboard: React.FC = () => {
 					</Text>
 				</View>
 
-				<View style={[styles.row, { justifyContent: 'space-between' }]}>
+				<View
+					style={[
+						styles.row,
+						{ justifyContent: 'space-between', marginBottom: 12 },
+					]}
+				>
 					<Text style={{ color: colors.gray }}>Mutual Fund Schemes</Text>
 					<Text style={{ fontWeight: 'bold', color: colors.dark }}>
 						{dashboardData?.mutualFunds.length || 0}
+					</Text>
+				</View>
+
+				<View
+					style={[
+						styles.row,
+						{ justifyContent: 'space-between', marginBottom: 12 },
+					]}
+				>
+					<Text style={{ color: colors.gray }}>Stocks</Text>
+					<Text style={{ fontWeight: 'bold', color: colors.dark }}>
+						{dashboardData?.stocks.length || 0}
+					</Text>
+				</View>
+
+				<View style={[styles.row, { justifyContent: 'space-between' }]}>
+					<Text style={{ color: colors.gray }}>Gold ETFs</Text>
+					<Text style={{ fontWeight: 'bold', color: colors.dark }}>
+						{dashboardData?.goldETFs.length || 0}
 					</Text>
 				</View>
 			</View>
@@ -137,7 +350,7 @@ export const Dashboard: React.FC = () => {
 					Recent Activity
 				</Text>
 
-				{dashboardData && dashboardData?.lastUpdated && (
+				{dashboardData && dashboardData.lastUpdated && (
 					<View style={[styles.row, { marginBottom: 12 }]}>
 						<View
 							style={{
@@ -153,7 +366,7 @@ export const Dashboard: React.FC = () => {
 								Last Updated
 							</Text>
 							<Text style={{ color: colors.gray, fontSize: 12 }}>
-								{new Date(dashboardData?.lastUpdated).toLocaleString()}
+								{new Date(dashboardData.lastUpdated).toLocaleString()}
 							</Text>
 						</View>
 					</View>
@@ -423,6 +636,7 @@ export const Dashboard: React.FC = () => {
 						activeSection === 'mf'
 							? styles.buttonPrimary
 							: { backgroundColor: colors.lightGray },
+						{ marginRight: 8 },
 					]}
 					onPress={() => setActiveSection('mf')}
 				>
@@ -435,6 +649,7 @@ export const Dashboard: React.FC = () => {
 						📊 Mutual Funds
 					</Text>
 				</TouchableOpacity>
+
 				<TouchableOpacity
 					style={[
 						styles.button,
