@@ -50,6 +50,48 @@ export const AssetCards: React.FC<AssetCardsProps> = ({ summary }) => {
 			color: colors.warning,
 			icon: '📊',
 		},
+		{
+			title: 'Gold ETFs',
+			amount: summary.goldETFs,
+			percentage: getPercentage(summary.goldETFs, summary.totalAssets),
+			color: colors.warning,
+			icon: '🥇',
+		},
+		{
+			title: 'Stocks',
+			amount: summary.stocks,
+			percentage: getPercentage(summary.stocks, summary.totalAssets),
+			color: colors.success,
+			icon: '📈',
+		},
+		{
+			title: 'Equity ETFs',
+			amount: summary.equityETFs,
+			percentage: getPercentage(summary.equityETFs, summary.totalAssets),
+			color: colors.info,
+			icon: '📊',
+		},
+		{
+			title: 'PPF',
+			amount: summary.ppf,
+			percentage: getPercentage(summary.ppf, summary.totalAssets),
+			color: colors.primary,
+			icon: '🏛️',
+		},
+		{
+			title: 'Floating Rate Bonds',
+			amount: summary.frb,
+			percentage: getPercentage(summary.frb, summary.totalAssets),
+			color: colors.secondary,
+			icon: '📄',
+		},
+		{
+			title: 'NPS',
+			amount: summary.nps,
+			percentage: getPercentage(summary.nps, summary.totalAssets),
+			color: colors.dark,
+			icon: '👵',
+		},
 	];
 
 	return (

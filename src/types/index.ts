@@ -199,6 +199,12 @@ export interface DashboardData {
 	recurringDeposits: RecurringDeposit[];
 	mutualFunds: MutualFund[];
 	lastUpdated: string;
+	goldETFs: GoldETF[];
+	stocks: Stock[];
+	equityETFs: EquityETF[];
+	ppfAccounts: PublicProvidentFund[];
+	frbBonds: FloatingRateBond[];
+	npsAccounts: NationalPensionScheme[];
 }
 
 // Navigation types
@@ -254,4 +260,159 @@ export interface CreateMutualFundData {
 	investedAmount: number;
 	units: number;
 	nav: number;
+}
+
+// Add new asset types
+
+export interface GoldETF {
+	id: string;
+	etfName: string;
+	symbol: string;
+	units: number;
+	currentPrice: number;
+	investedAmount: number;
+	currentValue: number;
+	returns: number;
+	lastUpdated: string;
+}
+
+export interface Stock {
+	id: string;
+	companyName: string;
+	symbol: string;
+	exchange: 'NSE' | 'BSE';
+	quantity: number;
+	averagePrice: number;
+	currentPrice: number;
+	investedAmount: number;
+	currentValue: number;
+	returns: number;
+	lastUpdated: string;
+}
+
+export interface EquityETF {
+	id: string;
+	etfName: string;
+	symbol: string;
+	units: number;
+	currentNav: number;
+	investedAmount: number;
+	currentValue: number;
+	returns: number;
+	lastUpdated: string;
+}
+
+export interface PublicProvidentFund {
+	id: string;
+	accountNumber: string;
+	financialYear: string;
+	totalDeposits: number;
+	currentBalance: number;
+	interestRate: number;
+	maturityDate: string;
+	lastUpdated: string;
+}
+
+export interface FloatingRateBond {
+	id: string;
+	bondName: string;
+	certificateNumber: string;
+	investmentAmount: number;
+	currentValue: number;
+	interestRate: number;
+	purchaseDate: string;
+	maturityDate: string;
+	lastUpdated: string;
+}
+
+export interface NationalPensionScheme {
+	id: string;
+	pranNumber: string;
+	totalContribution: number;
+	currentValue: number;
+	returns: number;
+	lastContributionDate: string;
+	lastUpdated: string;
+}
+
+// Update AssetData interface to include new asset types
+export interface AssetData {
+	summary: AssetSummary;
+	bankAccounts: BankAccount[];
+	fixedDeposits: FixedDeposit[];
+	recurringDeposits: RecurringDeposit[];
+	mutualFunds: MutualFund[];
+	goldETFs: GoldETF[];
+	stocks: Stock[];
+	equityETFs: EquityETF[];
+	ppfAccounts: PublicProvidentFund[];
+	frbBonds: FloatingRateBond[];
+	npsAccounts: NationalPensionScheme[];
+	lastUpdated: string;
+}
+
+// Update AssetSummary interface
+export interface AssetSummary {
+	totalAssets: number;
+	cash: number;
+	fixedDeposits: number;
+	recurringDeposits: number;
+	mutualFunds: number;
+	goldETFs: number;
+	stocks: number;
+	equityETFs: number;
+	ppf: number;
+	frb: number;
+	nps: number;
+	otherAssets: number;
+}
+
+// Create interfaces for new asset types
+export interface CreateGoldETFData {
+	etfName: string;
+	symbol: string;
+	units: number;
+	currentPrice: number;
+	investedAmount: number;
+}
+
+export interface CreateStockData {
+	companyName: string;
+	symbol: string;
+	exchange: 'NSE' | 'BSE';
+	quantity: number;
+	averagePrice: number;
+	currentPrice: number;
+}
+
+export interface CreateEquityETFData {
+	etfName: string;
+	symbol: string;
+	units: number;
+	currentNav: number;
+	investedAmount: number;
+}
+
+export interface CreatePPFData {
+	accountNumber: string;
+	financialYear: string;
+	totalDeposits: number;
+	interestRate: number;
+	maturityDate: string;
+}
+
+export interface CreateFRBData {
+	bondName: string;
+	certificateNumber: string;
+	investmentAmount: number;
+	interestRate: number;
+	purchaseDate: string;
+	maturityDate: string;
+}
+
+export interface CreateNPSData {
+	pranNumber: string;
+	totalContribution: number;
+	currentValue: number;
+	lastContributionDate: string;
 }

@@ -1,9 +1,15 @@
 import {
 	AssetCards,
 	BankAccounts,
+	EquityETFs,
 	FixedDeposits,
+	FloatingRateBonds,
+	GoldETFs,
 	MutualFunds,
+	NPSAccounts,
+	PPFAccounts,
 	RecurringDeposits,
+	Stocks,
 } from '@/components';
 import { useAuth } from '@/hooks';
 import { assetService } from '@/services/assetService';
@@ -26,7 +32,17 @@ export const Dashboard: React.FC = () => {
 	);
 	const [refreshing, setRefreshing] = useState(false);
 	const [activeSection, setActiveSection] = useState<
-		'overview' | 'cash' | 'fd' | 'rd' | 'mf'
+		| 'overview'
+		| 'cash'
+		| 'fd'
+		| 'rd'
+		| 'mf'
+		| 'gold'
+		| 'stocks'
+		| 'equity'
+		| 'ppf'
+		| 'frb'
+		| 'nps'
 	>('overview');
 
 	useEffect(() => {
@@ -224,6 +240,54 @@ export const Dashboard: React.FC = () => {
 						userId={user?.id || ''}
 					/>
 				);
+			case 'gold':
+				return (
+					<GoldETFs
+						etfs={dashboardData?.goldETFs || []}
+						onRefresh={loadDashboardData}
+						userId={user?.id || ''}
+					/>
+				);
+			case 'stocks':
+				return (
+					<Stocks
+						stocks={dashboardData?.stocks || []}
+						onRefresh={loadDashboardData}
+						userId={user?.id || ''}
+					/>
+				);
+			case 'equity':
+				return (
+					<EquityETFs
+						etfs={dashboardData?.equityETFs || []}
+						onRefresh={loadDashboardData}
+						userId={user?.id || ''}
+					/>
+				);
+			case 'ppf':
+				return (
+					<PPFAccounts
+						accounts={dashboardData?.ppfAccounts || []}
+						onRefresh={loadDashboardData}
+						userId={user?.id || ''}
+					/>
+				);
+			case 'frb':
+				return (
+					<FloatingRateBonds
+						bonds={dashboardData?.frbBonds || []}
+						onRefresh={loadDashboardData}
+						userId={user?.id || ''}
+					/>
+				);
+			case 'nps':
+				return (
+					<NPSAccounts
+						accounts={dashboardData?.npsAccounts || []}
+						onRefresh={loadDashboardData}
+						userId={user?.id || ''}
+					/>
+				);
 			default:
 				return renderOverview();
 		}
@@ -270,7 +334,7 @@ export const Dashboard: React.FC = () => {
 			<ScrollView
 				horizontal
 				showsHorizontalScrollIndicator={false}
-				style={{ marginVertical: 16 }}
+				style={{ marginVertical: 16, maxHeight: 60 }}
 				contentContainerStyle={{ paddingHorizontal: 20 }}
 			>
 				<TouchableOpacity
@@ -369,6 +433,124 @@ export const Dashboard: React.FC = () => {
 						]}
 					>
 						📊 Mutual Funds
+					</Text>
+				</TouchableOpacity>
+				<TouchableOpacity
+					style={[
+						styles.button,
+						activeSection === 'gold'
+							? styles.buttonPrimary
+							: { backgroundColor: colors.lightGray },
+						{ marginRight: 8 },
+					]}
+					onPress={() => setActiveSection('gold')}
+				>
+					<Text
+						style={[
+							styles.buttonText,
+							activeSection === 'gold' ? {} : { color: colors.dark },
+						]}
+					>
+						🥇 Gold ETFs
+					</Text>
+				</TouchableOpacity>
+
+				<TouchableOpacity
+					style={[
+						styles.button,
+						activeSection === 'stocks'
+							? styles.buttonPrimary
+							: { backgroundColor: colors.lightGray },
+						{ marginRight: 8 },
+					]}
+					onPress={() => setActiveSection('stocks')}
+				>
+					<Text
+						style={[
+							styles.buttonText,
+							activeSection === 'stocks' ? {} : { color: colors.dark },
+						]}
+					>
+						📈 Stocks
+					</Text>
+				</TouchableOpacity>
+
+				<TouchableOpacity
+					style={[
+						styles.button,
+						activeSection === 'equity'
+							? styles.buttonPrimary
+							: { backgroundColor: colors.lightGray },
+						{ marginRight: 8 },
+					]}
+					onPress={() => setActiveSection('equity')}
+				>
+					<Text
+						style={[
+							styles.buttonText,
+							activeSection === 'equity' ? {} : { color: colors.dark },
+						]}
+					>
+						📊 Equity ETFs
+					</Text>
+				</TouchableOpacity>
+
+				<TouchableOpacity
+					style={[
+						styles.button,
+						activeSection === 'ppf'
+							? styles.buttonPrimary
+							: { backgroundColor: colors.lightGray },
+						{ marginRight: 8 },
+					]}
+					onPress={() => setActiveSection('ppf')}
+				>
+					<Text
+						style={[
+							styles.buttonText,
+							activeSection === 'ppf' ? {} : { color: colors.dark },
+						]}
+					>
+						🏛️ PPF
+					</Text>
+				</TouchableOpacity>
+
+				<TouchableOpacity
+					style={[
+						styles.button,
+						activeSection === 'frb'
+							? styles.buttonPrimary
+							: { backgroundColor: colors.lightGray },
+						{ marginRight: 8 },
+					]}
+					onPress={() => setActiveSection('frb')}
+				>
+					<Text
+						style={[
+							styles.buttonText,
+							activeSection === 'frb' ? {} : { color: colors.dark },
+						]}
+					>
+						📄 FRB
+					</Text>
+				</TouchableOpacity>
+
+				<TouchableOpacity
+					style={[
+						styles.button,
+						activeSection === 'nps'
+							? styles.buttonPrimary
+							: { backgroundColor: colors.lightGray },
+					]}
+					onPress={() => setActiveSection('nps')}
+				>
+					<Text
+						style={[
+							styles.buttonText,
+							activeSection === 'nps' ? {} : { color: colors.dark },
+						]}
+					>
+						👵 NPS
 					</Text>
 				</TouchableOpacity>
 			</ScrollView>
