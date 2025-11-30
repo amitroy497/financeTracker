@@ -1,6 +1,9 @@
+import { BANK_LIST } from '@/constants';
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles';
 import { BankAccount, CreateBankAccountData } from '@/types';
+import { maskAccountNumber } from '@/utils';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -25,6 +28,11 @@ export const BankAccounts: React.FC<BankAccountsProps> = ({
 }) => {
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [showBankDropdown, setShowBankDropdown] = useState(false);
+	const [bankSearch, setBankSearch] = useState('');
+	const [unmaskedAccounts, setUnmaskedAccounts] = useState<Set<string>>(
+		new Set()
+	);
 	const [newAccount, setNewAccount] = useState<CreateBankAccountData>({
 		bankName: '',
 		accountNumber: '',
@@ -42,6 +50,22 @@ export const BankAccounts: React.FC<BankAccountsProps> = ({
 		}).format(amount);
 	};
 
+	const toggleAccountNumberVisibility = (accountId: string): void => {
+		const newUnmaskedAccounts = new Set(unmaskedAccounts);
+		if (newUnmaskedAccounts.has(accountId)) {
+			newUnmaskedAccounts.delete(accountId);
+		} else {
+			newUnmaskedAccounts.add(accountId);
+		}
+		setUnmaskedAccounts(newUnmaskedAccounts);
+	};
+
+	const getDisplayAccountNumber = (account: BankAccount): string => {
+		return unmaskedAccounts.has(account.id)
+			? account.accountNumber
+			: maskAccountNumber(account.accountNumber);
+	};
+
 	const getBankIcon = (bankName: string): string => {
 		const bankIcons: { [key: string]: string } = {
 			'Axis Bank': '🏦',
@@ -49,6 +73,7 @@ export const BankAccounts: React.FC<BankAccountsProps> = ({
 			'HDFC Bank': '🏛️',
 			'ICICI Bank': '🏢',
 			SBI: '🇮🇳',
+			'State Bank of India (SBI)': '🇮🇳',
 			Default: '🏦',
 		};
 
@@ -58,11 +83,21 @@ export const BankAccounts: React.FC<BankAccountsProps> = ({
 	const getAccountTypeColor = (type: string): string => {
 		const colorsMap: { [key: string]: string } = {
 			Savings: colors.success,
-			Current: colors.primary,
-			Salary: colors.info,
+			Current: colors.info,
+			Salary: colors.primary,
 		};
 
 		return colorsMap[type] || colors.gray;
+	};
+
+	const filteredBanks = BANK_LIST.sort().filter((bank) =>
+		bank.toLowerCase().includes(bankSearch.toLowerCase())
+	);
+
+	const handleSelectBank = (bank: string): void => {
+		setNewAccount({ ...newAccount, bankName: bank });
+		setShowBankDropdown(false);
+		setBankSearch('');
 	};
 
 	const handleAddAccount = async (): Promise<void> => {
@@ -73,6 +108,18 @@ export const BankAccounts: React.FC<BankAccountsProps> = ({
 
 		if (newAccount.balance < 0) {
 			Alert.alert('Error', 'Balance cannot be negative');
+			return;
+		}
+
+		// Validate account number (only digits, at least 9 characters)
+		const accountNumberRegex = /^\d+$/;
+		if (!accountNumberRegex.test(newAccount.accountNumber)) {
+			Alert.alert('Error', 'Account number should contain only digits');
+			return;
+		}
+
+		if (newAccount.accountNumber.length < 9) {
+			Alert.alert('Error', 'Account number should be at least 9 digits long');
 			return;
 		}
 
@@ -112,6 +159,10 @@ export const BankAccounts: React.FC<BankAccountsProps> = ({
 					onPress: async () => {
 						try {
 							await assetService.deleteBankAccount(userId, accountId);
+							// Remove from unmasked accounts if present
+							const newUnmaskedAccounts = new Set(unmaskedAccounts);
+							newUnmaskedAccounts.delete(accountId);
+							setUnmaskedAccounts(newUnmaskedAccounts);
 							onRefresh();
 							Alert.alert('Success', 'Bank account deleted successfully!');
 						} catch (error) {
@@ -131,7 +182,6 @@ export const BankAccounts: React.FC<BankAccountsProps> = ({
 
 	return (
 		<View style={{ padding: 20 }}>
-			{/* Summary Card */}
 			<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
 				<View style={[styles.row, styles.spaceBetween]}>
 					<View>
@@ -165,6 +215,7 @@ export const BankAccounts: React.FC<BankAccountsProps> = ({
 			<ScrollView
 				showsVerticalScrollIndicator={false}
 				style={{ maxHeight: 400 }}
+				contentContainerStyle={{ flexGrow: 1 }}
 			>
 				{accounts.map((account) => (
 					<TouchableOpacity
@@ -181,32 +232,78 @@ export const BankAccounts: React.FC<BankAccountsProps> = ({
 							handleDeleteAccount(account.id, account.bankName)
 						}
 					>
-						<View
-							style={[
-								styles.row,
-								styles.spaceBetween,
-								{ alignItems: 'flex-start' },
-							]}
-						>
-							<View style={[styles.row, { alignItems: 'flex-start', flex: 1 }]}>
+						<View style={[styles.row]}>
+							<View
+								style={{
+									alignItems: 'flex-start',
+									justifyContent: 'flex-start',
+								}}
+							>
 								<Text style={{ fontSize: 20, marginRight: 12, marginTop: 2 }}>
 									{getBankIcon(account.bankName)}
 								</Text>
-								<View style={{ flex: 1 }}>
-									<Text
+							</View>
+							<View style={{ justifyContent: 'center' }}>
+								<View style={[styles.row, styles.spaceBetween]}>
+									<View style={{ flex: 1 }}>
+										<Text
+											style={{
+												fontWeight: 'bold',
+												color: colors.dark,
+												fontSize: 16,
+											}}
+										>
+											{account.bankName}
+										</Text>
+									</View>
+									<View
 										style={{
-											fontWeight: 'bold',
-											color: colors.dark,
-											fontSize: 16,
+											alignItems: 'flex-end',
+											flexDirection: 'row',
+											gap: 4,
 										}}
 									>
-										{account.bankName}
-									</Text>
-									<Text
-										style={{ color: colors.gray, fontSize: 12, marginTop: 2 }}
+										<Text
+											style={{
+												fontWeight: 'bold',
+												color: colors.dark,
+												fontSize: 16,
+											}}
+										>
+											{formatCurrency(account.balance)}
+										</Text>
+										<Text style={{ color: colors.gray, fontSize: 12 }}>
+											{account.currency}
+										</Text>
+									</View>
+								</View>
+								<View>
+									<View
+										style={[
+											styles.row,
+											{
+												alignItems: 'center',
+												marginTop: 6,
+											},
+										]}
 									>
-										{account.accountNumber} • {account.accountType} Account
-									</Text>
+										<Text style={{ color: colors.gray, fontSize: 12 }}>
+											{getDisplayAccountNumber(account)} • {account.accountType}{' '}
+											Account
+										</Text>
+										<TouchableOpacity
+											onPress={() => toggleAccountNumberVisibility(account.id)}
+											style={{ marginLeft: 8, padding: 4 }}
+										>
+											<Ionicons
+												name={
+													unmaskedAccounts.has(account.id) ? 'eye-off' : 'eye'
+												}
+												size={16}
+												color={colors.gray}
+											/>
+										</TouchableOpacity>
+									</View>
 									<Text
 										style={{ color: colors.gray, fontSize: 10, marginTop: 4 }}
 									>
@@ -215,27 +312,10 @@ export const BankAccounts: React.FC<BankAccountsProps> = ({
 									</Text>
 								</View>
 							</View>
-
-							<View style={{ alignItems: 'flex-end' }}>
-								<Text
-									style={{
-										fontWeight: 'bold',
-										color: colors.dark,
-										fontSize: 16,
-									}}
-								>
-									{formatCurrency(account.balance)}
-								</Text>
-								<Text style={{ color: colors.gray, fontSize: 12 }}>
-									{account.currency}
-								</Text>
-							</View>
 						</View>
 					</TouchableOpacity>
 				))}
 			</ScrollView>
-
-			{/* Add New Account Modal */}
 			<Modal
 				visible={showAddModal}
 				animationType='slide'
@@ -249,62 +329,149 @@ export const BankAccounts: React.FC<BankAccountsProps> = ({
 						backgroundColor: 'rgba(0,0,0,0.5)',
 					}}
 				>
-					<View style={[styles.card, { margin: 20, maxHeight: '80%' }]}>
-						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-							Add Bank Account
-						</Text>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Bank Name'
-							value={newAccount.bankName}
-							onChangeText={(text) =>
-								setNewAccount({ ...newAccount, bankName: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Account Number'
-							value={newAccount.accountNumber}
-							onChangeText={(text) =>
-								setNewAccount({ ...newAccount, accountNumber: text })
-							}
-							placeholderTextColor={colors.gray}
-							keyboardType='number-pad'
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Balance'
-							value={newAccount.balance.toString()}
-							onChangeText={(text) =>
-								setNewAccount({ ...newAccount, balance: parseFloat(text) || 0 })
-							}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
-							<TouchableOpacity
-								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-								onPress={() => setShowAddModal(false)}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>Cancel</Text>
-							</TouchableOpacity>
-
-							<TouchableOpacity
-								style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-								onPress={handleAddAccount}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>
-									{isSubmitting ? 'Adding...' : 'Add Account'}
+					<View style={[styles.card, { margin: 20, maxHeight: '90%' }]}>
+						<ScrollView
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ flexGrow: 1 }}
+						>
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								Add Bank Account
+							</Text>
+							<View style={{ marginBottom: 16 }}>
+								<Text style={{ marginBottom: 8, color: colors.dark }}>
+									Select Bank
 								</Text>
-							</TouchableOpacity>
-						</View>
+								<TouchableOpacity
+									style={[
+										styles.input,
+										{
+											flexDirection: 'row',
+											justifyContent: 'space-between',
+											alignItems: 'center',
+										},
+									]}
+									onPress={() => setShowBankDropdown(!showBankDropdown)}
+								>
+									<Text
+										style={{
+											color: newAccount.bankName ? colors.dark : colors.gray,
+										}}
+									>
+										{newAccount.bankName || 'Select a bank'}
+									</Text>
+									<Text>{showBankDropdown ? '▲' : '▼'}</Text>
+								</TouchableOpacity>
+								{showBankDropdown && (
+									<View
+										style={{
+											backgroundColor: colors.white,
+											borderRadius: 8,
+											borderWidth: 1,
+											borderColor: colors.lightGray,
+											maxHeight: 200,
+											marginTop: 4,
+										}}
+									>
+										<TextInput
+											style={[
+												styles.input,
+												{
+													borderWidth: 0,
+													borderBottomWidth: 1,
+													borderRadius: 0,
+													marginBottom: 0,
+												},
+											]}
+											placeholder='Search banks...'
+											value={bankSearch}
+											onChangeText={setBankSearch}
+											placeholderTextColor={colors.gray}
+											autoFocus={true}
+										/>
+
+										{/* Bank List */}
+										<ScrollView
+											style={{ maxHeight: 150 }}
+											showsVerticalScrollIndicator={true}
+											contentContainerStyle={{ flexGrow: 1 }}
+										>
+											{filteredBanks.map((bank) => (
+												<TouchableOpacity
+													key={bank}
+													style={{
+														padding: 12,
+														borderBottomWidth: 1,
+														borderBottomColor: colors.lightGray,
+													}}
+													onPress={() => handleSelectBank(bank)}
+												>
+													<Text style={{ color: colors.dark }}>{bank}</Text>
+												</TouchableOpacity>
+											))}
+											{filteredBanks.length === 0 && (
+												<View style={{ padding: 12 }}>
+													<Text
+														style={{ color: colors.gray, textAlign: 'center' }}
+													>
+														No banks found
+													</Text>
+												</View>
+											)}
+										</ScrollView>
+									</View>
+								)}
+							</View>
+
+							<TextInput
+								style={styles.input}
+								placeholder='Account Number'
+								value={newAccount.accountNumber}
+								onChangeText={(text) =>
+									setNewAccount({ ...newAccount, accountNumber: text })
+								}
+								placeholderTextColor={colors.gray}
+								keyboardType='number-pad'
+								maxLength={18}
+							/>
+
+							<TextInput
+								style={styles.input}
+								placeholder='Balance'
+								value={newAccount.balance.toString()}
+								onChangeText={(text) =>
+									setNewAccount({
+										...newAccount,
+										balance: parseFloat(text) || 0,
+									})
+								}
+								placeholderTextColor={colors.gray}
+								keyboardType='decimal-pad'
+							/>
+
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										setShowAddModal(false);
+										setShowBankDropdown(false);
+										setBankSearch('');
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={handleAddAccount}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting ? 'Adding...' : 'Add Account'}
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</ScrollView>
 					</View>
 				</View>
 			</Modal>

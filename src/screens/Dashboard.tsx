@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks';
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles';
 import { DashboardData } from '@/types';
+import { isDataEmpty } from '@/utils';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
 	Alert,
@@ -176,100 +177,97 @@ export const Dashboard: React.FC = () => {
 
 	const renderOverview = () => (
 		<ScrollView showsVerticalScrollIndicator={false}>
-			<View
-				style={[
-					styles.card,
-					{
-						flexDirection: 'row',
-						justifyContent: 'center',
-						gap: 8,
-						paddingVertical: 12,
-						marginHorizontal: 6,
-					},
-				]}
-			>
-				<TouchableOpacity
-					style={[
-						styles.button,
-						chartType === 'pie'
-							? styles.buttonPrimary
-							: { backgroundColor: colors.lightGray },
-						{ flex: 1, paddingVertical: 8 },
-					]}
-					onPress={() => setChartType('pie')}
-				>
-					<Text
+			{!isDataEmpty(dashboardData) && (
+				<>
+					<View
 						style={[
-							styles.buttonText,
-							chartType === 'pie' ? {} : { color: colors.dark },
-							{ fontSize: 12 },
+							styles.card,
+							{
+								flexDirection: 'row',
+								justifyContent: 'center',
+								gap: 8,
+								paddingVertical: 12,
+								marginHorizontal: 6,
+							},
 						]}
 					>
-						📊 Pie
-					</Text>
-				</TouchableOpacity>
-
-				<TouchableOpacity
-					style={[
-						styles.button,
-						chartType === 'bar'
-							? styles.buttonPrimary
-							: { backgroundColor: colors.lightGray },
-						{ flex: 1, paddingVertical: 8 },
-					]}
-					onPress={() => setChartType('bar')}
-				>
-					<Text
-						style={[
-							styles.buttonText,
-							chartType === 'bar' ? {} : { color: colors.dark },
-							{ fontSize: 12 },
-						]}
-					>
-						📈 Bar
-					</Text>
-				</TouchableOpacity>
-
-				<TouchableOpacity
-					style={[
-						styles.button,
-						chartType === 'cards'
-							? styles.buttonPrimary
-							: { backgroundColor: colors.lightGray },
-						{ flex: 1, paddingVertical: 8 },
-					]}
-					onPress={() => setChartType('cards')}
-				>
-					<Text
-						style={[
-							styles.buttonText,
-							chartType === 'cards' ? {} : { color: colors.dark },
-							{ fontSize: 12 },
-						]}
-					>
-						💳 Cards
-					</Text>
-				</TouchableOpacity>
-			</View>
-
-			{/* Asset Visualization */}
-			{chartType === 'pie' && dashboardData && (
-				<AssetPieChart
-					data={pieChartData}
-					totalAssets={dashboardData.summary.totalAssets}
-					height={320}
-				/>
+						<TouchableOpacity
+							style={[
+								styles.button,
+								chartType === 'pie'
+									? styles.buttonPrimary
+									: { backgroundColor: colors.lightGray },
+								{ flex: 1, paddingVertical: 8 },
+							]}
+							onPress={() => setChartType('pie')}
+						>
+							<Text
+								style={[
+									styles.buttonText,
+									chartType === 'pie' ? {} : { color: colors.dark },
+									{ fontSize: 12 },
+								]}
+							>
+								📊 Pie
+							</Text>
+						</TouchableOpacity>
+						<TouchableOpacity
+							style={[
+								styles.button,
+								chartType === 'bar'
+									? styles.buttonPrimary
+									: { backgroundColor: colors.lightGray },
+								{ flex: 1, paddingVertical: 8 },
+							]}
+							onPress={() => setChartType('bar')}
+						>
+							<Text
+								style={[
+									styles.buttonText,
+									chartType === 'bar' ? {} : { color: colors.dark },
+									{ fontSize: 12 },
+								]}
+							>
+								📈 Bar
+							</Text>
+						</TouchableOpacity>
+						<TouchableOpacity
+							style={[
+								styles.button,
+								chartType === 'cards'
+									? styles.buttonPrimary
+									: { backgroundColor: colors.lightGray },
+								{ flex: 1, paddingVertical: 8 },
+							]}
+							onPress={() => setChartType('cards')}
+						>
+							<Text
+								style={[
+									styles.buttonText,
+									chartType === 'cards' ? {} : { color: colors.dark },
+									{ fontSize: 12 },
+								]}
+							>
+								💳 Cards
+							</Text>
+						</TouchableOpacity>
+					</View>
+					{chartType === 'pie' && dashboardData && (
+						<AssetPieChart
+							data={pieChartData}
+							totalAssets={dashboardData.summary.totalAssets}
+							height={320}
+						/>
+					)}
+					{chartType === 'bar' && dashboardData && (
+						<AssetBarChart data={pieChartData} height={320} showValues={true} />
+					)}
+					{chartType === 'cards' && dashboardData && (
+						<AssetCards summary={dashboardData.summary} />
+					)}
+				</>
 			)}
 
-			{chartType === 'bar' && dashboardData && (
-				<AssetBarChart data={pieChartData} height={320} showValues={true} />
-			)}
-
-			{chartType === 'cards' && dashboardData && (
-				<AssetCards summary={dashboardData.summary} />
-			)}
-
-			{/* Quick Stats */}
 			<View style={styles.card}>
 				<Text style={[styles.subHeading, { marginBottom: 16 }]}>
 					Portfolio Summary

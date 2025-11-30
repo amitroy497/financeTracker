@@ -76,17 +76,6 @@ export interface FileInfoProps {
 	onRefresh: () => void;
 }
 
-// CRUD operations types
-export interface CRUDOperations {
-	createItem: (item: ItemFormData) => Promise<Item>;
-	readAllItems: () => Promise<Item[]>;
-	readItem: (id: string) => Promise<Item | null>;
-	updateItem: (id: string, item: Partial<ItemFormData>) => Promise<Item>;
-	deleteItem: (id: string) => Promise<boolean>;
-	deleteAllItems: () => Promise<boolean>;
-	getStorageInfo: () => Promise<StorageInfo | null>;
-}
-
 // Add these new types for authentication
 export interface User {
 	id: string;

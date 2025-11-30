@@ -1,4 +1,5 @@
 import { Item, ItemFormData } from '@/types';
+import _ from 'lodash';
 
 // Format date to readable string
 export const formatDate = (dateString: string): string => {
@@ -84,8 +85,34 @@ export const filterItemsByCategory = (
 	return items.filter((item) => item.category === category);
 };
 
-// Safe number conversion for file sizes
 export const safeParseFloat = (value: string): number => {
 	const parsed = parseFloat(value);
 	return isNaN(parsed) ? 0 : parsed;
+};
+
+export const isDeepEmpty = (value: any): boolean => {
+	if (_.isNil(value) || value === '' || value === 0) return true;
+	if (_.isArray(value) && value.length === 0) return true;
+	if (_.isObject(value)) {
+		return _.every(_.values(value), isDeepEmpty);
+	}
+	return false;
+};
+
+// Universal function that handles both arrays and single objects
+export const isDataEmpty = (data: any | any[] | null | undefined): boolean => {
+	if (_.isNil(data)) return true;
+	if (Array.isArray(data)) {
+		return _.every(data, (item) => isDeepEmpty(item));
+	}
+	return isDeepEmpty(data);
+};
+
+export const maskAccountNumber = (accountNumber: string): string => {
+	if (accountNumber.length <= 4) {
+		return accountNumber;
+	}
+	const lastFour = accountNumber.slice(-4);
+	const maskedPart = '•'.repeat(Math.max(accountNumber.length - 4, 0));
+	return maskedPart + lastFour;
 };
