@@ -116,3 +116,10 @@ export const maskAccountNumber = (accountNumber: string): string => {
 	const maskedPart = '•'.repeat(Math.max(accountNumber.length - 4, 0));
 	return maskedPart + lastFour;
 };
+
+export const getCurrentMonth = (): string => {
+	const now = new Date();
+	return `${now.getFullYear()}-${(now.getMonth() + 1)
+		.toString()
+		.padStart(2, '0')}`;
+};

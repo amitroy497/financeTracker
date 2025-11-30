@@ -1,4 +1,4 @@
-import { Dashboard, ProfileScreen } from '@/screens';
+import { Dashboard, ExpensesScreen, ProfileScreen } from '@/screens';
 import { AppTabParamList } from '@/types';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
@@ -43,9 +43,10 @@ export const BottomTabNavigator: React.FC = () => {
 					}}
 				/>
 				<Tab.Screen
-					name='Transactions'
-					component={TransactionsScreen}
+					name='Expenses'
+					component={ExpensesScreen}
 					options={{
+						title: 'Expenses',
 						tabBarIcon: ({ color, size }) => (
 							<Text style={{ color, fontSize: size }}>💸</Text>
 						),

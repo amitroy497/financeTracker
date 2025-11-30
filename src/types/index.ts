@@ -199,7 +199,7 @@ export interface DashboardData {
 // Navigation types
 export type AppTabParamList = {
 	Dashboard: undefined;
-	Transactions: undefined;
+	Expenses: undefined;
 	Assets: undefined;
 	Profile: undefined;
 };
