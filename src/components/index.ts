@@ -1,3 +1,4 @@
+export * from './Dashboard';
 export * from './FileInfo';
 export * from './ItemForm';
 export * from './ItemList';

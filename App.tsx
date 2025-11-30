@@ -1,6 +1,6 @@
 import { AuthProvider } from '@/auth';
-import { MainApp } from '@/components/MainApp';
 import { useAuth } from '@/hooks';
+import { BottomTabNavigator } from '@/Navigation/BottomTabNavigator';
 import { AuthScreen } from '@/screens';
 import React from 'react';
 import { StatusBar } from 'react-native';
@@ -23,7 +23,7 @@ const AppContent: React.FC = () => {
 	return (
 		<SafeAreaView style={styles.safeArea}>
 			<StatusBar barStyle='dark-content' backgroundColor='#f8f9fa' />
-			{isAuthenticated ? <MainApp /> : <AuthScreen />}
+			{isAuthenticated ? <BottomTabNavigator /> : <AuthScreen />}
 		</SafeAreaView>
 	);
 };

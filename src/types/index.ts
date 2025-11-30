@@ -131,3 +131,127 @@ export interface AuthContextType extends AuthState {
 	) => Promise<boolean>;
 	changePin: (newPin: string) => Promise<boolean>;
 }
+
+// Add these new types for assets and dashboard
+
+export interface AssetSummary {
+	totalAssets: number;
+	cash: number;
+	fixedDeposits: number;
+	recurringDeposits: number;
+	mutualFunds: number;
+	otherAssets: number;
+}
+
+export interface BankAccount {
+	id: string;
+	bankName: string;
+	accountNumber: string;
+	accountType: 'Savings' | 'Current' | 'Salary';
+	balance: number;
+	currency: string;
+	lastUpdated: string;
+}
+
+export interface FixedDeposit {
+	id: string;
+	bankName: string;
+	depositNumber: string;
+	amount: number;
+	interestRate: number;
+	startDate: string;
+	maturityDate: string;
+	tenure: number; // in months
+	status: 'Active' | 'Matured';
+}
+
+export interface RecurringDeposit {
+	id: string;
+	bankName: string;
+	accountNumber: string;
+	monthlyAmount: number;
+	totalAmount: number;
+	interestRate: number;
+	startDate: string;
+	maturityDate: string;
+	tenure: number; // in months
+	completedMonths: number;
+}
+
+export interface MutualFund {
+	id: string;
+	fundName: string;
+	fundHouse: string;
+	folioNumber: string;
+	investmentType: 'Equity' | 'Debt' | 'Hybrid' | 'ELSS';
+	currentValue: number;
+	investedAmount: number;
+	units: number;
+	nav: number;
+	returns: number;
+	lastUpdated: string;
+}
+
+export interface DashboardData {
+	summary: AssetSummary;
+	bankAccounts: BankAccount[];
+	fixedDeposits: FixedDeposit[];
+	recurringDeposits: RecurringDeposit[];
+	mutualFunds: MutualFund[];
+	lastUpdated: string;
+}
+
+// Navigation types
+export type AppTabParamList = {
+	Dashboard: undefined;
+	Transactions: undefined;
+	Assets: undefined;
+	Profile: undefined;
+};
+
+// Add these new types for asset data storage
+
+export interface AssetData {
+	summary: AssetSummary;
+	bankAccounts: BankAccount[];
+	fixedDeposits: FixedDeposit[];
+	recurringDeposits: RecurringDeposit[];
+	mutualFunds: MutualFund[];
+	lastUpdated: string;
+}
+
+export interface CreateBankAccountData {
+	bankName: string;
+	accountNumber: string;
+	accountType: 'Savings' | 'Current' | 'Salary';
+	balance: number;
+	currency: string;
+}
+
+export interface CreateFixedDepositData {
+	bankName: string;
+	depositNumber: string;
+	amount: number;
+	interestRate: number;
+	startDate: string;
+	tenure: number;
+}
+
+export interface CreateRecurringDepositData {
+	bankName: string;
+	accountNumber: string;
+	monthlyAmount: number;
+	interestRate: number;
+	startDate: string;
+	tenure: number;
+}
+
+export interface CreateMutualFundData {
+	fundName: string;
+	fundHouse: string;
+	folioNumber: string;
+	investmentType: 'Equity' | 'Debt' | 'Hybrid' | 'ELSS';
+	investedAmount: number;
+	units: number;
+	nav: number;
+}
