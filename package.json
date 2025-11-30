@@ -1,6 +1,6 @@
 {
 	"name": "financetracker",
-	"version": "1.0.0",
+	"version": "1.0.6",
 	"main": "index.ts",
 	"scripts": {
 		"start": "expo start",
@@ -11,7 +11,10 @@
 		"type-check:watch": "tsc --noEmit --watch",
 		"lint": "eslint . --ext .js,.jsx,.ts,.tsx",
 		"build": "expo build",
-		"prebuild": "npm run type-check"
+		"prebuild": "npm run type-check",
+		"version:patch": "npm version patch && git push && git push --tags",
+		"version:minor": "npm version minor && git push && git push --tags",
+		"version:major": "npm version major && git push && git push --tags"
 	},
 	"dependencies": {
 		"@expo/vector-icons": "^15.0.3",
