@@ -1,20 +1,40 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { AuthProvider } from '@/auth';
+import { MainApp } from '@/components/MainApp';
+import { useAuth } from '@/hooks';
+import { AuthScreen } from '@/screens';
+import React from 'react';
+import { StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { styles } from './src/styles/global';
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+// Main app component that conditionally renders based on auth state
+const AppContent: React.FC = () => {
+	const { isAuthenticated, isLoading } = useAuth();
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+	if (isLoading) {
+		return (
+			<SafeAreaView style={styles.safeArea}>
+				<StatusBar barStyle='dark-content' backgroundColor='#f8f9fa' />
+				<AuthScreen />
+			</SafeAreaView>
+		);
+	}
+
+	return (
+		<SafeAreaView style={styles.safeArea}>
+			<StatusBar barStyle='dark-content' backgroundColor='#f8f9fa' />
+			{isAuthenticated ? <MainApp /> : <AuthScreen />}
+		</SafeAreaView>
+	);
+};
+
+// Root app component with auth provider
+const App: React.FC = () => {
+	return (
+		<AuthProvider>
+			<AppContent />
+		</AuthProvider>
+	);
+};
+
+export default App;

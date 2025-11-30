@@ -1,6 +1,26 @@
 {
-  "extends": "expo/tsconfig.base",
-  "compilerOptions": {
-    "strict": true
-  }
+	"extends": "expo/tsconfig.base",
+	"compilerOptions": {
+		"ignoreDeprecations": "6.0",
+		"strict": true,
+		"jsx": "react-native",
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"resolveJsonModule": true,
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["src/*"],
+			"@/components/*": ["src/components/*"],
+			"@/services/*": ["src/services/*"],
+			"@/utils/*": ["src/utils/*"],
+			"@/styles/*": ["src/styles/*"],
+			"@/types/*": ["src/types/*"],
+			"@/hooks/*": ["src/hooks/*"],
+			"@/auth/*": ["src/auth/*"],
+			"@/screens/*": ["src/screens/*"]
+		}
+	},
+	"include": ["**/*.ts", "**/*.tsx"],
+	"exclude": ["node_modules", "dist", "build"]
 }
