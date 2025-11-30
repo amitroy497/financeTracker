@@ -49,6 +49,12 @@ export const styles = StyleSheet.create({
 		shadowRadius: 4,
 		elevation: 3,
 	},
+	subheader: {
+		fontSize: 18,
+		fontWeight: '600',
+		color: colors.dark,
+		marginBottom: 8,
+	},
 	input: {
 		backgroundColor: colors.white,
 		padding: 16,

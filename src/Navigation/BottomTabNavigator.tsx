@@ -1,4 +1,4 @@
-import { Dashboard } from '@/screens';
+import { Dashboard, ProfileScreen } from '@/screens';
 import { AppTabParamList } from '@/types';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
@@ -7,7 +7,6 @@ import { Text, View } from 'react-native';
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
-// Placeholder components for other tabs
 const TransactionsScreen = () => (
 	<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
 		<Text>Transactions Screen - Coming Soon</Text>
@@ -17,12 +16,6 @@ const TransactionsScreen = () => (
 const AssetsScreen = () => (
 	<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
 		<Text>Assets Screen - Coming Soon</Text>
-	</View>
-);
-
-const ProfileScreen = () => (
-	<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-		<Text>Profile Screen - Coming Soon</Text>
 	</View>
 );
 

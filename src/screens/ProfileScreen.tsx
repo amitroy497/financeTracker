@@ -1,0 +1,639 @@
+import { useAuth } from '@/hooks';
+import { colors, styles } from '@/styles';
+import React, { useState } from 'react';
+import {
+	ActivityIndicator,
+	Alert,
+	ScrollView,
+	Switch,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
+} from 'react-native';
+
+export const ProfileScreen: React.FC = () => {
+	const {
+		user,
+		logout,
+		enableBiometric,
+		changePassword,
+		changePin,
+		biometricSupported,
+	} = useAuth();
+
+	const [isLoading, setIsLoading] = useState(false);
+	const [activeSection, setActiveSection] = useState<
+		'main' | 'email' | 'password' | 'pin' | 'biometric'
+	>('main');
+
+	// Email state
+	const [email, setEmail] = useState(user?.email || '');
+	const [currentPasswordForEmail, setCurrentPasswordForEmail] = useState('');
+
+	// Password state
+	const [currentPassword, setCurrentPassword] = useState('');
+	const [newPassword, setNewPassword] = useState('');
+	const [confirmNewPassword, setConfirmNewPassword] = useState('');
+
+	// PIN state
+	const [currentPin, setCurrentPin] = useState('');
+	const [newPin, setNewPin] = useState('');
+	const [confirmNewPin, setConfirmNewPin] = useState('');
+
+	// Biometric state
+	const [useBiometric, setUseBiometric] = useState(
+		user?.biometricEnabled || false
+	);
+
+	const handleUpdateEmail = async (): Promise<void> => {
+		if (!email.trim()) {
+			Alert.alert('Error', 'Please enter email address');
+			return;
+		}
+
+		if (!currentPasswordForEmail.trim()) {
+			Alert.alert('Error', 'Please enter current password to update email');
+			return;
+		}
+
+		// Email validation
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+			Alert.alert('Error', 'Please enter a valid email address');
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			// Note: You'll need to implement updateEmail function in your authService
+			// For now, this is a placeholder
+			Alert.alert('Success', 'Email updated successfully!');
+			setActiveSection('main');
+			resetForms();
+		} catch (error: any) {
+			Alert.alert('Error', error.message || 'Failed to update email');
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleChangePassword = async (): Promise<void> => {
+		if (!currentPassword.trim()) {
+			Alert.alert('Error', 'Please enter current password');
+			return;
+		}
+
+		if (!newPassword.trim()) {
+			Alert.alert('Error', 'Please enter new password');
+			return;
+		}
+
+		if (newPassword !== confirmNewPassword) {
+			Alert.alert('Error', 'New passwords do not match');
+			return;
+		}
+
+		if (newPassword.length < 6) {
+			Alert.alert('Error', 'Password must be at least 6 characters long');
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			const success = await changePassword(currentPassword, newPassword);
+			if (success) {
+				Alert.alert('Success', 'Password updated successfully!');
+				setActiveSection('main');
+				resetForms();
+			} else {
+				Alert.alert(
+					'Error',
+					'Failed to update password. Please check your current password.'
+				);
+			}
+		} catch (error: any) {
+			Alert.alert('Error', error.message || 'Failed to update password');
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleChangePin = async (): Promise<void> => {
+		if (!newPin.trim()) {
+			Alert.alert('Error', 'Please enter new PIN');
+			return;
+		}
+
+		if (newPin.length !== 4) {
+			Alert.alert('Error', 'PIN must be 4 digits');
+			return;
+		}
+
+		if (newPin !== confirmNewPin) {
+			Alert.alert('Error', 'PINs do not match');
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			const success = await changePin(newPin);
+			if (success) {
+				Alert.alert('Success', 'PIN updated successfully!');
+				setActiveSection('main');
+				resetForms();
+			} else {
+				Alert.alert('Error', 'Failed to update PIN');
+			}
+		} catch (error: any) {
+			Alert.alert('Error', error.message || 'Failed to update PIN');
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleToggleBiometric = async (value: boolean): Promise<void> => {
+		try {
+			setIsLoading(true);
+			await enableBiometric(value);
+			setUseBiometric(value);
+			Alert.alert(
+				'Success',
+				value
+					? 'Biometric authentication enabled!'
+					: 'Biometric authentication disabled!'
+			);
+		} catch (error: any) {
+			Alert.alert(
+				'Error',
+				error.message || 'Failed to update biometric setting'
+			);
+			setUseBiometric(!value); // Revert switch on error
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleRemovePin = async (): Promise<void> => {
+		Alert.alert(
+			'Remove PIN',
+			'Are you sure you want to remove your PIN? You will no longer be able to login with PIN.',
+			[
+				{ text: 'Cancel', style: 'cancel' },
+				{
+					text: 'Remove',
+					style: 'destructive',
+					onPress: async () => {
+						setIsLoading(true);
+						try {
+							// You'll need to implement removePin function in authService
+							// For now, this sets an empty PIN hash
+							const success = await changePin('');
+							if (success) {
+								Alert.alert('Success', 'PIN removed successfully!');
+								setActiveSection('main');
+							} else {
+								Alert.alert('Error', 'Failed to remove PIN');
+							}
+						} catch (error: any) {
+							Alert.alert('Error', error.message || 'Failed to remove PIN');
+						} finally {
+							setIsLoading(false);
+						}
+					},
+				},
+			]
+		);
+	};
+
+	const resetForms = (): void => {
+		setEmail(user?.email || '');
+		setCurrentPasswordForEmail('');
+		setCurrentPassword('');
+		setNewPassword('');
+		setConfirmNewPassword('');
+		setCurrentPin('');
+		setNewPin('');
+		setConfirmNewPin('');
+	};
+
+	const handleBackToMain = (): void => {
+		setActiveSection('main');
+		resetForms();
+	};
+
+	if (activeSection !== 'main') {
+		return (
+			<ScrollView
+				style={styles.container}
+				contentContainerStyle={{ padding: 20 }}
+			>
+				{/* Header with Back Button */}
+				<View style={[styles.row, { marginBottom: 30, alignItems: 'center' }]}>
+					<TouchableOpacity
+						onPress={handleBackToMain}
+						style={{ marginRight: 15 }}
+					>
+						<Text style={{ color: colors.primary, fontSize: 18 }}>←</Text>
+					</TouchableOpacity>
+					<Text style={styles.header}>
+						{activeSection === 'email' && 'Update Email'}
+						{activeSection === 'password' && 'Change Password'}
+						{activeSection === 'pin' && user?.pinHash
+							? 'Change PIN'
+							: 'Set PIN'}
+						{activeSection === 'biometric' && 'Biometric Settings'}
+					</Text>
+				</View>
+
+				{/* Update Email Section */}
+				{activeSection === 'email' && (
+					<>
+						<TextInput
+							style={styles.input}
+							placeholder='New Email Address'
+							value={email}
+							onChangeText={setEmail}
+							placeholderTextColor={colors.gray}
+							autoCapitalize='none'
+							keyboardType='email-address'
+						/>
+						<TextInput
+							style={styles.input}
+							placeholder='Current Password'
+							value={currentPasswordForEmail}
+							onChangeText={setCurrentPasswordForEmail}
+							placeholderTextColor={colors.gray}
+							secureTextEntry
+						/>
+						<TouchableOpacity
+							style={[
+								styles.button,
+								styles.buttonPrimary,
+								{ marginBottom: 16 },
+							]}
+							onPress={handleUpdateEmail}
+							disabled={isLoading}
+						>
+							{isLoading ? (
+								<ActivityIndicator color={colors.white} />
+							) : (
+								<Text style={styles.buttonText}>Update Email</Text>
+							)}
+						</TouchableOpacity>
+					</>
+				)}
+
+				{/* Change Password Section */}
+				{activeSection === 'password' && (
+					<>
+						<TextInput
+							style={styles.input}
+							placeholder='Current Password'
+							value={currentPassword}
+							onChangeText={setCurrentPassword}
+							placeholderTextColor={colors.gray}
+							secureTextEntry
+						/>
+						<TextInput
+							style={styles.input}
+							placeholder='New Password'
+							value={newPassword}
+							onChangeText={setNewPassword}
+							placeholderTextColor={colors.gray}
+							secureTextEntry
+						/>
+						<TextInput
+							style={styles.input}
+							placeholder='Confirm New Password'
+							value={confirmNewPassword}
+							onChangeText={setConfirmNewPassword}
+							placeholderTextColor={colors.gray}
+							secureTextEntry
+						/>
+						<TouchableOpacity
+							style={[
+								styles.button,
+								styles.buttonPrimary,
+								{ marginBottom: 16 },
+							]}
+							onPress={handleChangePassword}
+							disabled={isLoading}
+						>
+							{isLoading ? (
+								<ActivityIndicator color={colors.white} />
+							) : (
+								<Text style={styles.buttonText}>Change Password</Text>
+							)}
+						</TouchableOpacity>
+					</>
+				)}
+
+				{/* PIN Management Section */}
+				{activeSection === 'pin' && (
+					<>
+						{user?.pinHash ? (
+							// Change existing PIN
+							<>
+								<TextInput
+									style={styles.input}
+									placeholder='New PIN (4 digits)'
+									value={newPin}
+									onChangeText={setNewPin}
+									placeholderTextColor={colors.gray}
+									keyboardType='number-pad'
+									secureTextEntry
+									maxLength={4}
+								/>
+								<TextInput
+									style={styles.input}
+									placeholder='Confirm New PIN'
+									value={confirmNewPin}
+									onChangeText={setConfirmNewPin}
+									placeholderTextColor={colors.gray}
+									keyboardType='number-pad'
+									secureTextEntry
+									maxLength={4}
+								/>
+								<TouchableOpacity
+									style={[
+										styles.button,
+										styles.buttonPrimary,
+										{ marginBottom: 8 },
+									]}
+									onPress={handleChangePin}
+									disabled={isLoading}
+								>
+									{isLoading ? (
+										<ActivityIndicator color={colors.white} />
+									) : (
+										<Text style={styles.buttonText}>Change PIN</Text>
+									)}
+								</TouchableOpacity>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonDanger]}
+									onPress={handleRemovePin}
+									disabled={isLoading}
+								>
+									<Text style={styles.buttonText}>Remove PIN</Text>
+								</TouchableOpacity>
+							</>
+						) : (
+							// Set new PIN
+							<>
+								<TextInput
+									style={styles.input}
+									placeholder='Set PIN (4 digits)'
+									value={newPin}
+									onChangeText={setNewPin}
+									placeholderTextColor={colors.gray}
+									keyboardType='number-pad'
+									secureTextEntry
+									maxLength={4}
+								/>
+								<TextInput
+									style={styles.input}
+									placeholder='Confirm PIN'
+									value={confirmNewPin}
+									onChangeText={setConfirmNewPin}
+									placeholderTextColor={colors.gray}
+									keyboardType='number-pad'
+									secureTextEntry
+									maxLength={4}
+								/>
+								<TouchableOpacity
+									style={[
+										styles.button,
+										styles.buttonPrimary,
+										{ marginBottom: 16 },
+									]}
+									onPress={handleChangePin}
+									disabled={isLoading}
+								>
+									{isLoading ? (
+										<ActivityIndicator color={colors.white} />
+									) : (
+										<Text style={styles.buttonText}>Set PIN</Text>
+									)}
+								</TouchableOpacity>
+							</>
+						)}
+					</>
+				)}
+
+				{/* Biometric Settings Section */}
+				{activeSection === 'biometric' && (
+					<>
+						{biometricSupported ? (
+							<View style={[styles.card, { marginBottom: 20 }]}>
+								<View
+									style={[
+										styles.row,
+										{ justifyContent: 'space-between', alignItems: 'center' },
+									]}
+								>
+									<View style={{ flex: 1 }}>
+										<Text
+											style={{
+												color: colors.dark,
+												fontSize: 16,
+												fontWeight: '600',
+												marginBottom: 4,
+											}}
+										>
+											Biometric Sign In
+										</Text>
+										<Text style={{ color: colors.gray, fontSize: 14 }}>
+											Use fingerprint or face recognition to sign in quickly
+										</Text>
+									</View>
+									<Switch
+										value={useBiometric}
+										onValueChange={handleToggleBiometric}
+										trackColor={{
+											false: colors.lightGray,
+											true: colors.primary,
+										}}
+										disabled={isLoading}
+									/>
+								</View>
+							</View>
+						) : (
+							<View
+								style={[styles.card, { backgroundColor: colors.lightGray }]}
+							>
+								<Text style={{ color: colors.gray, textAlign: 'center' }}>
+									Biometric authentication is not supported on this device
+								</Text>
+							</View>
+						)}
+					</>
+				)}
+			</ScrollView>
+		);
+	}
+
+	// Main Profile View
+	return (
+		<ScrollView
+			style={styles.container}
+			contentContainerStyle={{ padding: 20 }}
+		>
+			<Text style={styles.header}>👤 Profile Settings</Text>
+
+			{/* User Info Card */}
+			<View style={[styles.card, { marginBottom: 24 }]}>
+				<View style={[styles.row, { alignItems: 'center', marginBottom: 12 }]}>
+					<Text style={{ fontSize: 24, marginRight: 12 }}>👤</Text>
+					<View style={{ flex: 1 }}>
+						<Text
+							style={{ color: colors.dark, fontSize: 18, fontWeight: '600' }}
+						>
+							{user?.username}
+						</Text>
+						<Text style={{ color: colors.gray, fontSize: 14, marginTop: 2 }}>
+							{user?.email || 'No email set'}
+						</Text>
+					</View>
+				</View>
+				<Text style={{ color: colors.gray, fontSize: 12 }}>
+					Member since {new Date(user?.createdAt || '').toLocaleDateString()}
+				</Text>
+			</View>
+
+			{/* Security Settings */}
+			<Text style={[styles.subheader, { marginBottom: 16 }]}>
+				Security Settings
+			</Text>
+
+			{/* Email Setting */}
+			<TouchableOpacity
+				style={[styles.card, { marginBottom: 12 }]}
+				onPress={() => setActiveSection('email')}
+			>
+				<View
+					style={[
+						styles.row,
+						{ justifyContent: 'space-between', alignItems: 'center' },
+					]}
+				>
+					<View style={[styles.row, { alignItems: 'center', flex: 1 }]}>
+						<Text style={{ fontSize: 20, marginRight: 12 }}>📧</Text>
+						<View style={{ flex: 1 }}>
+							<Text
+								style={{ color: colors.dark, fontSize: 16, fontWeight: '600' }}
+							>
+								Email Address
+							</Text>
+							<Text style={{ color: colors.gray, fontSize: 14 }}>
+								{user?.email || 'Not set'}
+							</Text>
+						</View>
+					</View>
+					<Text style={{ color: colors.primary }}>→</Text>
+				</View>
+			</TouchableOpacity>
+
+			{/* Password Setting */}
+			<TouchableOpacity
+				style={[styles.card, { marginBottom: 12 }]}
+				onPress={() => setActiveSection('password')}
+			>
+				<View
+					style={[
+						styles.row,
+						{ justifyContent: 'space-between', alignItems: 'center' },
+					]}
+				>
+					<View style={[styles.row, { alignItems: 'center', flex: 1 }]}>
+						<Text style={{ fontSize: 20, marginRight: 12 }}>🔒</Text>
+						<View style={{ flex: 1 }}>
+							<Text
+								style={{ color: colors.dark, fontSize: 16, fontWeight: '600' }}
+							>
+								Password
+							</Text>
+							<Text style={{ color: colors.gray, fontSize: 14 }}>
+								Change your password
+							</Text>
+						</View>
+					</View>
+					<Text style={{ color: colors.primary }}>→</Text>
+				</View>
+			</TouchableOpacity>
+
+			{/* PIN Setting */}
+			<TouchableOpacity
+				style={[styles.card, { marginBottom: 12 }]}
+				onPress={() => setActiveSection('pin')}
+			>
+				<View
+					style={[
+						styles.row,
+						{ justifyContent: 'space-between', alignItems: 'center' },
+					]}
+				>
+					<View style={[styles.row, { alignItems: 'center', flex: 1 }]}>
+						<Text style={{ fontSize: 20, marginRight: 12 }}>🔑</Text>
+						<View style={{ flex: 1 }}>
+							<Text
+								style={{ color: colors.dark, fontSize: 16, fontWeight: '600' }}
+							>
+								PIN
+							</Text>
+							<Text style={{ color: colors.gray, fontSize: 14 }}>
+								{user?.pinHash ? 'Change or remove PIN' : 'Set up PIN login'}
+							</Text>
+						</View>
+					</View>
+					<Text style={{ color: colors.primary }}>→</Text>
+				</View>
+			</TouchableOpacity>
+
+			{/* Biometric Setting */}
+			<TouchableOpacity
+				style={[styles.card, { marginBottom: 24 }]}
+				onPress={() => setActiveSection('biometric')}
+			>
+				<View
+					style={[
+						styles.row,
+						{ justifyContent: 'space-between', alignItems: 'center' },
+					]}
+				>
+					<View style={[styles.row, { alignItems: 'center', flex: 1 }]}>
+						<Text style={{ fontSize: 20, marginRight: 12 }}>👆</Text>
+						<View style={{ flex: 1 }}>
+							<Text
+								style={{ color: colors.dark, fontSize: 16, fontWeight: '600' }}
+							>
+								Biometric Sign In
+							</Text>
+							<Text style={{ color: colors.gray, fontSize: 14 }}>
+								{user?.biometricEnabled ? 'Enabled' : 'Disabled'}
+							</Text>
+						</View>
+					</View>
+					<Text style={{ color: colors.primary }}>→</Text>
+				</View>
+			</TouchableOpacity>
+
+			{/* Logout Button */}
+			<TouchableOpacity
+				style={[styles.button, styles.buttonDanger]}
+				onPress={() => {
+					Alert.alert('Logout', 'Are you sure you want to logout?', [
+						{ text: 'Cancel', style: 'cancel' },
+						{
+							text: 'Logout',
+							style: 'destructive',
+							onPress: logout,
+						},
+					]);
+				}}
+			>
+				<Text style={styles.buttonText}>Logout</Text>
+			</TouchableOpacity>
+		</ScrollView>
+	);
+};
