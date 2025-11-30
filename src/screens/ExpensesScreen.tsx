@@ -1,6 +1,8 @@
+import { EXPENSE_CATEGORIES } from '@/constants';
 import { useAuth } from '@/hooks';
 import { colors, styles } from '@/styles';
 import { getCurrentMonth } from '@/utils';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system/legacy';
 import React, { useEffect, useState } from 'react';
 import {
@@ -33,113 +35,6 @@ export interface ExpenseFormData {
 	date: string;
 }
 
-// Expense categories based on your list
-export const EXPENSE_CATEGORIES = [
-	{ key: 'transport', name: 'Transport', emoji: '🚗', color: '#FF6B6B' },
-	{ key: 'in_laws', name: 'In Laws', emoji: '👨‍👩‍👧‍👦', color: '#4ECDC4' },
-	{ key: 'gas', name: 'Gas', emoji: '🔥', color: '#45B7D1' },
-	{
-		key: 'snacks_desserts',
-		name: 'Snacks & Desserts',
-		emoji: '🍦',
-		color: '#FFA07A',
-	},
-	{ key: 'medicine', name: 'Medicine', emoji: '💊', color: '#FFD700' },
-	{
-		key: 'ranchi_grocery',
-		name: 'Ranchi Grocery',
-		emoji: '🛒',
-		color: '#98D8C8',
-	},
-	{
-		key: 'kolkata_household',
-		name: 'Kolkata Household',
-		emoji: '🏠',
-		color: '#A78BFA',
-	},
-	{
-		key: 'rent_electricity',
-		name: 'Rent & Electricity',
-		emoji: '💡',
-		color: '#F471B5',
-	},
-	{
-		key: 'shivraj_maintenance',
-		name: 'Shivraj Maintenance',
-		emoji: '🔧',
-		color: '#6EE7B7',
-	},
-	{
-		key: 'entertainment',
-		name: 'Entertainment',
-		emoji: '🎬',
-		color: '#F59E0B',
-	},
-	{ key: 'train', name: 'Train', emoji: '🚆', color: '#10B981' },
-	{ key: 'petrol_bike', name: 'Petrol & Bike', emoji: '⛽', color: '#6366F1' },
-	{
-		key: 'wife_account',
-		name: 'Wife Account & Cash',
-		emoji: '👩',
-		color: '#EC4899',
-	},
-	{
-		key: 'wife_shopping',
-		name: 'Wife Shopping & Parlour',
-		emoji: '💄',
-		color: '#8B5CF6',
-	},
-	{
-		key: 'banking_charges',
-		name: 'Banking & EMI Charges',
-		emoji: '🏦',
-		color: '#06B6D4',
-	},
-	{ key: 'wifi', name: 'Wifi', emoji: '📶', color: '#3B82F6' },
-	{
-		key: 'mobile_recharge',
-		name: 'Mobile Recharge',
-		emoji: '📱',
-		color: '#EF4444',
-	},
-	{
-		key: 'trading_charges',
-		name: 'Trading Charges',
-		emoji: '📈',
-		color: '#84CC16',
-	},
-	{
-		key: 'digital_gold',
-		name: 'Digital Gold Charges',
-		emoji: '💰',
-		color: '#F59E0B',
-	},
-	{
-		key: 'subscriptions',
-		name: 'Subscriptions',
-		emoji: '📺',
-		color: '#8B5CF6',
-	},
-	{
-		key: 'health_insurance',
-		name: 'Health Insurance',
-		emoji: '🏥',
-		color: '#10B981',
-	},
-	{ key: 'street_food', name: 'Street Food', emoji: '🍢', color: '#F97316' },
-	{ key: 'online_food', name: 'Online Food', emoji: '🍕', color: '#DC2626' },
-	{ key: 'shopping', name: 'Online Shopping', emoji: '📦', color: '#7C3AED' },
-	{ key: 'liquid', name: 'Liquid', emoji: '🥤', color: '#60A5FA' },
-	{ key: 'donation', name: 'Donation', emoji: '🤲', color: '#059669' },
-	{ key: 'neighbour', name: 'Neighbour', emoji: '🏡', color: '#6B7280' },
-	{
-		key: 'miscellaneous',
-		name: 'Miscellaneous',
-		emoji: '📝',
-		color: '#9CA3AF',
-	},
-];
-
 export const ExpensesScreen: React.FC = () => {
 	const { user } = useAuth();
 	const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -147,6 +42,7 @@ export const ExpensesScreen: React.FC = () => {
 	const [loading, setLoading] = useState(true);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showCategoryModal, setShowCategoryModal] = useState(false);
+	const [showDatePicker, setShowDatePicker] = useState(false);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedCategory, setSelectedCategory] = useState<string>('all');
 	const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth());
@@ -158,6 +54,9 @@ export const ExpensesScreen: React.FC = () => {
 		category: '',
 		date: new Date().toISOString().split('T')[0], // Today's date
 	});
+
+	// Date state for the picker
+	const [selectedDate, setSelectedDate] = useState(new Date());
 
 	// Load expenses on component mount
 	useEffect(() => {
@@ -329,6 +228,7 @@ export const ExpensesScreen: React.FC = () => {
 			category: '',
 			date: new Date().toISOString().split('T')[0],
 		});
+		setSelectedDate(new Date());
 	};
 
 	const getCategoryInfo = (categoryKey: string) => {
@@ -380,6 +280,24 @@ export const ExpensesScreen: React.FC = () => {
 			month: 'short',
 			year: 'numeric',
 		});
+	};
+
+	const formatDateForDisplay = (dateString: string): string => {
+		const date = new Date(dateString);
+		return date.toLocaleDateString('en-IN', {
+			day: '2-digit',
+			month: 'short',
+			year: 'numeric',
+		});
+	};
+
+	const handleDateChange = (event: any, date?: Date): void => {
+		setShowDatePicker(false);
+		if (date) {
+			setSelectedDate(date);
+			const formattedDate = date.toISOString().split('T')[0];
+			setFormData({ ...formData, date: formattedDate });
+		}
 	};
 
 	// Group expenses by date for section list
@@ -470,7 +388,7 @@ export const ExpensesScreen: React.FC = () => {
 				>
 					<TextInput
 						style={[styles.input, { flex: 1, marginRight: 12 }]}
-						placeholder='MMMM'
+						placeholder='YYYY-MM'
 						value={selectedMonth}
 						onChangeText={setSelectedMonth}
 						placeholderTextColor={colors.gray}
@@ -673,12 +591,26 @@ export const ExpensesScreen: React.FC = () => {
 							</Text>
 						</TouchableOpacity>
 
-						<TextInput
-							style={styles.input}
-							value={formData.date}
-							onChangeText={(text) => setFormData({ ...formData, date: text })}
-							placeholderTextColor={colors.gray}
-						/>
+						{/* Date Picker Button */}
+						<TouchableOpacity
+							style={[styles.input, { justifyContent: 'center' }]}
+							onPress={() => setShowDatePicker(true)}
+						>
+							<Text style={{ color: colors.dark }}>
+								📅 {formatDateForDisplay(formData.date)}
+							</Text>
+						</TouchableOpacity>
+
+						{/* Date Picker */}
+						{showDatePicker && (
+							<DateTimePicker
+								value={selectedDate}
+								mode='date'
+								display='default'
+								onChange={handleDateChange}
+								maximumDate={new Date()}
+							/>
+						)}
 
 						<View style={[styles.row, { marginTop: 20 }]}>
 							<TouchableOpacity
