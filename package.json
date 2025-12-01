@@ -12,9 +12,9 @@
 		"lint": "eslint . --ext .js,.jsx,.ts,.tsx",
 		"build": "expo build",
 		"prebuild": "npm run type-check",
-		"version:patch": "npm version patch && git push && git push --tags",
-		"version:minor": "npm version minor && git push && git push --tags",
-		"version:major": "npm version major && git push && git push --tags"
+		"version:patch": "npm version patch --no-git-tag-version && git add . && git commit -m \"chore(release): bump patch to v$(npm pkg get version | tr -d '\"')\" && git tag v$(npm pkg get version | tr -d '\"') && git push && git push --tags",
+		"version:minor": "npm version minor --no-git-tag-version && git add . && git commit -m \"chore(release): bump minor to v$(npm pkg get version | tr -d '\"')\" && git tag v$(npm pkg get version | tr -d '\"') && git push && git push --tags",
+		"version:major": "npm version major --no-git-tag-version && git add . && git commit -m \"chore(release): bump major to v$(npm pkg get version | tr -d '\"')\" && git tag v$(npm pkg get version | tr -d '\"') && git push && git push --tags"
 	},
 	"dependencies": {
 		"@expo/vector-icons": "^15.0.3",
