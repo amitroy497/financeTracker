@@ -1,4 +1,6 @@
+import { useAuth } from '@/hooks';
 import {
+	AdminScreen,
 	Dashboard,
 	ExpensesScreen,
 	ProfileScreen,
@@ -25,6 +27,8 @@ const AssetsScreen = () => (
 );
 
 export const BottomTabNavigator: React.FC = () => {
+	const { user } = useAuth();
+
 	return (
 		<NavigationContainer>
 			<Tab.Navigator
@@ -74,16 +78,35 @@ export const BottomTabNavigator: React.FC = () => {
 						),
 					}}
 				/>
-				<Tab.Screen
-					name='Assets'
-					component={AssetsScreen}
-					options={{
-						title: 'Assets',
-						tabBarIcon: ({ color, size }) => (
-							<Text style={{ color, fontSize: size }}>🏦</Text>
-						),
-					}}
-				/>
+
+				{/* Show Admin tab only for admin users */}
+				{user?.isAdmin && (
+					<Tab.Screen
+						name='Admin'
+						component={AdminScreen}
+						options={{
+							title: 'Admin',
+							tabBarIcon: ({ color, size }) => (
+								<Text style={{ color, fontSize: size }}>👨‍💼</Text>
+							),
+						}}
+					/>
+				)}
+
+				{/* Show Assets tab for non-admin users */}
+				{!user?.isAdmin && (
+					<Tab.Screen
+						name='Assets'
+						component={AssetsScreen}
+						options={{
+							title: 'Assets',
+							tabBarIcon: ({ color, size }) => (
+								<Text style={{ color, fontSize: size }}>🏦</Text>
+							),
+						}}
+					/>
+				)}
+
 				<Tab.Screen
 					name='Profile'
 					component={ProfileScreen}

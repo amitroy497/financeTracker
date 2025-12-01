@@ -86,6 +86,7 @@ export interface User {
 	biometricEnabled: boolean;
 	createdAt: string;
 	lastLogin?: string;
+	isAdmin?: boolean;
 }
 
 export interface AuthCredentials {
@@ -203,6 +204,7 @@ export type AppTabParamList = {
 	Savings: undefined;
 	Assets: undefined;
 	Profile: undefined;
+	Admin?: undefined;
 };
 
 // Add these new types for asset data storage
@@ -436,4 +438,50 @@ export interface YearlyFinancialData {
 	monthlyTotals: { [month: string]: number }; // Format: "YYYY-MM"
 	createdAt: string;
 	updatedAt: string;
+}
+
+// Add these new types to your existing types file
+
+export interface UserDataExport {
+	version: string;
+	exportDate: string;
+	userId: string;
+	username: string;
+
+	// Assets data
+	assets: AssetData;
+
+	// Expenses data
+	expenses: any[]; // From ExpensesScreen
+
+	// Savings data
+	savings: any[]; // From SavingsScreen
+
+	// User settings
+	userSettings: {
+		email?: string;
+		biometricEnabled: boolean;
+		preferences?: any;
+	};
+}
+
+export interface AdminUser {
+	id: string;
+	username: string;
+	isAdmin: boolean;
+	createdAt: string;
+}
+
+export interface AdminCredentials {
+	username: string;
+	password: string;
+}
+
+// Add to AuthCredentials
+export interface AuthCredentials {
+	username: string;
+	password: string;
+	pin?: string;
+	biometricEnabled?: boolean;
+	isAdmin?: boolean; // Add this
 }

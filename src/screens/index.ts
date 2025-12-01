@@ -1,3 +1,4 @@
+export * from './AdminScreen';
 export * from './AuthScreen';
 export * from './Dashboard';
 export * from './ExpensesScreen';

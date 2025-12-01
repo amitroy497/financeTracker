@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks';
 import { colors, styles } from '@/styles';
-import React, { useState } from 'react';
+import { DataBackupService } from '@/utils/dataBackup';
+import React, { useEffect, useState } from 'react';
 import {
 	ActivityIndicator,
 	Alert,
@@ -24,8 +25,13 @@ export const ProfileScreen: React.FC = () => {
 
 	const [isLoading, setIsLoading] = useState(false);
 	const [activeSection, setActiveSection] = useState<
-		'main' | 'email' | 'password' | 'pin' | 'biometric'
+		'main' | 'email' | 'password' | 'pin' | 'biometric' | 'backup'
 	>('main');
+	const [exportInfo, setExportInfo] = useState<{
+		lastExport?: string;
+		fileSize?: number;
+		itemsCount: number;
+	} | null>(null);
 
 	// Email state
 	const [email, setEmail] = useState(user?.email || '');
@@ -45,6 +51,150 @@ export const ProfileScreen: React.FC = () => {
 	const [useBiometric, setUseBiometric] = useState(
 		user?.biometricEnabled || false
 	);
+
+	// Load export info when backup section is active
+	useEffect(() => {
+		if (user && activeSection === 'backup') {
+			loadExportInfo();
+		}
+	}, [user, activeSection]);
+
+	const loadExportInfo = async (): Promise<void> => {
+		if (!user) return;
+
+		try {
+			const info = await DataBackupService.getExportInfo(user.id);
+			setExportInfo(info);
+		} catch (error) {
+			console.error('Error loading export info:', error);
+		}
+	};
+
+	const handleExportData = async (): Promise<void> => {
+		if (!user) return;
+
+		setIsLoading(true);
+		try {
+			Alert.alert(
+				'Export Data',
+				'This will create a JSON file with all your financial data. Do you want to continue?',
+				[
+					{ text: 'Cancel', style: 'cancel' },
+					{
+						text: 'Export',
+						onPress: async () => {
+							try {
+								const exportPath = await DataBackupService.exportUserData(
+									user.id,
+									user.username
+								);
+
+								await DataBackupService.shareExportFile(exportPath);
+
+								Alert.alert(
+									'Success',
+									'Data exported successfully! You can share the file or save it for backup.'
+								);
+
+								loadExportInfo(); // Refresh info
+							} catch (error: any) {
+								Alert.alert(
+									'Export Failed',
+									error.message || 'Failed to export data'
+								);
+							}
+						},
+					},
+				]
+			);
+		} catch (error: any) {
+			Alert.alert('Error', error.message || 'Failed to export data');
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleImportData = async (): Promise<void> => {
+		if (!user) return;
+
+		Alert.alert(
+			'Import Data',
+			'Warning: This will overwrite all your current data. Make sure you have a backup. Continue?',
+			[
+				{ text: 'Cancel', style: 'cancel' },
+				{
+					text: 'Choose File',
+					onPress: async () => {
+						setIsLoading(true);
+						try {
+							const fileContent = await DataBackupService.pickImportFile();
+
+							if (!fileContent) {
+								Alert.alert('Info', 'No file selected');
+								setIsLoading(false);
+								return;
+							}
+
+							// Validate file
+							const importData =
+								DataBackupService.validateImportFile(fileContent);
+
+							// Verify user ID matches (optional check)
+							if (importData.userId !== user.id) {
+								Alert.alert(
+									'User ID Mismatch',
+									`This export file belongs to "${importData.username}". Import anyway?`,
+									[
+										{ text: 'Cancel', style: 'cancel' },
+										{
+											text: 'Import Anyway',
+											onPress: async () => {
+												await performImport(importData);
+											},
+										},
+									]
+								);
+							} else {
+								await performImport(importData);
+							}
+						} catch (error: any) {
+							Alert.alert(
+								'Import Failed',
+								error.message || 'Invalid import file'
+							);
+						} finally {
+							setIsLoading(false);
+						}
+					},
+				},
+			]
+		);
+	};
+
+	const performImport = async (importData: any): Promise<void> => {
+		try {
+			await DataBackupService.importUserData(user!.id, importData);
+
+			Alert.alert(
+				'Success',
+				'Data imported successfully! Please restart the app to see the changes.',
+				[
+					{
+						text: 'OK',
+						onPress: () => {
+							setActiveSection('main');
+							// Note: In a production app, you might want to:
+							// 1. Force a refresh of all screens
+							// 2. Clear navigation stack
+							// 3. Reload the app
+						},
+					},
+				]
+			);
+		} catch (error: any) {
+			Alert.alert('Import Failed', error.message || 'Failed to import data');
+		}
+	};
 
 	const handleUpdateEmail = async (): Promise<void> => {
 		if (!email.trim()) {
@@ -222,6 +372,163 @@ export const ProfileScreen: React.FC = () => {
 		resetForms();
 	};
 
+	// Render Backup/Restore Section
+	if (activeSection === 'backup') {
+		return (
+			<ScrollView
+				style={styles.container}
+				contentContainerStyle={{ padding: 20 }}
+			>
+				{/* Header with Back Button */}
+				<View style={[styles.row, { marginBottom: 30, alignItems: 'center' }]}>
+					<TouchableOpacity
+						onPress={handleBackToMain}
+						style={{ marginRight: 15 }}
+					>
+						<Text style={{ color: colors.primary, fontSize: 18 }}>←</Text>
+					</TouchableOpacity>
+					<Text style={styles.header}>Data Backup & Restore</Text>
+				</View>
+
+				{/* Export Info Card */}
+				<View style={[styles.card, { marginBottom: 24 }]}>
+					<Text style={[styles.subheader, { marginBottom: 16 }]}>
+						📊 Current Data Summary
+					</Text>
+
+					{exportInfo ? (
+						<>
+							<View
+								style={[
+									styles.row,
+									{ justifyContent: 'space-between', marginBottom: 12 },
+								]}
+							>
+								<Text style={{ color: colors.gray }}>Total Items</Text>
+								<Text style={{ fontWeight: 'bold', color: colors.dark }}>
+									{exportInfo.itemsCount}
+								</Text>
+							</View>
+
+							{exportInfo.fileSize && (
+								<View
+									style={[
+										styles.row,
+										{ justifyContent: 'space-between', marginBottom: 12 },
+									]}
+								>
+									<Text style={{ color: colors.gray }}>Data Size</Text>
+									<Text style={{ fontWeight: 'bold', color: colors.dark }}>
+										{(exportInfo.fileSize / 1024).toFixed(2)} KB
+									</Text>
+								</View>
+							)}
+
+							{exportInfo.lastExport && (
+								<View style={[styles.row, { justifyContent: 'space-between' }]}>
+									<Text style={{ color: colors.gray }}>Last Export</Text>
+									<Text style={{ fontWeight: 'bold', color: colors.dark }}>
+										{exportInfo.lastExport}
+									</Text>
+								</View>
+							)}
+						</>
+					) : (
+						<Text style={{ color: colors.gray, textAlign: 'center' }}>
+							Loading data info...
+						</Text>
+					)}
+				</View>
+
+				{/* Export Button */}
+				<TouchableOpacity
+					style={[
+						styles.button,
+						styles.buttonPrimary,
+						{ marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
+					]}
+					onPress={handleExportData}
+					disabled={isLoading}
+				>
+					{isLoading ? (
+						<ActivityIndicator color={colors.white} />
+					) : (
+						<>
+							<Text style={{ fontSize: 20, marginRight: 10 }}>📤</Text>
+							<Text style={styles.buttonText}>Export All Data</Text>
+						</>
+					)}
+				</TouchableOpacity>
+
+				{/* Import Button */}
+				<TouchableOpacity
+					style={[
+						styles.button,
+						{
+							backgroundColor: colors.warning,
+							marginBottom: 24,
+							flexDirection: 'row',
+							alignItems: 'center',
+						},
+					]}
+					onPress={handleImportData}
+					disabled={isLoading}
+				>
+					{isLoading ? (
+						<ActivityIndicator color={colors.white} />
+					) : (
+						<>
+							<Text style={{ fontSize: 20, marginRight: 10 }}>📥</Text>
+							<Text style={styles.buttonText}>Import Data</Text>
+						</>
+					)}
+				</TouchableOpacity>
+
+				{/* Warning Note */}
+				<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
+					<Text
+						style={{ color: colors.danger, fontWeight: '600', marginBottom: 8 }}
+					>
+						⚠️ Important Notes:
+					</Text>
+					<Text style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}>
+						1. Export creates a JSON file with all your financial data
+					</Text>
+					<Text style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}>
+						2. Import will overwrite ALL existing data
+					</Text>
+					<Text style={{ color: colors.gray, fontSize: 12 }}>
+						3. Keep backup files in a secure location
+					</Text>
+				</View>
+
+				{/* How to Use */}
+				<View style={[styles.card, { marginTop: 16 }]}>
+					<Text style={[styles.subheader, { marginBottom: 12 }]}>
+						📖 How to Use:
+					</Text>
+					<Text style={{ color: colors.gray, fontSize: 12, marginBottom: 6 }}>
+						• <Text style={{ fontWeight: 'bold' }}>Export:</Text> Creates a
+						backup file you can save anywhere
+					</Text>
+					<Text style={{ color: colors.gray, fontSize: 12, marginBottom: 6 }}>
+						• <Text style={{ fontWeight: 'bold' }}>Import:</Text> Restores data
+						from a previously exported file
+					</Text>
+					<Text style={{ color: colors.gray, fontSize: 12, marginBottom: 6 }}>
+						• <Text style={{ fontWeight: 'bold' }}>After reinstall:</Text>{' '}
+						Import your backup file to restore all data
+					</Text>
+					<Text style={{ color: colors.gray, fontSize: 12 }}>
+						• <Text style={{ fontWeight: 'bold' }}>Admin help:</Text> Contact
+						admin if you need assistance
+					</Text>
+				</View>
+			</ScrollView>
+		);
+	}
+
+	// Render other sections (email, password, pin, biometric)
 	if (activeSection !== 'main') {
 		return (
 			<ScrollView
@@ -486,11 +793,36 @@ export const ProfileScreen: React.FC = () => {
 				<View style={[styles.row, { alignItems: 'center', marginBottom: 12 }]}>
 					<Text style={{ fontSize: 24, marginRight: 12 }}>👤</Text>
 					<View style={{ flex: 1 }}>
-						<Text
-							style={{ color: colors.dark, fontSize: 18, fontWeight: '600' }}
+						<View
+							style={[styles.row, { alignItems: 'center', marginBottom: 4 }]}
 						>
-							{user?.username}
-						</Text>
+							<Text
+								style={{ color: colors.dark, fontSize: 18, fontWeight: '600' }}
+							>
+								{user?.username}
+							</Text>
+							{user?.isAdmin && (
+								<View
+									style={{
+										marginLeft: 8,
+										backgroundColor: colors.primary,
+										paddingHorizontal: 8,
+										paddingVertical: 2,
+										borderRadius: 4,
+									}}
+								>
+									<Text
+										style={{
+											color: colors.white,
+											fontSize: 10,
+											fontWeight: 'bold',
+										}}
+									>
+										ADMIN
+									</Text>
+								</View>
+							)}
+						</View>
 						<Text style={{ color: colors.gray, fontSize: 14, marginTop: 2 }}>
 							{user?.email || 'No email set'}
 						</Text>
@@ -592,7 +924,7 @@ export const ProfileScreen: React.FC = () => {
 
 			{/* Biometric Setting */}
 			<TouchableOpacity
-				style={[styles.card, { marginBottom: 24 }]}
+				style={[styles.card, { marginBottom: 12 }]}
 				onPress={() => setActiveSection('biometric')}
 			>
 				<View
@@ -617,6 +949,75 @@ export const ProfileScreen: React.FC = () => {
 					<Text style={{ color: colors.primary }}>→</Text>
 				</View>
 			</TouchableOpacity>
+
+			{/* Backup & Restore Setting */}
+			<TouchableOpacity
+				style={[styles.card, { marginBottom: 24 }]}
+				onPress={() => setActiveSection('backup')}
+			>
+				<View
+					style={[
+						styles.row,
+						{ justifyContent: 'space-between', alignItems: 'center' },
+					]}
+				>
+					<View style={[styles.row, { alignItems: 'center', flex: 1 }]}>
+						<Text style={{ fontSize: 20, marginRight: 12 }}>💾</Text>
+						<View style={{ flex: 1 }}>
+							<Text
+								style={{ color: colors.dark, fontSize: 16, fontWeight: '600' }}
+							>
+								Data Backup & Restore
+							</Text>
+							<Text style={{ color: colors.gray, fontSize: 14 }}>
+								Export/Import all your financial data
+							</Text>
+						</View>
+					</View>
+					<Text style={{ color: colors.primary }}>→</Text>
+				</View>
+			</TouchableOpacity>
+
+			{/* App Info */}
+			<View style={[styles.card, { marginBottom: 24 }]}>
+				<Text style={[styles.subheader, { marginBottom: 12 }]}>
+					ℹ️ App Information
+				</Text>
+				<View
+					style={[
+						styles.row,
+						{ justifyContent: 'space-between', marginBottom: 8 },
+					]}
+				>
+					<Text style={{ color: colors.gray }}>User ID</Text>
+					<Text
+						style={{
+							color: colors.dark,
+							fontSize: 12,
+							fontFamily: 'monospace',
+						}}
+					>
+						{user?.id?.substring(0, 8)}...
+					</Text>
+				</View>
+				<View
+					style={[
+						styles.row,
+						{ justifyContent: 'space-between', marginBottom: 8 },
+					]}
+				>
+					<Text style={{ color: colors.gray }}>Last Login</Text>
+					<Text style={{ color: colors.dark, fontSize: 12 }}>
+						{user?.lastLogin
+							? new Date(user.lastLogin).toLocaleDateString()
+							: 'Never'}
+					</Text>
+				</View>
+				<View style={[styles.row, { justifyContent: 'space-between' }]}>
+					<Text style={{ color: colors.gray }}>Data Version</Text>
+					<Text style={{ color: colors.dark, fontSize: 12 }}>1.0.0</Text>
+				</View>
+			</View>
 
 			{/* Logout Button */}
 			<TouchableOpacity

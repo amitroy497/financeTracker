@@ -1,3 +1,4 @@
+// AuthProvider.tsx
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
 import { authService } from '../services/authService';
 import {
@@ -37,10 +38,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 	const login = async (credentials: LoginCredentials): Promise<boolean> => {
 		try {
+			console.log('AuthProvider: Attempting login for:', credentials.username);
 			setAuthState((prev) => ({ ...prev, isLoading: true }));
 
 			const user = await authService.login(credentials);
+
 			if (user) {
+				console.log(
+					'AuthProvider: Login successful for:',
+					user.username,
+					'isAdmin:',
+					user.isAdmin
+				);
 				setAuthState((prev) => ({
 					...prev,
 					user,
@@ -50,39 +59,56 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				return true;
 			}
 
+			console.log(
+				'AuthProvider: Login failed - invalid credentials for:',
+				credentials.username
+			);
 			setAuthState((prev) => ({ ...prev, isLoading: false }));
 			return false;
-		} catch (error) {
-			console.error('Login error:', error);
+		} catch (error: any) {
+			console.error('AuthProvider: Login error:', error);
 			setAuthState((prev) => ({ ...prev, isLoading: false }));
-			return false;
+			// Re-throw the error so the UI can show the specific error message
+			throw error;
 		}
 	};
 
 	const register = async (credentials: AuthCredentials): Promise<boolean> => {
 		try {
+			console.log(
+				'AuthProvider: Attempting registration for:',
+				credentials.username
+			);
 			setAuthState((prev) => ({ ...prev, isLoading: true }));
 
 			const success = await authService.register(credentials);
+
 			if (success) {
+				console.log(
+					'AuthProvider: Registration successful for:',
+					credentials.username
+				);
+
 				// Auto-login after registration
 				const loginCredentials: LoginCredentials = {
 					username: credentials.username,
 					password: credentials.password,
 				};
+
 				return await login(loginCredentials);
 			}
 
 			setAuthState((prev) => ({ ...prev, isLoading: false }));
 			return false;
-		} catch (error) {
-			console.error('Registration error:', error);
+		} catch (error: any) {
+			console.error('AuthProvider: Registration error:', error);
 			setAuthState((prev) => ({ ...prev, isLoading: false }));
-			return false;
+			throw error;
 		}
 	};
 
 	const logout = (): void => {
+		console.log('AuthProvider: Logging out user');
 		setAuthState({
 			user: null,
 			isAuthenticated: false,
@@ -95,13 +121,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		if (!authState.user) return;
 
 		try {
+			console.log('AuthProvider: Setting biometric to:', enable);
 			await authService.enableBiometric(authState.user.id, enable);
 			setAuthState((prev) => ({
 				...prev,
 				user: prev.user ? { ...prev.user, biometricEnabled: enable } : null,
 			}));
 		} catch (error) {
-			console.error('Error updating biometric setting:', error);
+			console.error('AuthProvider: Error updating biometric setting:', error);
 			throw error;
 		}
 	};
@@ -113,13 +140,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		if (!authState.user) return false;
 
 		try {
+			console.log(
+				'AuthProvider: Changing password for:',
+				authState.user.username
+			);
 			return await authService.changePassword(
 				authState.user.id,
 				oldPassword,
 				newPassword
 			);
 		} catch (error) {
-			console.error('Error changing password:', error);
+			console.error('AuthProvider: Error changing password:', error);
 			return false;
 		}
 	};
@@ -128,9 +159,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		if (!authState.user) return false;
 
 		try {
+			console.log('AuthProvider: Changing PIN for:', authState.user.username);
 			return await authService.changePin(authState.user.id, newPin);
 		} catch (error) {
-			console.error('Error changing PIN:', error);
+			console.error('AuthProvider: Error changing PIN:', error);
 			return false;
 		}
 	};
