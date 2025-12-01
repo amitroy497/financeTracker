@@ -200,6 +200,7 @@ export interface DashboardData {
 export type AppTabParamList = {
 	Dashboard: undefined;
 	Expenses: undefined;
+	Savings: undefined;
 	Assets: undefined;
 	Profile: undefined;
 };
@@ -405,3 +406,24 @@ export interface CreateNPSData {
 	currentValue: number;
 	lastContributionDate: string;
 }
+
+export const SAVINGS_TYPES = [
+	{
+		key: 'monthly',
+		name: 'Monthly Savings',
+		emoji: '📅',
+		description: 'Regular monthly contributions',
+	},
+	{
+		key: 'daily',
+		name: 'Daily Savings',
+		emoji: '📊',
+		description: 'Daily savings or contributions',
+	},
+	{
+		key: 'lumpsum',
+		name: 'Lumpsum Investment',
+		emoji: '💰',
+		description: 'One-time investment',
+	},
+];

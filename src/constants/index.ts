@@ -136,3 +136,341 @@ export const EXPENSE_CATEGORIES = [
 		color: '#9CA3AF',
 	},
 ];
+
+export const SAVINGS_CATEGORIES = [
+	// Mutual Funds
+	{
+		key: 'tata_large_mid_cap',
+		name: 'Tata Large & Mid Cap Fund',
+		emoji: '📈',
+		color: '#3B82F6',
+	},
+	{
+		key: 'tata_small_cap',
+		name: 'Tata Small Cap Fund',
+		emoji: '📊',
+		color: '#1D4ED8',
+	},
+	{
+		key: 'tata_small_cap_direct',
+		name: 'Tata Small Cap Fund - Direct',
+		emoji: '🎯',
+		color: '#2563EB',
+	},
+	{
+		key: 'tata_gold_etf_fof',
+		name: 'Tata Gold ETF Fund of Fund',
+		emoji: '💰',
+		color: '#F59E0B',
+	},
+	{
+		key: 'uti_gold_etf_fof',
+		name: 'UTI Gold ETF Fund of Fund',
+		emoji: '🏦',
+		color: '#D97706',
+	},
+	{
+		key: 'uti_nifty_50',
+		name: 'UTI Nifty 50 Index Fund',
+		emoji: '📉',
+		color: '#059669',
+	},
+	{
+		key: 'uti_sensex',
+		name: 'UTI S&P BSE SENSEX Index Fund',
+		emoji: '📊',
+		color: '#047857',
+	},
+	{ key: 'hdfc_gold', name: 'HDFC Gold Fund', emoji: '🥇', color: '#F59E0B' },
+	{
+		key: 'hdfc_nifty_50',
+		name: 'HDFC Index Fund - NIFTY 50 Plan',
+		emoji: '📈',
+		color: '#DC2626',
+	},
+	{
+		key: 'hdfc_sensex',
+		name: 'HDFC Index Fund - S&P BSE SENSEX Plan',
+		emoji: '📉',
+		color: '#B91C1C',
+	},
+	{
+		key: 'icici_equity',
+		name: 'ICICI Prudential Retirement Fund Pure Equity Plan',
+		emoji: '🏢',
+		color: '#7C3AED',
+	},
+	{
+		key: 'nippon_gold',
+		name: 'Nippon India Gold Savings Fund',
+		emoji: '🏅',
+		color: '#F59E0B',
+	},
+	{
+		key: 'nippon_small_cap',
+		name: 'Nippon India Small Cap Fund',
+		emoji: '📊',
+		color: '#0EA5E9',
+	},
+	{ key: 'sbi_gold', name: 'SBI Gold Fund', emoji: '🥇', color: '#F59E0B' },
+	{
+		key: 'sbi_large_midcap',
+		name: 'SBI Large & Midcap Fund',
+		emoji: '📈',
+		color: '#10B981',
+	},
+	{
+		key: 'sbi_small_cap',
+		name: 'SBI Small Cap Fund',
+		emoji: '📊',
+		color: '#0D9488',
+	},
+	{
+		key: 'parag_parikh_flexi',
+		name: 'Parag Parikh Flexi Cap Fund',
+		emoji: '🎯',
+		color: '#8B5CF6',
+	},
+	{
+		key: 'canara_elss',
+		name: 'Canara Robeco ELSS Tax Saver Fund',
+		emoji: '💰',
+		color: '#EF4444',
+	},
+
+	// Digital & ETFs
+	{ key: 'digital_gold', name: 'Digital Gold', emoji: '💎', color: '#F59E0B' },
+	{
+		key: 'gold_etfs_total',
+		name: 'Gold Exchange Traded Funds (Total)',
+		emoji: '📊',
+		color: '#D97706',
+	},
+	{
+		key: 'shoonya_etfs_total',
+		name: 'Shoonya Exchange Traded Funds (Total)',
+		emoji: '📉',
+		color: '#7C3AED',
+	},
+	{
+		key: 'shoonya_shares_total',
+		name: 'Shoonya Shares (Total)',
+		emoji: '📈',
+		color: '#10B981',
+	},
+
+	// Bonds & Fixed Income
+	{
+		key: 'floating_rate_bond',
+		name: 'Floating Rate Savings Bond',
+		emoji: '📋',
+		color: '#06B6D4',
+	},
+	{
+		key: 'treasury_bills',
+		name: 'Treasury Bills',
+		emoji: '🏛️',
+		color: '#3B82F6',
+	},
+
+	// Insurance
+	{
+		key: 'lic',
+		name: 'Life Insurance Corporation',
+		emoji: '🛡️',
+		color: '#EF4444',
+	},
+
+	// Recurring Deposits
+	{
+		key: 'rd_au_financial',
+		name: 'Recurring Deposit - AU Financial Bank',
+		emoji: '🏦',
+		color: '#8B5CF6',
+	},
+	{
+		key: 'rd_pnb_indian',
+		name: 'Recurring Deposit - Punjab National Bank & Indian Bank',
+		emoji: '🏦',
+		color: '#3B82F6',
+	},
+
+	// Other Investments
+	{
+		key: 'fi_smart_deposit',
+		name: 'FI Smart Deposit',
+		emoji: '💡',
+		color: '#84CC16',
+	},
+	{
+		key: 'nps',
+		name: 'National Pension Scheme',
+		emoji: '👵',
+		color: '#F97316',
+	},
+	{ key: 'ppf', name: 'Public Provident Fund', emoji: '📒', color: '#10B981' },
+
+	// Gold ETF Components
+	{
+		key: 'axis_gold_etf',
+		name: 'Axis Gold Exchange Traded Fund',
+		emoji: '🥇',
+		color: '#F59E0B',
+	},
+	{
+		key: 'birla_gold_etf',
+		name: 'Birla Sun Life Gold ETF',
+		emoji: '🥇',
+		color: '#F59E0B',
+	},
+	{
+		key: 'kotak_gold_etf',
+		name: 'Kotak Gold Exchange Traded Fund',
+		emoji: '🥇',
+		color: '#F59E0B',
+	},
+	{
+		key: 'nippon_gold_bees',
+		name: 'Nippon India ETF Gold Bees',
+		emoji: '🐝',
+		color: '#F59E0B',
+	},
+	{
+		key: 'zerodha_gold_etf',
+		name: 'Zerodha Gold ETF',
+		emoji: '🥇',
+		color: '#F59E0B',
+	},
+	{
+		key: 'mirae_gold_etf',
+		name: 'Mirae Asset Gold ETF',
+		emoji: '🥇',
+		color: '#F59E0B',
+	},
+	{ key: 'dsp_gold_etf', name: 'DSP Gold ETF', emoji: '🥇', color: '#F59E0B' },
+	{
+		key: 'icici_gold_etf',
+		name: 'ICICI Prudential Gold ETF',
+		emoji: '🥇',
+		color: '#F59E0B',
+	},
+	{
+		key: 'uti_gold_etf',
+		name: 'UTI Gold Exchange Traded Fund',
+		emoji: '🥇',
+		color: '#F59E0B',
+	},
+	{
+		key: 'hdfc_gold_etf',
+		name: 'HDFC Gold Exchange Traded Fund',
+		emoji: '🥇',
+		color: '#F59E0B',
+	},
+	{
+		key: 'quantum_gold_etf',
+		name: 'Quantum Gold Fund ETF',
+		emoji: '🥇',
+		color: '#F59E0B',
+	},
+	{
+		key: 'sbi_gold_etf',
+		name: 'SBI Gold Exchange Traded Scheme',
+		emoji: '🥇',
+		color: '#F59E0B',
+	},
+	{
+		key: 'tata_gold_etf',
+		name: 'TATA Gold Exchange Traded Fund',
+		emoji: '🥇',
+		color: '#F59E0B',
+	},
+
+	// Shoonya Shares Components
+	{
+		key: 'ambuja_cement',
+		name: 'Ambuja Cement',
+		emoji: '🏗️',
+		color: '#6B7280',
+	},
+	{ key: 'berger_paint', name: 'Berger Paint', emoji: '🎨', color: '#3B82F6' },
+	{ key: 'canara_bank', name: 'Canara Bank', emoji: '🏦', color: '#EF4444' },
+	{
+		key: 'castrol_india',
+		name: 'Castrol India',
+		emoji: '🛢️',
+		color: '#DC2626',
+	},
+	{ key: 'coal_india', name: 'Coal India', emoji: '⛏️', color: '#000000' },
+	{ key: 'gail', name: 'GAIL', emoji: '⛽', color: '#10B981' },
+	{
+		key: 'hindustan_zinc',
+		name: 'Hindustan Zinc',
+		emoji: '⚙️',
+		color: '#F59E0B',
+	},
+	{ key: 'hdfc_bank', name: 'HDFC Bank', emoji: '🏦', color: '#EF4444' },
+	{
+		key: 'indian_oil',
+		name: 'Indian Oil Corporation',
+		emoji: '⛽',
+		color: '#DC2626',
+	},
+	{ key: 'itc', name: 'ITC', emoji: '🚬', color: '#059669' },
+	{ key: 'itc_hotels', name: 'ITC Hotels', emoji: '🏨', color: '#8B5CF6' },
+	{
+		key: 'mahindra',
+		name: 'Mahindra & Mahindra',
+		emoji: '🚜',
+		color: '#3B82F6',
+	},
+	{ key: 'nalco', name: 'National Aluminium', emoji: '🏭', color: '#0EA5E9' },
+	{ key: 'nmdc', name: 'NMDC', emoji: '⛏️', color: '#F59E0B' },
+	{ key: 'ntpc_green', name: 'NTPC Green', emoji: '🌿', color: '#10B981' },
+	{ key: 'ongc', name: 'ONGC', emoji: '🛢️', color: '#3B82F6' },
+	{ key: 'powergrid', name: 'Powergrid', emoji: '⚡', color: '#F59E0B' },
+	{ key: 'rec_ltd', name: 'REC Ltd.', emoji: '🏛️', color: '#DC2626' },
+	{ key: 'reliance', name: 'Reliance', emoji: '🏢', color: '#0EA5E9' },
+	{ key: 'sbi', name: 'State Bank of India', emoji: '🏦', color: '#F59E0B' },
+	{ key: 'tata_power', name: 'TATA Power', emoji: '⚡', color: '#3B82F6' },
+	{ key: 'tata_steel', name: 'TATA Steel', emoji: '🏭', color: '#6B7280' },
+	{ key: 'vbl', name: 'VBL', emoji: '🍺', color: '#F97316' },
+
+	// Shoonya ETF Components
+	{ key: 'fmcg_ietf', name: 'FMCGIETF', emoji: '🛒', color: '#8B5CF6' },
+	{ key: 'nifty_bees', name: 'NIFTYBEES', emoji: '🐝', color: '#059669' },
+	{ key: 'silver_bees', name: 'SILVERBEES', emoji: '🐝', color: '#C0C0C0' },
+
+	// Generic Categories for Daily/Monthly Savings
+	{ key: 'cash_savings', name: 'Cash Savings', emoji: '💵', color: '#10B981' },
+	{
+		key: 'bank_savings',
+		name: 'Bank Savings Account',
+		emoji: '🏦',
+		color: '#3B82F6',
+	},
+	{ key: 'piggy_bank', name: 'Piggy Bank', emoji: '🐷', color: '#EC4899' },
+	{
+		key: 'emergency_fund',
+		name: 'Emergency Fund',
+		emoji: '🚨',
+		color: '#EF4444',
+	},
+	{
+		key: 'goal_savings',
+		name: 'Goal-based Savings',
+		emoji: '🎯',
+		color: '#8B5CF6',
+	},
+	{
+		key: 'short_term',
+		name: 'Short-term Savings',
+		emoji: '📅',
+		color: '#06B6D4',
+	},
+	{
+		key: 'long_term',
+		name: 'Long-term Savings',
+		emoji: '📈',
+		color: '#059669',
+	},
+];

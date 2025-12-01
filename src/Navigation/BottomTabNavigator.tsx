@@ -1,4 +1,9 @@
-import { Dashboard, ExpensesScreen, ProfileScreen } from '@/screens';
+import {
+	Dashboard,
+	ExpensesScreen,
+	ProfileScreen,
+	SavingsScreen,
+} from '@/screens';
 import { AppTabParamList } from '@/types';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
@@ -31,12 +36,19 @@ export const BottomTabNavigator: React.FC = () => {
 					},
 					tabBarActiveTintColor: '#007AFF',
 					tabBarInactiveTintColor: '#8e8e93',
+					headerStyle: {
+						backgroundColor: '#ffffff',
+					},
+					headerTitleStyle: {
+						fontWeight: '600',
+					},
 				}}
 			>
 				<Tab.Screen
 					name='Dashboard'
 					component={Dashboard}
 					options={{
+						title: 'Dashboard',
 						tabBarIcon: ({ color, size }) => (
 							<Text style={{ color, fontSize: size }}>📊</Text>
 						),
@@ -53,11 +65,22 @@ export const BottomTabNavigator: React.FC = () => {
 					}}
 				/>
 				<Tab.Screen
+					name='Savings'
+					component={SavingsScreen}
+					options={{
+						title: 'Savings',
+						tabBarIcon: ({ color, size }) => (
+							<Text style={{ color, fontSize: size }}>💰</Text>
+						),
+					}}
+				/>
+				<Tab.Screen
 					name='Assets'
 					component={AssetsScreen}
 					options={{
+						title: 'Assets',
 						tabBarIcon: ({ color, size }) => (
-							<Text style={{ color, fontSize: size }}>💰</Text>
+							<Text style={{ color, fontSize: size }}>🏦</Text>
 						),
 					}}
 				/>
@@ -65,6 +88,7 @@ export const BottomTabNavigator: React.FC = () => {
 					name='Profile'
 					component={ProfileScreen}
 					options={{
+						title: 'Profile',
 						tabBarIcon: ({ color, size }) => (
 							<Text style={{ color, fontSize: size }}>👤</Text>
 						),

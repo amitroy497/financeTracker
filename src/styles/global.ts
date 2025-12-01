@@ -14,6 +14,7 @@ export const colors = {
 	white: '#ffffff',
 	gray: '#6c757d',
 	lightGray: '#e9ecef',
+	infoLight: '#dbeafe',
 } as const;
 
 export const styles = StyleSheet.create({
