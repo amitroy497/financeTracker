@@ -12,9 +12,9 @@
 		"lint": "eslint . --ext .js,.jsx,.ts,.tsx",
 		"build": "expo build",
 		"prebuild": "npm run type-check",
-		"version:patch": "npm version patch --no-git-tag-version && npm install --package-lock-only && git add . && git commit -m \"chore(release): bump patch to v$(node -p \"require('./package.json').version\")\" && git tag \"v$(node -p \"require('./package.json').version\")\" && git push && git push --tags",
-		"version:minor": "npm version minor --no-git-tag-version && npm install --package-lock-only && git add . && git commit -m \"chore(release): bump minor to v$(node -p \"require('./package.json').version\")\" && git tag \"v$(node -p \"require('./package.json').version\")\" && git push && git push --tags",
-		"version:major": "npm version major --no-git-tag-version && npm install --package-lock-only && git add . && git commit -m \"chore(release): bump major to v$(node -p \"require('./package.json').version\")\" && git tag \"v$(node -p \"require('./package.json').version\")\" && git push && git push --tags"
+		"version:patch": "npm install && git add . && git commit -m \"chore: update package-lock\" && npm version patch -m \"chore(release): bump patch to %s\" && git push --follow-tags",
+		"version:minor": "npm install && git add . && git commit -m \"chore: update package-lock\" && npm version minor -m \"chore(release): bump minor to %s\" && git push --follow-tags",
+		"version:major": "npm install && git add . && git commit -m \"chore: update package-lock\" && npm version major -m \"chore(release): bump major to %s\" && git push --follow-tags"
 	},
 	"dependencies": {
 		"@expo/vector-icons": "^15.0.3",
