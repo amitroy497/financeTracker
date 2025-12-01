@@ -1,6 +1,7 @@
 import { SAVINGS_CATEGORIES } from '@/constants';
 import { useAuth } from '@/hooks';
 import { colors, styles } from '@/styles';
+import { YearlyFinancialData } from '@/types';
 import { getCurrentMonth } from '@/utils';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -40,16 +41,6 @@ export interface SavingFormData {
 	notes: string;
 	expectedReturn: string;
 	maturityDate: string;
-}
-
-// Yearly financial data structure
-export interface YearlyFinancialData {
-	year: string; // Format: "2024-2025" for financial year
-	totalValue: number;
-	categoryTotals: { [category: string]: number };
-	monthlyTotals: { [month: string]: number }; // Format: "YYYY-MM"
-	createdAt: string;
-	updatedAt: string;
 }
 
 export const SavingsScreen: React.FC = () => {

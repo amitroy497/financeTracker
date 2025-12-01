@@ -427,3 +427,13 @@ export const SAVINGS_TYPES = [
 		description: 'One-time investment',
 	},
 ];
+
+export interface YearlyFinancialData {
+	year: string; // Format: "2024-2025" for financial year
+	totalValue?: number;
+	totalExpenses?: number;
+	categoryTotals: { [category: string]: number };
+	monthlyTotals: { [month: string]: number }; // Format: "YYYY-MM"
+	createdAt: string;
+	updatedAt: string;
+}
