@@ -1,6 +1,6 @@
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles';
-import { CreateFixedDepositData, FixedDeposit } from '@/types';
+import { CreateFixedDepositData, FixedDepositsProps } from '@/types';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -12,17 +12,11 @@ import {
 	View,
 } from 'react-native';
 
-interface FixedDepositsProps {
-	deposits: FixedDeposit[];
-	onRefresh: () => void;
-	userId: string;
-}
-
-export const FixedDeposits: React.FC<FixedDepositsProps> = ({
+export const FixedDeposits = ({
 	deposits,
 	onRefresh,
 	userId,
-}) => {
+}: FixedDepositsProps) => {
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [newDeposit, setNewDeposit] = useState<CreateFixedDepositData>({

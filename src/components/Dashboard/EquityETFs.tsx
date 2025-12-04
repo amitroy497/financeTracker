@@ -1,6 +1,6 @@
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles';
-import { CreateEquityETFData, EquityETF } from '@/types';
+import { CreateEquityETFData, EquityETFsProps } from '@/types';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -12,17 +12,7 @@ import {
 	View,
 } from 'react-native';
 
-interface EquityETFsProps {
-	etfs: EquityETF[];
-	onRefresh: () => void;
-	userId: string;
-}
-
-export const EquityETFs: React.FC<EquityETFsProps> = ({
-	etfs,
-	onRefresh,
-	userId,
-}) => {
+export const EquityETFs = ({ etfs, onRefresh, userId }: EquityETFsProps) => {
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [newETF, setNewETF] = useState<CreateEquityETFData>({

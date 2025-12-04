@@ -1,7 +1,7 @@
 import { EXPENSE_CATEGORIES } from '@/constants';
 import { useAuth } from '@/hooks';
 import { colors, styles } from '@/styles';
-import { YearlyFinancialData } from '@/types';
+import { Expense, ExpenseFormData, YearlyFinancialData } from '@/types';
 import { getCurrentMonth } from '@/utils';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -19,29 +19,7 @@ import {
 	View,
 } from 'react-native';
 
-// Expense types
-export interface Expense {
-	id: string;
-	amount: number;
-	description: string;
-	category: string;
-	date: string;
-	createdAt: string;
-	notes?: string;
-}
-
-export interface ExpenseFormData {
-	id?: string;
-	amount: string;
-	description: string;
-	category: string;
-	date: string;
-	notes: string;
-}
-
-// Yearly financial data structure
-
-export const ExpensesScreen: React.FC = () => {
+export const ExpensesScreen = () => {
 	const { user } = useAuth();
 	const [expenses, setExpenses] = useState<Expense[]>([]);
 	const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);

@@ -14,12 +14,6 @@ import { Text, View } from 'react-native';
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
-const TransactionsScreen = () => (
-	<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-		<Text>Transactions Screen - Coming Soon</Text>
-	</View>
-);
-
 const AssetsScreen = () => (
 	<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
 		<Text>Assets Screen - Coming Soon</Text>

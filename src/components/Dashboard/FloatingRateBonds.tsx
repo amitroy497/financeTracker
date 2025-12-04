@@ -1,6 +1,6 @@
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles';
-import { CreateFRBData, FloatingRateBond } from '@/types';
+import { CreateFRBData, FloatingRateBondsProps } from '@/types';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -12,17 +12,11 @@ import {
 	View,
 } from 'react-native';
 
-interface FloatingRateBondsProps {
-	bonds: FloatingRateBond[];
-	onRefresh: () => void;
-	userId: string;
-}
-
-export const FloatingRateBonds: React.FC<FloatingRateBondsProps> = ({
+export const FloatingRateBonds = ({
 	bonds,
 	onRefresh,
 	userId,
-}) => {
+}: FloatingRateBondsProps) => {
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [newBond, setNewBond] = useState<CreateFRBData>({

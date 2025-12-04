@@ -1,3 +1,4 @@
+import { ADMIN_CONFIG } from '@/constants';
 import { BiometricAuth } from '@/utils';
 import { DataBackupService } from '@/utils/dataBackup';
 import * as Crypto from 'expo-crypto';
@@ -7,14 +8,6 @@ import { AuthCredentials, LoginCredentials, User } from '../types';
 const USERS_FILE_PATH = `${FileSystem.documentDirectory}users.json`;
 const USER_DATA_DIR = `${FileSystem.documentDirectory}user_data/`;
 
-// Admin configuration
-const ADMIN_CONFIG = {
-	username: 'admin',
-	password: 'admin123',
-	email: 'admin@financetracker.com', // Add admin email
-};
-
-// Initialize users file with admin user
 const initializeUsersFile = async (): Promise<void> => {
 	try {
 		const fileInfo = await FileSystem.getInfoAsync(USERS_FILE_PATH);

@@ -1,6 +1,6 @@
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles';
-import { CreateGoldETFData, GoldETF } from '@/types';
+import { CreateGoldETFData, GoldETFsProps } from '@/types';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -12,17 +12,7 @@ import {
 	View,
 } from 'react-native';
 
-interface GoldETFsProps {
-	etfs: GoldETF[];
-	onRefresh: () => void;
-	userId: string;
-}
-
-export const GoldETFs: React.FC<GoldETFsProps> = ({
-	etfs,
-	onRefresh,
-	userId,
-}) => {
+export const GoldETFs = ({ etfs, onRefresh, userId }: GoldETFsProps) => {
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [newETF, setNewETF] = useState<CreateGoldETFData>({

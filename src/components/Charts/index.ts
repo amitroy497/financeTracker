@@ -1,2 +1,2 @@
-export * from './BarChart';
-export * from './PieChart';
+export * from './BarChartComponent';
+export * from './PieChartComponent';

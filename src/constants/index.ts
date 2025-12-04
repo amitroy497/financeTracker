@@ -474,3 +474,9 @@ export const SAVINGS_CATEGORIES = [
 		color: '#059669',
 	},
 ];
+
+export const ADMIN_CONFIG = {
+	username: 'admin',
+	password: 'admin123',
+	email: 'admin@financetracker.com',
+};

@@ -1,4 +1,3 @@
-// AuthProvider.tsx - Add this method
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
 import { authService } from '../services/authService';
 import {

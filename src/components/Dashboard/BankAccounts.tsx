@@ -1,7 +1,7 @@
 import { BANK_LIST } from '@/constants';
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles';
-import { BankAccount, CreateBankAccountData } from '@/types';
+import { BankAccount, BankAccountsProps, CreateBankAccountData } from '@/types';
 import { maskAccountNumber } from '@/utils';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
@@ -15,17 +15,11 @@ import {
 	View,
 } from 'react-native';
 
-interface BankAccountsProps {
-	accounts: BankAccount[];
-	onRefresh: () => void;
-	userId: string;
-}
-
-export const BankAccounts: React.FC<BankAccountsProps> = ({
+export const BankAccounts = ({
 	accounts,
 	onRefresh,
 	userId,
-}) => {
+}: BankAccountsProps) => {
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [showBankDropdown, setShowBankDropdown] = useState(false);

@@ -1,7 +1,7 @@
 import { SAVINGS_CATEGORIES } from '@/constants';
 import { useAuth } from '@/hooks';
 import { colors, styles } from '@/styles';
-import { YearlyFinancialData } from '@/types';
+import { Saving, SavingFormData, YearlyFinancialData } from '@/types';
 import { getCurrentMonth } from '@/utils';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -19,31 +19,7 @@ import {
 	View,
 } from 'react-native';
 
-// Savings types
-export interface Saving {
-	id: string;
-	amount: number;
-	description: string;
-	category: string;
-	date: string;
-	createdAt: string;
-	notes?: string;
-	expectedReturn?: number;
-	maturityDate?: string;
-}
-
-export interface SavingFormData {
-	id?: string;
-	amount: string;
-	description: string;
-	category: string;
-	date: string;
-	notes: string;
-	expectedReturn: string;
-	maturityDate: string;
-}
-
-export const SavingsScreen: React.FC = () => {
+export const SavingsScreen = () => {
 	const { user } = useAuth();
 	const [savings, setSavings] = useState<Saving[]>([]);
 	const [filteredSavings, setFilteredSavings] = useState<Saving[]>([]);

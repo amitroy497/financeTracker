@@ -1,6 +1,6 @@
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles';
-import { CreatePPFData, PublicProvidentFund } from '@/types';
+import { CreatePPFData, PPFAccountsProps } from '@/types';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -12,17 +12,11 @@ import {
 	View,
 } from 'react-native';
 
-interface PPFAccountsProps {
-	accounts: PublicProvidentFund[];
-	onRefresh: () => void;
-	userId: string;
-}
-
-export const PPFAccounts: React.FC<PPFAccountsProps> = ({
+export const PPFAccounts = ({
 	accounts,
 	onRefresh,
 	userId,
-}) => {
+}: PPFAccountsProps) => {
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [newAccount, setNewAccount] = useState<CreatePPFData>({

@@ -1,6 +1,6 @@
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles/global';
-import { CreateStockData, Stock } from '@/types';
+import { CreateStockData, StocksProps } from '@/types';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -12,17 +12,7 @@ import {
 	View,
 } from 'react-native';
 
-interface StocksProps {
-	stocks: Stock[];
-	onRefresh: () => void;
-	userId: string;
-}
-
-export const Stocks: React.FC<StocksProps> = ({
-	stocks,
-	onRefresh,
-	userId,
-}) => {
+export const Stocks = ({ stocks, onRefresh, userId }: StocksProps) => {
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [newStock, setNewStock] = useState<CreateStockData>({

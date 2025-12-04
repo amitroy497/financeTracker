@@ -1,14 +1,14 @@
 import {
-	AssetBarChart,
 	AssetCards,
-	AssetPieChart,
 	BankAccounts,
+	BarChartComponent,
 	EquityETFs,
 	FixedDeposits,
 	FloatingRateBonds,
 	GoldETFs,
 	MutualFunds,
 	NPSAccounts,
+	PieChartComponent,
 	PPFAccounts,
 	RecurringDeposits,
 	Stocks,
@@ -28,7 +28,7 @@ import {
 	View,
 } from 'react-native';
 
-export const Dashboard: React.FC = () => {
+export const Dashboard = () => {
 	const { user } = useAuth();
 	const [dashboardData, setDashboardData] = useState<DashboardData | null>(
 		null
@@ -253,14 +253,18 @@ export const Dashboard: React.FC = () => {
 						</TouchableOpacity>
 					</View>
 					{chartType === 'pie' && dashboardData && (
-						<AssetPieChart
+						<PieChartComponent
 							data={pieChartData}
 							totalAssets={dashboardData.summary.totalAssets}
 							height={320}
 						/>
 					)}
 					{chartType === 'bar' && dashboardData && (
-						<AssetBarChart data={pieChartData} height={320} showValues={true} />
+						<BarChartComponent
+							data={pieChartData}
+							height={320}
+							showValues={true}
+						/>
 					)}
 					{chartType === 'cards' && dashboardData && (
 						<AssetCards summary={dashboardData.summary} />

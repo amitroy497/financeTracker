@@ -1,25 +1,14 @@
-// components/AssetBarChart.tsx
 import { colors, styles } from '@/styles';
+import { BarChartComponentProps } from '@/types';
 import React from 'react';
 import { Dimensions, ScrollView, Text, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 
-interface AssetBarChartProps {
-	data: Array<{
-		x: string;
-		y: number;
-		color: string;
-		percentage: string;
-	}>;
-	height?: number;
-	showValues?: boolean;
-}
-
-export const AssetBarChart: React.FC<AssetBarChartProps> = ({
+export const BarChartComponent = ({
 	data,
 	height = 320,
 	showValues = true,
-}) => {
+}: BarChartComponentProps) => {
 	const screenWidth = Dimensions.get('window').width;
 
 	// Transform data for gifted-charts

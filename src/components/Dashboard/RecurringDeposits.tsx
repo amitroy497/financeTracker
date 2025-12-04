@@ -1,6 +1,6 @@
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles';
-import { CreateRecurringDepositData, RecurringDeposit } from '@/types';
+import { CreateRecurringDepositData, RecurringDepositsProps } from '@/types';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -12,17 +12,11 @@ import {
 	View,
 } from 'react-native';
 
-interface RecurringDepositsProps {
-	deposits: RecurringDeposit[];
-	onRefresh: () => void;
-	userId: string;
-}
-
-export const RecurringDeposits: React.FC<RecurringDepositsProps> = ({
+export const RecurringDeposits = ({
 	deposits,
 	onRefresh,
 	userId,
-}) => {
+}: RecurringDepositsProps) => {
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [newDeposit, setNewDeposit] = useState<CreateRecurringDepositData>({

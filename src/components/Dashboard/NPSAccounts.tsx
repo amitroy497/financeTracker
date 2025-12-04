@@ -1,6 +1,6 @@
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles';
-import { CreateNPSData, NationalPensionScheme } from '@/types';
+import { CreateNPSData, NPSAccountsProps } from '@/types';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -12,17 +12,11 @@ import {
 	View,
 } from 'react-native';
 
-interface NPSAccountsProps {
-	accounts: NationalPensionScheme[];
-	onRefresh: () => void;
-	userId: string;
-}
-
-export const NPSAccounts: React.FC<NPSAccountsProps> = ({
+export const NPSAccounts = ({
 	accounts,
 	onRefresh,
 	userId,
-}) => {
+}: NPSAccountsProps) => {
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [newAccount, setNewAccount] = useState<CreateNPSData>({

@@ -1,13 +1,9 @@
 import { colors, styles } from '@/styles';
-import { AssetSummary } from '@/types';
+import { AssetCardsProps } from '@/types';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
-interface AssetCardsProps {
-	summary: AssetSummary;
-}
-
-export const AssetCards: React.FC<AssetCardsProps> = ({ summary }) => {
+export const AssetCards = ({ summary }: AssetCardsProps) => {
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('en-IN', {
 			style: 'currency',

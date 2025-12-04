@@ -13,7 +13,7 @@ import {
 	View,
 } from 'react-native';
 
-export const ProfileScreen: React.FC = () => {
+export const ProfileScreen = () => {
 	const {
 		user,
 		logout,
@@ -23,7 +23,7 @@ export const ProfileScreen: React.FC = () => {
 		biometricSupported,
 	} = useAuth();
 
-	const [isLoading, setIsLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [activeSection, setActiveSection] = useState<
 		'main' | 'email' | 'password' | 'pin' | 'biometric' | 'backup'
 	>('main');

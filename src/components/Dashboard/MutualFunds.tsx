@@ -1,6 +1,6 @@
 import { assetService } from '@/services/assetService';
 import { colors, styles } from '@/styles';
-import { CreateMutualFundData, MutualFund } from '@/types';
+import { CreateMutualFundData, MutualFundsProps } from '@/types';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -12,17 +12,7 @@ import {
 	View,
 } from 'react-native';
 
-interface MutualFundsProps {
-	funds: MutualFund[];
-	onRefresh: () => void;
-	userId: string;
-}
-
-export const MutualFunds: React.FC<MutualFundsProps> = ({
-	funds,
-	onRefresh,
-	userId,
-}) => {
+export const MutualFunds = ({ funds, onRefresh, userId }: MutualFundsProps) => {
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [newFund, setNewFund] = useState<CreateMutualFundData>({

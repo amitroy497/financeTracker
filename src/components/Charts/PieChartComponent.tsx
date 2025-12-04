@@ -1,26 +1,14 @@
 import { colors, styles } from '@/styles';
+import { PieChartComponentProps } from '@/types';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 
-interface PieChartData {
-	x: string;
-	y: number;
-	color: string;
-	percentage: string;
-}
-
-interface AssetPieChartProps {
-	data: PieChartData[];
-	totalAssets: number;
-	height?: number;
-}
-
-export const AssetPieChart: React.FC<AssetPieChartProps> = ({
+export const PieChartComponent = ({
 	data,
 	totalAssets,
 	height = 250,
-}) => {
+}: PieChartComponentProps) => {
 	const chartData = data.filter((item) => item.y > 0);
 
 	const formatCurrency = (amount: number): string => {

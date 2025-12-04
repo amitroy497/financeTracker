@@ -489,3 +489,144 @@ export interface AuthCredentials {
 	biometricEnabled?: boolean;
 	isAdmin?: boolean; // Add this
 }
+
+export type BarChartComponentProps = {
+	data: Array<{
+		x: string;
+		y: number;
+		color: string;
+		percentage: string;
+	}>;
+	height?: number;
+	showValues?: boolean;
+};
+
+export type PieChartData = {
+	x: string;
+	y: number;
+	color: string;
+	percentage: string;
+};
+
+export type PieChartComponentProps = {
+	data: PieChartData[];
+	totalAssets: number;
+	height?: number;
+};
+
+export type AssetCardsProps = {
+	summary: AssetSummary;
+};
+
+export type BankAccountsProps = {
+	accounts: BankAccount[];
+	onRefresh: () => void;
+	userId: string;
+};
+
+export type EquityETFsProps = {
+	etfs: EquityETF[];
+	onRefresh: () => void;
+	userId: string;
+};
+
+export type FixedDepositsProps = {
+	deposits: FixedDeposit[];
+	onRefresh: () => void;
+	userId: string;
+};
+
+export type FloatingRateBondsProps = {
+	bonds: FloatingRateBond[];
+	onRefresh: () => void;
+	userId: string;
+};
+
+export type GoldETFsProps = {
+	etfs: GoldETF[];
+	onRefresh: () => void;
+	userId: string;
+};
+
+export type MutualFundsProps = {
+	funds: MutualFund[];
+	onRefresh: () => void;
+	userId: string;
+};
+
+export type NPSAccountsProps = {
+	accounts: NationalPensionScheme[];
+	onRefresh: () => void;
+	userId: string;
+};
+
+export type PPFAccountsProps = {
+	accounts: PublicProvidentFund[];
+	onRefresh: () => void;
+	userId: string;
+};
+
+export type RecurringDepositsProps = {
+	deposits: RecurringDeposit[];
+	onRefresh: () => void;
+	userId: string;
+};
+
+export type StocksProps = {
+	stocks: Stock[];
+	onRefresh: () => void;
+	userId: string;
+};
+
+export type UserInfo = {
+	id: string;
+	username: string;
+	createdAt: string;
+	isAdmin?: boolean;
+	dataSize?: number;
+	itemsCount?: number;
+};
+
+export type AuthMode = 'login' | 'register' | 'biometric' | 'admin';
+
+export type Expense = {
+	id: string;
+	amount: number;
+	description: string;
+	category: string;
+	date: string;
+	createdAt: string;
+	notes?: string;
+};
+
+export type ExpenseFormData = {
+	id?: string;
+	amount: string;
+	description: string;
+	category: string;
+	date: string;
+	notes: string;
+};
+
+export type Saving = {
+	id: string;
+	amount: number;
+	description: string;
+	category: string;
+	date: string;
+	createdAt: string;
+	notes?: string;
+	expectedReturn?: number;
+	maturityDate?: string;
+};
+
+export type SavingFormData = {
+	id?: string;
+	amount: string;
+	description: string;
+	category: string;
+	date: string;
+	notes: string;
+	expectedReturn: string;
+	maturityDate: string;
+};

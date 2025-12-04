@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks';
 import { authService } from '@/services/authService';
 import { colors, styles } from '@/styles';
+import { UserInfo } from '@/types';
 import { DataBackupService } from '@/utils/dataBackup';
 import React, { useEffect, useState } from 'react';
 import {
@@ -13,16 +14,7 @@ import {
 	View,
 } from 'react-native';
 
-interface UserInfo {
-	id: string;
-	username: string;
-	createdAt: string;
-	isAdmin?: boolean;
-	dataSize?: number;
-	itemsCount?: number;
-}
-
-export const AdminScreen: React.FC = () => {
+export const AdminScreen = () => {
 	const { user, logout } = useAuth();
 	const [users, setUsers] = useState<UserInfo[]>([]);
 	const [loading, setLoading] = useState(true);
