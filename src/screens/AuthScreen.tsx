@@ -199,7 +199,7 @@ export const AuthScreen = () => {
 		);
 	}
 
-	// Admin Login View
+	// Admin Login View - SIMPLIFIED VERSION
 	if (showAdminLogin) {
 		return (
 			<ScrollView
@@ -207,45 +207,42 @@ export const AuthScreen = () => {
 				contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
 			>
 				<View style={{ padding: 20 }}>
-					{/* Header with Back Button */}
-					<View
-						style={[styles.row, { marginBottom: 30, alignItems: 'center' }]}
-					>
-						<TouchableOpacity
-							onPress={() => setShowAdminLogin(false)}
-							style={{ marginRight: 15 }}
-						>
-							<Text style={{ color: colors.primary, fontSize: 18 }}>←</Text>
-						</TouchableOpacity>
-						<Text style={styles.header}>🔐 Admin Login</Text>
-					</View>
-
-					{/* Admin Login Form */}
-					<View style={[styles.card, { marginBottom: 24 }]}>
+					{/* Simplified Header - Removed Back Button */}
+					<View style={{ marginBottom: 40 }}>
+						<Text style={[styles.header, { textAlign: 'center' }]}>
+							🔐 ADMINISTRATOR LOGIN
+						</Text>
 						<Text
 							style={{
 								color: colors.danger,
-								fontWeight: '600',
-								marginBottom: 12,
+								fontSize: 14,
 								textAlign: 'center',
+								marginTop: 12,
+								fontWeight: '600',
 							}}
 						>
-							⚠️ Restricted Access
+							RESTRICTED ACCESS
 						</Text>
 						<Text
 							style={{
 								color: colors.gray,
-								fontSize: 14,
+								fontSize: 12,
 								textAlign: 'center',
-								marginBottom: 20,
+								marginTop: 4,
 							}}
 						>
-							Administrator access only
+							Administrative users only
 						</Text>
+					</View>
 
+					{/* Admin Login Form */}
+					<View style={[styles.card, { marginBottom: 24 }]}>
 						<TextInput
-							style={styles.input}
-							placeholder='Admin Username'
+							style={[
+								styles.input,
+								{ textAlign: 'center', fontWeight: 'bold' },
+							]}
+							placeholder='ADMIN USERNAME'
 							value={adminUsername}
 							onChangeText={setAdminUsername}
 							placeholderTextColor={colors.gray}
@@ -255,10 +252,10 @@ export const AuthScreen = () => {
 						/>
 
 						{/* Admin Password with Eye Icon */}
-						<View style={{ position: 'relative', marginBottom: 16 }}>
+						<View style={{ position: 'relative', marginBottom: 20 }}>
 							<TextInput
-								style={styles.input}
-								placeholder='Admin Password'
+								style={[styles.input, { textAlign: 'center' }]}
+								placeholder='ADMIN PASSWORD'
 								value={adminPassword}
 								onChangeText={setAdminPassword}
 								placeholderTextColor={colors.gray}
@@ -284,7 +281,11 @@ export const AuthScreen = () => {
 						<TouchableOpacity
 							style={[
 								styles.button,
-								{ backgroundColor: colors.dark, marginBottom: 16 },
+								{
+									backgroundColor: colors.dark,
+									marginBottom: 16,
+									paddingVertical: 16,
+								},
 							]}
 							onPress={handleAdminLogin}
 							disabled={isSubmitting}
@@ -292,37 +293,43 @@ export const AuthScreen = () => {
 							{isSubmitting ? (
 								<ActivityIndicator color={colors.white} />
 							) : (
-								<Text style={styles.buttonText}>Login as Admin</Text>
+								<Text style={[styles.buttonText, { fontSize: 18 }]}>
+									LOGIN AS ADMINISTRATOR
+								</Text>
 							)}
 						</TouchableOpacity>
 
+						{/* Minimal Back Option */}
 						<TouchableOpacity
-							style={[styles.button, styles.buttonSecondary]}
-							onPress={() => setShowAdminLogin(false)}
-							disabled={isSubmitting}
+							style={{ alignSelf: 'center', padding: 12 }}
+							onPress={() => {
+								setShowAdminLogin(false);
+								resetForm();
+							}}
 						>
-							<Text style={styles.buttonText}>Back to User Login</Text>
+							<Text style={{ color: colors.gray, fontSize: 14 }}>
+								← Return to User Login
+							</Text>
 						</TouchableOpacity>
 					</View>
 
-					{/* Admin Features Info */}
+					{/* Admin Information Card - Removed features list */}
 					<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
 						<Text
-							style={{ color: colors.dark, fontWeight: '600', marginBottom: 8 }}
+							style={{
+								color: colors.dark,
+								fontWeight: '600',
+								marginBottom: 12,
+								textAlign: 'center',
+								fontSize: 16,
+							}}
 						>
-							Admin Features:
+							SYSTEM ADMINISTRATION
 						</Text>
-						<Text style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}>
-							• View all registered users
-						</Text>
-						<Text style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}>
-							• Export/import user data
-						</Text>
-						<Text style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}>
-							• Manage user accounts
-						</Text>
-						<Text style={{ color: colors.gray, fontSize: 12 }}>
-							• System configuration
+						<Text
+							style={{ color: colors.gray, fontSize: 12, textAlign: 'center' }}
+						>
+							Full system access for user management and data administration
 						</Text>
 					</View>
 				</View>
@@ -330,7 +337,7 @@ export const AuthScreen = () => {
 		);
 	}
 
-	// Main Auth View (Login/Register)
+	// Main Auth View (Login/Register) - NO ADMIN OPTION IN MAIN VIEW
 	return (
 		<ScrollView
 			style={styles.container}
@@ -513,16 +520,7 @@ export const AuthScreen = () => {
 							</TouchableOpacity>
 						)}
 
-						{/* Admin Login Option */}
-						<TouchableOpacity
-							style={[
-								styles.button,
-								{ backgroundColor: colors.dark, marginBottom: 16 },
-							]}
-							onPress={() => setShowAdminLogin(true)}
-						>
-							<Text style={styles.buttonText}>👨‍💼 Admin Login</Text>
-						</TouchableOpacity>
+						{/* REMOVED ADMIN LOGIN OPTION FROM MAIN VIEW */}
 
 						{/* Forgot Password */}
 						<TouchableOpacity
@@ -539,6 +537,39 @@ export const AuthScreen = () => {
 								Forgot Password?
 							</Text>
 						</TouchableOpacity>
+
+						{/* Separator and Admin Access Link */}
+						<View style={{ alignItems: 'center', marginTop: 20 }}>
+							<View
+								style={{
+									height: 1,
+									backgroundColor: colors.lightGray,
+									width: '100%',
+									marginBottom: 16,
+								}}
+							/>
+							<TouchableOpacity onPress={() => setShowAdminLogin(true)}>
+								<Text
+									style={{
+										color: colors.dark,
+										fontSize: 12,
+										fontWeight: '600',
+									}}
+								>
+									🔐 ADMINISTRATOR ACCESS
+								</Text>
+							</TouchableOpacity>
+							<Text
+								style={{
+									color: colors.gray,
+									fontSize: 10,
+									marginTop: 4,
+									textAlign: 'center',
+								}}
+							>
+								Restricted access for system administrators only
+							</Text>
+						</View>
 					</>
 				) : (
 					/* REGISTER FORM */
@@ -692,10 +723,43 @@ export const AuthScreen = () => {
 								• Biometric login can be enabled later in settings
 							</Text>
 						</View>
+
+						{/* Separator and Admin Access Link for Register View */}
+						<View style={{ alignItems: 'center', marginTop: 20 }}>
+							<View
+								style={{
+									height: 1,
+									backgroundColor: colors.lightGray,
+									width: '100%',
+									marginBottom: 16,
+								}}
+							/>
+							<TouchableOpacity onPress={() => setShowAdminLogin(true)}>
+								<Text
+									style={{
+										color: colors.dark,
+										fontSize: 12,
+										fontWeight: '600',
+									}}
+								>
+									🔐 ADMINISTRATOR ACCESS
+								</Text>
+							</TouchableOpacity>
+							<Text
+								style={{
+									color: colors.gray,
+									fontSize: 10,
+									marginTop: 4,
+									textAlign: 'center',
+								}}
+							>
+								System administrators click here for restricted access
+							</Text>
+						</View>
 					</>
 				)}
 
-				{/* Demo Credentials Info (for testing) */}
+				{/* Demo Credentials Info (for testing) - Only show for regular users */}
 				{mode === 'login' && !showAdminLogin && (
 					<TouchableOpacity
 						style={{ alignSelf: 'center', marginTop: 20 }}
@@ -705,9 +769,6 @@ export const AuthScreen = () => {
 								'For testing purposes:\n\n' +
 									'Username: demo\n' +
 									'Password: demo123\n\n' +
-									'Admin:\n' +
-									'Username: admin\n' +
-									'Password: admin123\n\n' +
 									'Create your own account for real usage.',
 								[{ text: 'OK', style: 'default' }]
 							);

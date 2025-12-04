@@ -630,3 +630,50 @@ export type SavingFormData = {
 	expectedReturn: string;
 	maturityDate: string;
 };
+export interface CreateUserData {
+	username: string;
+	email?: string;
+	password: string;
+	isAdmin?: boolean;
+	biometricEnabled?: boolean;
+}
+
+export interface UpdateUserData {
+	username?: string;
+	email?: string;
+	isAdmin?: boolean;
+	biometricEnabled?: boolean;
+	resetPassword?: boolean;
+	newPassword?: string;
+}
+
+export interface FullUserInfo extends User {
+	dataInfo?: {
+		assetsCount?: number;
+		expensesCount?: number;
+		savingsCount?: number;
+		lastExport?: string;
+	};
+}
+
+export type UserFormProps = {
+	visible: boolean;
+	mode: 'create' | 'edit';
+	user?: any;
+	onSubmit: (data: CreateUserData | UpdateUserData) => Promise<void>;
+	onCancel: () => void;
+	loading?: boolean;
+};
+
+export type AdminTabParamList = {
+	Admin: undefined;
+	Profile: undefined;
+};
+
+export type UserTabParamList = {
+	Dashboard: undefined;
+	Expenses: undefined;
+	Savings: undefined;
+	Assets: undefined;
+	Profile: undefined;
+};

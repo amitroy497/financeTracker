@@ -374,6 +374,127 @@ export const ProfileScreen = () => {
 
 	// Render Backup/Restore Section
 	if (activeSection === 'backup') {
+		if (user?.isAdmin) {
+			return (
+				<ScrollView
+					style={styles.container}
+					contentContainerStyle={{ padding: 20 }}
+				>
+					{/* Header with Back Button */}
+					<View
+						style={[styles.row, { marginBottom: 30, alignItems: 'center' }]}
+					>
+						<TouchableOpacity
+							onPress={handleBackToMain}
+							style={{ marginRight: 15 }}
+						>
+							<Text style={{ color: colors.primary, fontSize: 18 }}>←</Text>
+						</TouchableOpacity>
+						<Text style={styles.header}>Admin Data Management</Text>
+					</View>
+
+					<View style={[styles.card, { marginBottom: 24 }]}>
+						<Text
+							style={{
+								color: colors.primary,
+								fontSize: 20,
+								marginBottom: 16,
+								textAlign: 'center',
+							}}
+						>
+							👨‍💼
+						</Text>
+						<Text
+							style={[
+								styles.subheader,
+								{ marginBottom: 16, textAlign: 'center' },
+							]}
+						>
+							Admin Data Management
+						</Text>
+
+						<Text
+							style={{
+								color: colors.dark,
+								marginBottom: 12,
+								textAlign: 'center',
+							}}
+						>
+							As an administrator, you have access to advanced data management
+							tools:
+						</Text>
+
+						<View style={{ marginBottom: 16 }}>
+							<Text
+								style={{
+									color: colors.success,
+									fontWeight: '600',
+									marginBottom: 4,
+								}}
+							>
+								• Export/Import User Data
+							</Text>
+							<Text
+								style={{ color: colors.gray, fontSize: 12, marginBottom: 8 }}
+							>
+								Export or import data for any user from the Admin Dashboard
+							</Text>
+
+							<Text
+								style={{
+									color: colors.info,
+									fontWeight: '600',
+									marginBottom: 4,
+								}}
+							>
+								• User Management
+							</Text>
+							<Text
+								style={{ color: colors.gray, fontSize: 12, marginBottom: 8 }}
+							>
+								Create, edit, or delete user accounts with full control
+							</Text>
+
+							<Text
+								style={{
+									color: colors.warning,
+									fontWeight: '600',
+									marginBottom: 4,
+								}}
+							>
+								• System Administration
+							</Text>
+							<Text style={{ color: colors.gray, fontSize: 12 }}>
+								Manage all system data and user information
+							</Text>
+						</View>
+
+						<TouchableOpacity
+							style={[
+								styles.button,
+								styles.buttonPrimary,
+								{ marginBottom: 16 },
+							]}
+							onPress={() => {
+								handleBackToMain();
+								// You might want to navigate to Admin screen here
+							}}
+						>
+							<Text style={styles.buttonText}>Go to Admin Dashboard</Text>
+						</TouchableOpacity>
+					</View>
+
+					<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
+						<Text
+							style={{ color: colors.gray, fontSize: 12, textAlign: 'center' }}
+						>
+							Note: Regular backup/restore features are disabled for admin
+							accounts. Use the Admin Dashboard for all data management tasks.
+						</Text>
+					</View>
+				</ScrollView>
+			);
+		}
 		return (
 			<ScrollView
 				style={styles.container}
@@ -951,32 +1072,61 @@ export const ProfileScreen = () => {
 			</TouchableOpacity>
 
 			{/* Backup & Restore Setting */}
-			<TouchableOpacity
-				style={[styles.card, { marginBottom: 24 }]}
-				onPress={() => setActiveSection('backup')}
-			>
+			{!user?.isAdmin && (
+				<TouchableOpacity
+					style={[styles.card, { marginBottom: 24 }]}
+					onPress={() => setActiveSection('backup')}
+				>
+					<View
+						style={[
+							styles.row,
+							{ justifyContent: 'space-between', alignItems: 'center' },
+						]}
+					>
+						<View style={[styles.row, { alignItems: 'center', flex: 1 }]}>
+							<Text style={{ fontSize: 20, marginRight: 12 }}>💾</Text>
+							<View style={{ flex: 1 }}>
+								<Text
+									style={{
+										color: colors.dark,
+										fontSize: 16,
+										fontWeight: '600',
+									}}
+								>
+									Data Backup & Restore
+								</Text>
+								<Text style={{ color: colors.gray, fontSize: 14 }}>
+									Export/Import all your financial data
+								</Text>
+							</View>
+						</View>
+						<Text style={{ color: colors.primary }}>→</Text>
+					</View>
+				</TouchableOpacity>
+			)}
+
+			{user?.isAdmin && (
 				<View
 					style={[
-						styles.row,
-						{ justifyContent: 'space-between', alignItems: 'center' },
+						styles.card,
+						{ marginBottom: 24, backgroundColor: colors.lightGray },
 					]}
 				>
-					<View style={[styles.row, { alignItems: 'center', flex: 1 }]}>
-						<Text style={{ fontSize: 20, marginRight: 12 }}>💾</Text>
+					<View style={[styles.row, { alignItems: 'center' }]}>
+						<Text style={{ fontSize: 20, marginRight: 12 }}>👨‍💼</Text>
 						<View style={{ flex: 1 }}>
 							<Text
 								style={{ color: colors.dark, fontSize: 16, fontWeight: '600' }}
 							>
-								Data Backup & Restore
+								Admin Data Management
 							</Text>
 							<Text style={{ color: colors.gray, fontSize: 14 }}>
-								Export/Import all your financial data
+								Use the Admin Dashboard to manage user data and backups
 							</Text>
 						</View>
 					</View>
-					<Text style={{ color: colors.primary }}>→</Text>
 				</View>
-			</TouchableOpacity>
+			)}
 
 			{/* App Info */}
 			<View style={[styles.card, { marginBottom: 24 }]}>

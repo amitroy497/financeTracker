@@ -3,7 +3,14 @@ import { BiometricAuth } from '@/utils';
 import { DataBackupService } from '@/utils/dataBackup';
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system/legacy';
-import { AuthCredentials, LoginCredentials, User } from '../types';
+import {
+	AuthCredentials,
+	CreateUserData,
+	FullUserInfo,
+	LoginCredentials,
+	UpdateUserData,
+	User,
+} from '../types';
 
 const USERS_FILE_PATH = `${FileSystem.documentDirectory}users.json`;
 const USER_DATA_DIR = `${FileSystem.documentDirectory}user_data/`;
@@ -546,6 +553,251 @@ export const authService = {
 		} catch (error) {
 			console.error('Error updating email:', error);
 			throw error;
+		}
+	},
+
+	// Add these methods to the existing authService object
+
+	// Create a new user (admin only)
+	createUser: async (
+		adminId: string,
+		userData: CreateUserData
+	): Promise<User> => {
+		try {
+			await initializeUsersFile();
+
+			// Verify admin user
+			const adminUser = await authService.getUserById(adminId);
+			if (!adminUser?.isAdmin) {
+				throw new Error('Admin privileges required');
+			}
+
+			const fileContent = await FileSystem.readAsStringAsync(USERS_FILE_PATH);
+			const data = JSON.parse(fileContent);
+
+			// Check if username already exists
+			const existingUsername = data.users.find(
+				(user: User) => user.username === userData.username
+			);
+			if (existingUsername) {
+				throw new Error('Username already exists');
+			}
+
+			// Check if email already exists (if provided)
+			if (userData.email) {
+				if (!isValidEmail(userData.email)) {
+					throw new Error('Please enter a valid email address');
+				}
+
+				const existingEmail = data.users.find(
+					(user: User) => user.email === userData.email
+				);
+				if (existingEmail) {
+					throw new Error('Email already registered');
+				}
+			}
+
+			// Hash password
+			const passwordHash = await hashData(userData.password);
+
+			const newUser: User = {
+				id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+				username: userData.username,
+				email: userData.email,
+				passwordHash,
+				biometricEnabled: userData.biometricEnabled || false,
+				createdAt: new Date().toISOString(),
+				isAdmin: userData.isAdmin || false,
+			};
+
+			data.users.push(newUser);
+			await FileSystem.writeAsStringAsync(
+				USERS_FILE_PATH,
+				JSON.stringify(data, null, 2)
+			);
+
+			// Create user's data files
+			const userDataPath = getUserDataPath(newUser.id);
+			const initialUserData = {
+				items: [],
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString(),
+			};
+			await FileSystem.writeAsStringAsync(
+				userDataPath,
+				JSON.stringify(initialUserData, null, 2)
+			);
+
+			return newUser;
+		} catch (error) {
+			console.error('Error creating user:', error);
+			throw error;
+		}
+	},
+
+	// Update user (admin only)
+	updateUser: async (
+		adminId: string,
+		userId: string,
+		updateData: UpdateUserData
+	): Promise<User> => {
+		try {
+			await initializeUsersFile();
+
+			// Verify admin user
+			const adminUser = await authService.getUserById(adminId);
+			if (!adminUser?.isAdmin) {
+				throw new Error('Admin privileges required');
+			}
+
+			const fileContent = await FileSystem.readAsStringAsync(USERS_FILE_PATH);
+			const data = JSON.parse(fileContent);
+
+			const userIndex = data.users.findIndex(
+				(user: User) => user.id === userId
+			);
+			if (userIndex === -1) {
+				throw new Error('User not found');
+			}
+
+			const user = data.users[userIndex];
+
+			// Prevent admin from modifying themselves
+			if (userId === adminId && updateData.isAdmin === false) {
+				throw new Error('Cannot remove admin privileges from yourself');
+			}
+
+			// Check if username is being changed and already exists
+			if (updateData.username && updateData.username !== user.username) {
+				const existingUsername = data.users.find(
+					(u: User, index: number) =>
+						u.username === updateData.username && index !== userIndex
+				);
+				if (existingUsername) {
+					throw new Error('Username already exists');
+				}
+			}
+
+			// Check if email is being changed and already exists
+			if (updateData.email && updateData.email !== user.email) {
+				if (!isValidEmail(updateData.email)) {
+					throw new Error('Please enter a valid email address');
+				}
+
+				const existingEmail = data.users.find(
+					(u: User, index: number) =>
+						u.email === updateData.email && index !== userIndex
+				);
+				if (existingEmail) {
+					throw new Error('Email already registered');
+				}
+			}
+
+			// Update user data
+			data.users[userIndex] = {
+				...user,
+				username: updateData.username || user.username,
+				email: updateData.email !== undefined ? updateData.email : user.email,
+				isAdmin:
+					updateData.isAdmin !== undefined ? updateData.isAdmin : user.isAdmin,
+				biometricEnabled:
+					updateData.biometricEnabled !== undefined
+						? updateData.biometricEnabled
+						: user.biometricEnabled,
+			};
+
+			// Reset password if requested
+			if (updateData.resetPassword && updateData.newPassword) {
+				data.users[userIndex].passwordHash = await hashData(
+					updateData.newPassword
+				);
+			}
+
+			await FileSystem.writeAsStringAsync(
+				USERS_FILE_PATH,
+				JSON.stringify(data, null, 2)
+			);
+
+			return data.users[userIndex];
+		} catch (error) {
+			console.error('Error updating user:', error);
+			throw error;
+		}
+	},
+
+	// Delete user (admin only)
+	deleteUser: async (adminId: string, userId: string): Promise<boolean> => {
+		try {
+			await initializeUsersFile();
+
+			// Verify admin user
+			const adminUser = await authService.getUserById(adminId);
+			if (!adminUser?.isAdmin) {
+				throw new Error('Admin privileges required');
+			}
+
+			// Prevent admin from deleting themselves
+			if (adminId === userId) {
+				throw new Error('Cannot delete your own account');
+			}
+
+			const fileContent = await FileSystem.readAsStringAsync(USERS_FILE_PATH);
+			const data = JSON.parse(fileContent);
+
+			const initialLength = data.users.length;
+			data.users = data.users.filter((user: User) => user.id !== userId);
+
+			if (data.users.length === initialLength) {
+				throw new Error('User not found');
+			}
+
+			await FileSystem.writeAsStringAsync(
+				USERS_FILE_PATH,
+				JSON.stringify(data, null, 2)
+			);
+
+			// Delete user's data files
+			try {
+				const userDataPath = getUserDataPath(userId);
+				await FileSystem.deleteAsync(userDataPath);
+			} catch (error) {
+				console.error('Error deleting user data files:', error);
+				// Continue even if data files deletion fails
+			}
+
+			return true;
+		} catch (error) {
+			console.error('Error deleting user:', error);
+			throw error;
+		}
+	},
+
+	// Get detailed user info (admin only)
+	getDetailedUserInfo: async (userId: string): Promise<FullUserInfo | null> => {
+		try {
+			await initializeUsersFile();
+
+			const fileContent = await FileSystem.readAsStringAsync(USERS_FILE_PATH);
+			const data = JSON.parse(fileContent);
+
+			const user = data.users.find((u: User) => u.id === userId);
+			if (!user) {
+				return null;
+			}
+
+			// Get user's data info
+			const dataInfo = await DataBackupService.getExportInfo(userId);
+
+			return {
+				...user,
+				dataInfo: {
+					assetsCount: dataInfo.itemsCount,
+					lastExport: dataInfo.lastExport,
+				},
+			};
+		} catch (error) {
+			console.error('Error getting detailed user info:', error);
+			return null;
 		}
 	},
 };
