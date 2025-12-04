@@ -594,7 +594,6 @@ export const ExpensesScreen = () => {
 
 		return (
 			<View style={styles.container}>
-				{/* Header */}
 				<View style={{ padding: 20, backgroundColor: colors.white }}>
 					<View style={{ marginBottom: 16 }}>
 						<TouchableOpacity
@@ -793,8 +792,6 @@ export const ExpensesScreen = () => {
 						))}
 					</ScrollView>
 				</View>
-
-				{/* Month Selector and Daily Expenses */}
 				<View
 					style={[
 						styles.row,
@@ -899,8 +896,6 @@ export const ExpensesScreen = () => {
 					</View>
 				)}
 			</View>
-
-			{/* Expenses List */}
 			{filteredExpenses.length === 0 ? (
 				<View style={[styles.center, { flex: 1, padding: 40 }]}>
 					<Text style={{ fontSize: 48, marginBottom: 16 }}>💸</Text>

@@ -4,14 +4,8 @@ import {
 	ProfileScreen,
 	SavingsScreen,
 } from '@/screens';
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
 import { Tab } from './TabNavigator';
-
-const AssetsScreen = () => (
-	<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-		<Text>Assets Screen - Coming Soon</Text>
-	</View>
-);
 
 export const UserTabNavigator: React.FC = () => {
 	return (
@@ -36,9 +30,9 @@ export const UserTabNavigator: React.FC = () => {
 				name='Dashboard'
 				component={Dashboard}
 				options={{
-					title: 'Dashboard',
+					title: 'Assets',
 					tabBarIcon: ({ color, size }) => (
-						<Text style={{ color, fontSize: size }}>📊</Text>
+						<Text style={{ color, fontSize: size }}>🏦</Text>
 					),
 				}}
 			/>
@@ -62,18 +56,6 @@ export const UserTabNavigator: React.FC = () => {
 					),
 				}}
 			/>
-
-			<Tab.Screen
-				name='Assets'
-				component={AssetsScreen}
-				options={{
-					title: 'Assets',
-					tabBarIcon: ({ color, size }) => (
-						<Text style={{ color, fontSize: size }}>🏦</Text>
-					),
-				}}
-			/>
-
 			<Tab.Screen
 				name='Profile'
 				component={ProfileScreen}

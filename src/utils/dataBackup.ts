@@ -293,13 +293,26 @@ export class DataBackupService {
 		}
 	}
 
-	// Get export file info
+	// src/utils/dataBackup.ts
+	// Update the getExportInfo method to exclude admin data:
+
 	static async getExportInfo(userId: string): Promise<{
 		lastExport?: string;
 		fileSize?: number;
 		itemsCount: number;
 	}> {
 		try {
+			// Check if this is an admin user
+			const authService = require('@/services/authService').authService;
+			const user = await authService.getUserById(userId);
+
+			// For admin users, return minimal info or empty
+			if (user?.isAdmin) {
+				return {
+					itemsCount: 0,
+				};
+			}
+
 			const filePaths = await this.getUserDataFilePaths(userId);
 			const filesInfo = await Promise.all([
 				FileSystem.getInfoAsync(filePaths.assetsPath),

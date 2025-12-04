@@ -1,3 +1,5 @@
+// src/screens/AdminScreen.tsx
+
 import { UserForm } from '@/components';
 import { useAuth } from '@/hooks';
 import { authService } from '@/services/authService';
@@ -35,9 +37,17 @@ export const AdminScreen = () => {
 		try {
 			const allUsers = await authService.getAllUsers();
 
-			// Get detailed info for each user
+			// Get detailed info for each user (only for non-admin users)
 			const detailedUsers: FullUserInfo[] = await Promise.all(
 				allUsers.map(async (userData) => {
+					// For admin users, don't load data info
+					if (userData.isAdmin) {
+						return {
+							...userData,
+							dataInfo: undefined, // No data info for admin users
+						};
+					}
+
 					const dataInfo = await DataBackupService.getExportInfo(userData.id);
 					return {
 						...userData,
@@ -329,27 +339,28 @@ export const AdminScreen = () => {
 										Created: {new Date(item.createdAt).toLocaleDateString()}
 									</Text>
 
-									{/* Data Info */}
-									<View style={[styles.row, { marginTop: 8, gap: 12 }]}>
-										{item.dataInfo?.assetsCount !== undefined && (
-											<Text style={{ color: colors.info, fontSize: 11 }}>
+									{/* Data Info - Only show for non-admin users */}
+									{!item.isAdmin &&
+										item.dataInfo?.assetsCount !== undefined && (
+											<Text
+												style={{
+													color: colors.info,
+													fontSize: 11,
+													marginTop: 8,
+												}}
+											>
 												📊 {item.dataInfo.assetsCount} items
 											</Text>
 										)}
-										{item.dataInfo?.lastExport && (
-											<Text style={{ color: colors.success, fontSize: 11 }}>
-												📅 Last export: {item.dataInfo.lastExport}
-											</Text>
-										)}
-									</View>
 								</View>
 
-								<View style={{ alignItems: 'center' }}>
+								{/* REMOVED the "Tap for details" section */}
+								{/* <View style={{ alignItems: 'center' }}>
 									<Text style={{ color: colors.gray, fontSize: 12 }}>
 										Tap for details
 									</Text>
 									<Text style={{ color: colors.primary, fontSize: 24 }}>→</Text>
-								</View>
+								</View> */}
 							</View>
 						</TouchableOpacity>
 
@@ -365,40 +376,45 @@ export const AdminScreen = () => {
 								},
 							]}
 						>
-							<TouchableOpacity
-								style={[
-									styles.button,
-									{
-										backgroundColor: colors.primary,
-										paddingHorizontal: 12,
-										paddingVertical: 6,
-										width: 80,
-									},
-								]}
-								onPress={() => handleExportUserData(item.id, item.username)}
-								disabled={actionLoading}
-							>
-								<Text style={[styles.buttonText, { fontSize: 12 }]}>
-									📤 Export
-								</Text>
-							</TouchableOpacity>
-							<TouchableOpacity
-								style={[
-									styles.button,
-									{
-										backgroundColor: colors.warning,
-										paddingHorizontal: 12,
-										paddingVertical: 6,
-										width: 80,
-									},
-								]}
-								onPress={() => handleImportForUser(item.id, item.username)}
-								disabled={actionLoading}
-							>
-								<Text style={[styles.buttonText, { fontSize: 12 }]}>
-									📥 Import
-								</Text>
-							</TouchableOpacity>
+							{/* Only show export/import for non-admin users */}
+							{!item.isAdmin && (
+								<>
+									<TouchableOpacity
+										style={[
+											styles.button,
+											{
+												backgroundColor: colors.primary,
+												paddingHorizontal: 12,
+												paddingVertical: 6,
+												width: 80,
+											},
+										]}
+										onPress={() => handleExportUserData(item.id, item.username)}
+										disabled={actionLoading}
+									>
+										<Text style={[styles.buttonText, { fontSize: 12 }]}>
+											📤 Export
+										</Text>
+									</TouchableOpacity>
+									<TouchableOpacity
+										style={[
+											styles.button,
+											{
+												backgroundColor: colors.warning,
+												paddingHorizontal: 12,
+												paddingVertical: 6,
+												width: 80,
+											},
+										]}
+										onPress={() => handleImportForUser(item.id, item.username)}
+										disabled={actionLoading}
+									>
+										<Text style={[styles.buttonText, { fontSize: 12 }]}>
+											📥 Import
+										</Text>
+									</TouchableOpacity>
+								</>
+							)}
 							{item.id !== user.id && (
 								<>
 									<TouchableOpacity
@@ -595,7 +611,8 @@ export const AdminScreen = () => {
 										</View>
 									</View>
 
-									{selectedUser.dataInfo && (
+									{/* Only show data info for non-admin users */}
+									{selectedUser.dataInfo && !selectedUser.isAdmin && (
 										<View style={{ marginBottom: 24 }}>
 											<Text style={{ color: colors.gray, fontSize: 12 }}>
 												Data Information
