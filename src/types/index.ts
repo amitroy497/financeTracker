@@ -91,13 +91,16 @@ export interface User {
 
 export interface AuthCredentials {
 	username: string;
+	email?: string;
 	password: string;
 	pin?: string;
 	biometricEnabled?: boolean;
+	isAdmin?: boolean;
 }
 
 export interface LoginCredentials {
 	username: string;
+	email?: string;
 	password?: string;
 	pin?: string;
 	useBiometric?: boolean;
@@ -120,6 +123,7 @@ export interface AuthContextType extends AuthState {
 		newPassword: string
 	) => Promise<boolean>;
 	changePin: (newPin: string) => Promise<boolean>;
+	updateEmail: (newEmail: string) => Promise<boolean>;
 }
 
 // Add these new types for assets and dashboard

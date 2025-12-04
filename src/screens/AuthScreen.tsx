@@ -11,7 +11,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Add this import
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type AuthMode = 'login' | 'register' | 'biometric' | 'admin';
 
@@ -21,6 +21,7 @@ export const AuthScreen: React.FC = () => {
 
 	const [mode, setMode] = useState<AuthMode>('login');
 	const [username, setUsername] = useState('');
+	const [email, setEmail] = useState(''); // Add email state
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [pin, setPin] = useState('');
@@ -97,10 +98,17 @@ export const AuthScreen: React.FC = () => {
 			return;
 		}
 
+		// Email validation (optional but recommended)
+		if (email && !isValidEmail(email)) {
+			Alert.alert('Error', 'Please enter a valid email address');
+			return;
+		}
+
 		setIsSubmitting(true);
 		try {
 			const success = await register({
 				username,
+				email: email || undefined, // Pass email to register function
 				password,
 				pin: pin || undefined,
 				biometricEnabled: enableBio,
@@ -117,6 +125,12 @@ export const AuthScreen: React.FC = () => {
 		} finally {
 			setIsSubmitting(false);
 		}
+	};
+
+	// Email validation function
+	const isValidEmail = (email: string): boolean => {
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		return emailRegex.test(email);
 	};
 
 	const handleAdminLogin = async (): Promise<void> => {
@@ -156,6 +170,7 @@ export const AuthScreen: React.FC = () => {
 
 	const resetForm = (): void => {
 		setUsername('');
+		setEmail(''); // Reset email
 		setPassword('');
 		setConfirmPassword('');
 		setPin('');
@@ -529,6 +544,17 @@ export const AuthScreen: React.FC = () => {
 				) : (
 					/* REGISTER FORM */
 					<>
+						{/* Email Field (Optional) */}
+						<TextInput
+							style={styles.input}
+							placeholder='Email (Optional)'
+							value={email}
+							onChangeText={setEmail}
+							placeholderTextColor={colors.gray}
+							autoCapitalize='none'
+							keyboardType='email-address'
+						/>
+
 						{/* Password with Eye Icon */}
 						<View style={{ position: 'relative', marginBottom: 16 }}>
 							<TextInput
@@ -652,6 +678,11 @@ export const AuthScreen: React.FC = () => {
 								style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}
 							>
 								• Password must be at least 6 characters
+							</Text>
+							<Text
+								style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}
+							>
+								• Email is optional but recommended for account recovery
 							</Text>
 							<Text
 								style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}

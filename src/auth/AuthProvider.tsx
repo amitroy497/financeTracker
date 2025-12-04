@@ -1,4 +1,4 @@
-// AuthProvider.tsx
+// AuthProvider.tsx - Add this method
 import React, { createContext, ReactNode, useEffect, useState } from 'react';
 import { authService } from '../services/authService';
 import {
@@ -167,6 +167,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		}
 	};
 
+	// Add method to update email
+	const updateEmail = async (newEmail: string): Promise<boolean> => {
+		if (!authState.user) return false;
+
+		try {
+			console.log('AuthProvider: Updating email for:', authState.user.username);
+			const success = await authService.updateUserEmail(
+				authState.user.id,
+				newEmail
+			);
+
+			if (success) {
+				// Update current user state
+				setAuthState((prev) => ({
+					...prev,
+					user: prev.user ? { ...prev.user, email: newEmail } : null,
+				}));
+			}
+
+			return success;
+		} catch (error) {
+			console.error('AuthProvider: Error updating email:', error);
+			throw error;
+		}
+	};
+
 	const value: AuthContextType = {
 		...authState,
 		login,
@@ -175,6 +201,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		enableBiometric,
 		changePassword,
 		changePin,
+		updateEmail, // Add this to the context value
 	};
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

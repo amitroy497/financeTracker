@@ -1,7 +1,7 @@
 {
 	"expo": {
-		"name": "FinanceTracker",
-		"slug": "FinanceTracker",
+		"name": "RoyTracker",
+		"slug": "RoyTracker",
 		"version": "1.0.0",
 		"orientation": "portrait",
 		"icon": "./assets/icon.png",
@@ -28,6 +28,6 @@
 			"favicon": "./assets/favicon.png"
 		},
 		"plugins": ["expo-file-system"],
-		"scheme": "financetracker"
+		"scheme": "roytracker"
 	}
 }

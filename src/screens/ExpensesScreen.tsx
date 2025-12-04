@@ -618,6 +618,18 @@ export const ExpensesScreen: React.FC = () => {
 			<View style={styles.container}>
 				{/* Header */}
 				<View style={{ padding: 20, backgroundColor: colors.white }}>
+					<View style={{ marginBottom: 16 }}>
+						<TouchableOpacity
+							onPress={() => setShowCategoryTiles(false)}
+							style={{
+								flexDirection: 'row',
+								alignItems: 'center',
+								alignSelf: 'flex-start',
+							}}
+						>
+							<Text style={{ fontSize: 24, marginRight: 8 }}>↩</Text>
+						</TouchableOpacity>
+					</View>
 					<View
 						style={[
 							styles.row,
@@ -629,11 +641,6 @@ export const ExpensesScreen: React.FC = () => {
 						]}
 					>
 						<Text style={styles.header}>📊 Expense Categories</Text>
-						<TouchableOpacity onPress={() => setShowCategoryTiles(false)}>
-							<Text style={{ color: colors.primary, fontSize: 14 }}>
-								Back to List
-							</Text>
-						</TouchableOpacity>
 					</View>
 
 					{/* Yearly Total */}
@@ -753,6 +760,8 @@ export const ExpensesScreen: React.FC = () => {
 					]}
 				>
 					<Text style={styles.header}>💰 Expense Tracker</Text>
+				</View>
+				<View style={{ alignItems: 'flex-end', marginBottom: 16 }}>
 					<TouchableOpacity onPress={() => setShowCategoryTiles(true)}>
 						<Text style={{ color: colors.primary, fontSize: 14 }}>
 							📊 Categories

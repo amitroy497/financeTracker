@@ -10,7 +10,8 @@ const USER_DATA_DIR = `${FileSystem.documentDirectory}user_data/`;
 // Admin configuration
 const ADMIN_CONFIG = {
 	username: 'admin',
-	password: 'admin123', // Store plain password for admin creation
+	password: 'admin123',
+	email: 'admin@financetracker.com', // Add admin email
 };
 
 // Initialize users file with admin user
@@ -69,6 +70,12 @@ const verifyHash = async (data: string, hash: string): Promise<boolean> => {
 	return dataHash === hash;
 };
 
+// Email validation function
+const isValidEmail = (email: string): boolean => {
+	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	return emailRegex.test(email);
+};
+
 // Generate user-specific data file path
 const getUserDataPath = (userId: string): string => {
 	return `${USER_DATA_DIR}${userId}_data.json`;
@@ -99,6 +106,7 @@ const createAdminUser = async (): Promise<boolean> => {
 				Date.now().toString() +
 				Math.random().toString(36).substr(2, 9),
 			username: ADMIN_CONFIG.username,
+			email: ADMIN_CONFIG.email,
 			passwordHash,
 			biometricEnabled: false,
 			createdAt: new Date().toISOString(),
@@ -142,11 +150,26 @@ export const authService = {
 			const data = JSON.parse(fileContent);
 
 			// Check if username already exists
-			const existingUser = data.users.find(
+			const existingUsername = data.users.find(
 				(user: User) => user.username === credentials.username
 			);
-			if (existingUser) {
+			if (existingUsername) {
 				throw new Error('Username already exists');
+			}
+
+			// Check if email already exists (if provided)
+			if (credentials.email) {
+				// Validate email format
+				if (!isValidEmail(credentials.email)) {
+					throw new Error('Please enter a valid email address');
+				}
+
+				const existingEmail = data.users.find(
+					(user: User) => user.email === credentials.email
+				);
+				if (existingEmail) {
+					throw new Error('Email already registered');
+				}
 			}
 
 			// Hash password
@@ -161,6 +184,7 @@ export const authService = {
 			const newUser: User = {
 				id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
 				username: credentials.username,
+				email: credentials.email,
 				passwordHash,
 				pinHash,
 				biometricEnabled: credentials.biometricEnabled || false,
@@ -198,6 +222,7 @@ export const authService = {
 		try {
 			console.log('=== LOGIN ATTEMPT START ===');
 			console.log('Username:', credentials.username);
+			console.log('Email:', credentials.email);
 			console.log('Has password:', !!credentials.password);
 			console.log('Has PIN:', !!credentials.pin);
 			console.log('Use biometric:', credentials.useBiometric);
@@ -208,15 +233,24 @@ export const authService = {
 			const data = JSON.parse(fileContent);
 
 			console.log('Total users in file:', data.users.length);
-			console.log(
-				'Users list:',
-				data.users.map((u: User) => u.username)
-			);
 
-			// Find user (including admin)
-			const user = data.users.find(
-				(u: User) => u.username === credentials.username
-			);
+			// Find user by username OR email
+			let user: User | undefined;
+
+			if (credentials.username) {
+				// Try to find by username first
+				user = data.users.find(
+					(u: User) => u.username === credentials.username
+				);
+			}
+
+			// If not found by username and email is provided, try by email
+			if (!user && credentials.email) {
+				user = data.users.find((u: User) => u.email === credentials.email);
+				if (user) {
+					console.log('User found by email:', credentials.email);
+				}
+			}
 
 			if (!user) {
 				console.log('User not found in users.json');
@@ -225,8 +259,6 @@ export const authService = {
 				if (credentials.username === ADMIN_CONFIG.username) {
 					console.log('But username matches admin config');
 					console.log('Checking admin password...');
-					console.log('Input password:', credentials.password);
-					console.log('Expected password:', ADMIN_CONFIG.password);
 
 					// For admin, check against the config
 					if (credentials.password === ADMIN_CONFIG.password) {
@@ -238,6 +270,7 @@ export const authService = {
 								Date.now().toString() +
 								Math.random().toString(36).substr(2, 9),
 							username: ADMIN_CONFIG.username,
+							email: ADMIN_CONFIG.email,
 							passwordHash: await hashData(ADMIN_CONFIG.password),
 							biometricEnabled: false,
 							createdAt: new Date().toISOString(),
@@ -263,6 +296,7 @@ export const authService = {
 			}
 
 			console.log('User found:', user.username);
+			console.log('User email:', user.email);
 			console.log('User isAdmin:', user.isAdmin);
 			console.log('User biometricEnabled:', user.biometricEnabled);
 
@@ -281,12 +315,6 @@ export const authService = {
 			} else if (credentials.password) {
 				// Password authentication for both regular users and admin
 				console.log('Attempting password verification...');
-				console.log(
-					'Input password hash (will compare):',
-					await hashData(credentials.password)
-				);
-				console.log('Stored password hash:', user.passwordHash);
-
 				isValid = await verifyHash(credentials.password, user.passwordHash);
 				console.log('Password verification result:', isValid);
 			} else {
@@ -481,5 +509,50 @@ export const authService = {
 	// Create admin user (for initial setup - public method)
 	createAdminUser: async (): Promise<boolean> => {
 		return await createAdminUser();
+	},
+
+	// Update user email
+	updateUserEmail: async (
+		userId: string,
+		newEmail: string
+	): Promise<boolean> => {
+		try {
+			await initializeUsersFile();
+
+			const fileContent = await FileSystem.readAsStringAsync(USERS_FILE_PATH);
+			const data = JSON.parse(fileContent);
+
+			const userIndex = data.users.findIndex(
+				(user: User) => user.id === userId
+			);
+			if (userIndex === -1) {
+				throw new Error('User not found');
+			}
+
+			// Validate email format
+			if (!isValidEmail(newEmail)) {
+				throw new Error('Please enter a valid email address');
+			}
+
+			// Check if email already exists (excluding current user)
+			const existingEmail = data.users.find(
+				(user: User, index: number) =>
+					user.email === newEmail && index !== userIndex
+			);
+			if (existingEmail) {
+				throw new Error('Email already registered to another user');
+			}
+
+			data.users[userIndex].email = newEmail;
+			await FileSystem.writeAsStringAsync(
+				USERS_FILE_PATH,
+				JSON.stringify(data, null, 2)
+			);
+
+			return true;
+		} catch (error) {
+			console.error('Error updating email:', error);
+			throw error;
+		}
 	},
 };
