@@ -1,5 +1,6 @@
 import { assetService } from '@/services/assetService';
-import { colors, styles } from '@/styles/global';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { CreateStockData, StocksProps } from '@/types';
 import React, { useState } from 'react';
 import {
@@ -13,6 +14,8 @@ import {
 } from 'react-native';
 
 export const Stocks = ({ stocks, onRefresh, userId }: StocksProps) => {
+	const { colors } = useTheme();
+	const styles = createStyles(colors);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [newStock, setNewStock] = useState<CreateStockData>({

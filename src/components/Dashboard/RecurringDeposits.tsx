@@ -1,5 +1,6 @@
 import { assetService } from '@/services/assetService';
-import { colors, styles } from '@/styles';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { CreateRecurringDepositData, RecurringDepositsProps } from '@/types';
 import React, { useState } from 'react';
 import {
@@ -17,6 +18,8 @@ export const RecurringDeposits = ({
 	onRefresh,
 	userId,
 }: RecurringDepositsProps) => {
+	const { colors } = useTheme();
+	const styles = createStyles(colors);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [newDeposit, setNewDeposit] = useState<CreateRecurringDepositData>({

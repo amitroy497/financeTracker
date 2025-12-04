@@ -1,9 +1,12 @@
-import { colors, styles } from '@/styles';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { AssetCardsProps } from '@/types';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
 export const AssetCards = ({ summary }: AssetCardsProps) => {
+	const { colors } = useTheme();
+	const styles = createStyles(colors);
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('en-IN', {
 			style: 'currency',

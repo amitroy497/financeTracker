@@ -15,7 +15,8 @@ import {
 } from '@/components';
 import { useAuth } from '@/hooks';
 import { assetService } from '@/services/assetService';
-import { colors, styles } from '@/styles';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { DashboardData } from '@/types';
 import { isDataEmpty } from '@/utils';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -29,6 +30,8 @@ import {
 } from 'react-native';
 
 export const Dashboard = () => {
+	const { colors } = useTheme();
+	const styles = createStyles(colors);
 	const { user } = useAuth();
 	const [dashboardData, setDashboardData] = useState<DashboardData | null>(
 		null

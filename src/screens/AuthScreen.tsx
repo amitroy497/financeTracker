@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks';
-import { colors, styles } from '@/styles';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { AuthMode } from '@/types';
 import React, { useState } from 'react';
 import {
@@ -15,6 +16,8 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export const AuthScreen = () => {
+	const { colors } = useTheme();
+	const styles = createStyles(colors);
 	const { login, register, enableBiometric, biometricSupported, isLoading } =
 		useAuth();
 

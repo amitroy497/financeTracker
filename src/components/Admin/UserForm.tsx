@@ -1,4 +1,5 @@
-import { colors, styles } from '@/styles';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { CreateUserData, UpdateUserData, UserFormProps } from '@/types';
 import React, { useState } from 'react';
 import {
@@ -20,6 +21,8 @@ export const UserForm = ({
 	onCancel,
 	loading = false,
 }: UserFormProps) => {
+	const { colors } = useTheme();
+	const styles = createStyles(colors);
 	const [formData, setFormData] = useState<CreateUserData | UpdateUserData>({
 		username: user?.username || '',
 		email: user?.email || '',

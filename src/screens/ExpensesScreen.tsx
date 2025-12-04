@@ -1,6 +1,7 @@
 import { EXPENSE_CATEGORIES } from '@/constants';
 import { useAuth } from '@/hooks';
-import { colors, styles } from '@/styles';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { Expense, ExpenseFormData, YearlyFinancialData } from '@/types';
 import { getCurrentMonth } from '@/utils';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -20,6 +21,8 @@ import {
 } from 'react-native';
 
 export const ExpensesScreen = () => {
+	const { colors } = useTheme();
+	const styles = createStyles(colors);
 	const { user } = useAuth();
 	const [expenses, setExpenses] = useState<Expense[]>([]);
 	const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);

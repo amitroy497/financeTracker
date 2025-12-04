@@ -1,6 +1,7 @@
 import { BANK_LIST } from '@/constants';
 import { assetService } from '@/services/assetService';
-import { colors, styles } from '@/styles';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { BankAccount, BankAccountsProps, CreateBankAccountData } from '@/types';
 import { maskAccountNumber } from '@/utils';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,8 @@ export const BankAccounts = ({
 	onRefresh,
 	userId,
 }: BankAccountsProps) => {
+	const { colors } = useTheme();
+	const styles = createStyles(colors);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [showBankDropdown, setShowBankDropdown] = useState(false);

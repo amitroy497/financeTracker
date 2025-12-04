@@ -1,4 +1,5 @@
-import { colors, styles } from '@/styles';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { PieChartComponentProps } from '@/types';
 import React from 'react';
 import { Text, View } from 'react-native';
@@ -9,6 +10,8 @@ export const PieChartComponent = ({
 	totalAssets,
 	height = 250,
 }: PieChartComponentProps) => {
+	const { colors } = useTheme();
+	const styles = createStyles(colors);
 	const chartData = data.filter((item) => item.y > 0);
 
 	const formatCurrency = (amount: number): string => {

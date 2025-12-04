@@ -1,5 +1,6 @@
 import { assetService } from '@/services/assetService';
-import { colors, styles } from '@/styles';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { CreateEquityETFData, EquityETFsProps } from '@/types';
 import React, { useState } from 'react';
 import {
@@ -13,6 +14,8 @@ import {
 } from 'react-native';
 
 export const EquityETFs = ({ etfs, onRefresh, userId }: EquityETFsProps) => {
+	const { colors } = useTheme();
+	const styles = createStyles(colors);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [newETF, setNewETF] = useState<CreateEquityETFData>({

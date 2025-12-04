@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks';
-import { colors, styles } from '@/styles';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { DataBackupService } from '@/utils/dataBackup';
 import React, { useEffect, useState } from 'react';
 import {
@@ -14,6 +15,8 @@ import {
 } from 'react-native';
 
 export const ProfileScreen = () => {
+	const { theme, colors, setTheme } = useTheme();
+	const styles = createStyles(colors);
 	const {
 		user,
 		logout,
@@ -371,6 +374,104 @@ export const ProfileScreen = () => {
 		setActiveSection('main');
 		resetForms();
 	};
+
+	const renderThemeSettings = () => (
+		<View style={[styles.card, { marginBottom: 12 }]}>
+			<Text style={[styles.subheader, { marginBottom: 16 }]}>
+				🎨 Appearance Settings
+			</Text>
+
+			<View style={{ marginBottom: 20 }}>
+				<Text
+					style={{
+						color: colors.text,
+						fontSize: 16,
+						fontWeight: '600',
+						marginBottom: 12,
+					}}
+				>
+					Theme
+				</Text>
+
+				<View
+					style={[
+						styles.row,
+						{
+							backgroundColor: colors.lightGray,
+							borderRadius: 12,
+							padding: 4,
+						},
+					]}
+				>
+					<TouchableOpacity
+						style={[
+							{
+								flex: 1,
+								paddingVertical: 12,
+								borderRadius: 8,
+								alignItems: 'center',
+								backgroundColor:
+									theme === 'light' ? colors.primary : 'transparent',
+							},
+						]}
+						onPress={() => setTheme('light')}
+					>
+						<Text
+							style={{
+								color: theme === 'light' ? colors.white : colors.text,
+								fontWeight: '600',
+							}}
+						>
+							☀️ Light
+						</Text>
+					</TouchableOpacity>
+
+					<TouchableOpacity
+						style={[
+							{
+								flex: 1,
+								paddingVertical: 12,
+								borderRadius: 8,
+								alignItems: 'center',
+								backgroundColor:
+									theme === 'dark' ? colors.primary : 'transparent',
+							},
+						]}
+						onPress={() => setTheme('dark')}
+					>
+						<Text
+							style={{
+								color: theme === 'dark' ? colors.white : colors.text,
+								fontWeight: '600',
+							}}
+						>
+							🌙 Dark
+						</Text>
+					</TouchableOpacity>
+				</View>
+			</View>
+
+			<View
+				style={[
+					styles.row,
+					{ justifyContent: 'space-between', alignItems: 'center' },
+				]}
+			>
+				<Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
+					Auto Theme
+				</Text>
+				<Switch
+					value={false}
+					onValueChange={(value) => {
+						// You can implement auto theme based on system settings here
+						Alert.alert('Info', 'Auto theme feature coming soon!');
+					}}
+					trackColor={{ false: colors.lightGray, true: colors.primary }}
+					thumbColor={colors.white}
+				/>
+			</View>
+		</View>
+	);
 
 	// Render Backup/Restore Section
 	if (activeSection === 'backup') {
@@ -958,6 +1059,8 @@ export const ProfileScreen = () => {
 			<Text style={[styles.subheader, { marginBottom: 16 }]}>
 				Security Settings
 			</Text>
+
+			{renderThemeSettings()}
 
 			{/* Email Setting */}
 			<TouchableOpacity

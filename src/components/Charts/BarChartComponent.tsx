@@ -1,4 +1,5 @@
-import { colors, styles } from '@/styles';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { BarChartComponentProps } from '@/types';
 import React from 'react';
 import { Dimensions, ScrollView, Text, View } from 'react-native';
@@ -9,6 +10,8 @@ export const BarChartComponent = ({
 	height = 320,
 	showValues = true,
 }: BarChartComponentProps) => {
+	const { colors } = useTheme();
+	const styles = createStyles(colors);
 	const screenWidth = Dimensions.get('window').width;
 
 	// Transform data for gifted-charts

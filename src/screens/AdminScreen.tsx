@@ -3,7 +3,8 @@
 import { UserForm } from '@/components';
 import { useAuth } from '@/hooks';
 import { authService } from '@/services/authService';
-import { colors, styles } from '@/styles';
+import { createStyles } from '@/styles';
+import { useTheme } from '@/theme';
 import { FullUserInfo } from '@/types';
 import { DataBackupService } from '@/utils/dataBackup';
 import React, { useEffect, useState } from 'react';
@@ -20,6 +21,8 @@ import {
 } from 'react-native';
 
 export const AdminScreen = () => {
+	const { colors } = useTheme();
+	const styles = createStyles(colors);
 	const { user, logout } = useAuth();
 	const [users, setUsers] = useState<FullUserInfo[]>([]);
 	const [loading, setLoading] = useState(true);
