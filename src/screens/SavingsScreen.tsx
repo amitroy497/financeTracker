@@ -785,7 +785,6 @@ export const SavingsScreen = () => {
 					placeholderTextColor={colors.gray}
 				/>
 
-				{/* Category Filters */}
 				{/* Category Filters - Horizontal Scroll */}
 				<View style={{ marginBottom: 12 }}>
 					<ScrollView
@@ -826,56 +825,52 @@ export const SavingsScreen = () => {
 							</Text>
 						</TouchableOpacity>
 
-						{SAVINGS_CATEGORIES.slice(0, 12).map(
-							(
-								category // Show first 12 categories
-							) => (
-								<TouchableOpacity
-									key={category.key}
-									style={[
-										{
-											paddingHorizontal: 12,
-											paddingVertical: 8,
-											borderRadius: 20,
-											marginRight: 8,
-											backgroundColor:
+						{SAVINGS_CATEGORIES.map((category) => (
+							<TouchableOpacity
+								key={category.key}
+								style={[
+									{
+										paddingHorizontal: 12,
+										paddingVertical: 8,
+										borderRadius: 20,
+										marginRight: 8,
+										backgroundColor:
+											selectedCategory === category.key
+												? category.color
+												: colors.lightGray,
+										justifyContent: 'center',
+										alignItems: 'center',
+										minHeight: 36,
+										borderWidth: 1,
+										borderColor:
+											selectedCategory === category.key
+												? category.color
+												: 'transparent',
+									},
+								]}
+								onPress={() => setSelectedCategory(category.key)}
+							>
+								<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+									<Text style={{ fontSize: 14, marginRight: 4 }}>
+										{category.emoji}
+									</Text>
+									<Text
+										style={{
+											color:
 												selectedCategory === category.key
-													? category.color
-													: colors.lightGray,
-											justifyContent: 'center',
-											alignItems: 'center',
-											minHeight: 36,
-											borderWidth: 1,
-											borderColor:
-												selectedCategory === category.key
-													? category.color
-													: 'transparent',
-										},
-									]}
-									onPress={() => setSelectedCategory(category.key)}
-								>
-									<View style={{ flexDirection: 'row', alignItems: 'center' }}>
-										<Text style={{ fontSize: 14, marginRight: 4 }}>
-											{category.emoji}
-										</Text>
-										<Text
-											style={{
-												color:
-													selectedCategory === category.key
-														? colors.white
-														: colors.dark,
-												fontWeight: '600',
-												fontSize: 12,
-											}}
-										>
-											{category.name.length > 10
-												? category.name.substring(0, 10) + '...'
-												: category.name}
-										</Text>
-									</View>
-								</TouchableOpacity>
-							)
-						)}
+													? colors.white
+													: colors.dark,
+											fontWeight: '600',
+											fontSize: 12,
+										}}
+									>
+										{category.name.length > 10
+											? category.name.substring(0, 10) + '...'
+											: category.name}
+									</Text>
+								</View>
+							</TouchableOpacity>
+						))}
 					</ScrollView>
 				</View>
 
