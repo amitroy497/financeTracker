@@ -72,7 +72,6 @@ export const ProfileScreen = () => {
 			console.error('Error loading export info:', error);
 		}
 	};
-
 	const handleExportData = async (): Promise<void> => {
 		if (!user) return;
 
@@ -116,7 +115,6 @@ export const ProfileScreen = () => {
 			setIsLoading(false);
 		}
 	};
-
 	const handleImportData = async (): Promise<void> => {
 		if (!user) return;
 
@@ -173,7 +171,6 @@ export const ProfileScreen = () => {
 			]
 		);
 	};
-
 	const performImport = async (importData: any): Promise<void> => {
 		try {
 			await DataBackupService.importUserData(user!.id, importData);
@@ -198,7 +195,6 @@ export const ProfileScreen = () => {
 			Alert.alert('Import Failed', error.message || 'Failed to import data');
 		}
 	};
-
 	const handleUpdateEmail = async (): Promise<void> => {
 		if (!email.trim()) {
 			Alert.alert('Error', 'Please enter email address');
@@ -230,7 +226,6 @@ export const ProfileScreen = () => {
 			setIsLoading(false);
 		}
 	};
-
 	const handleChangePassword = async (): Promise<void> => {
 		if (!currentPassword.trim()) {
 			Alert.alert('Error', 'Please enter current password');
@@ -271,7 +266,6 @@ export const ProfileScreen = () => {
 			setIsLoading(false);
 		}
 	};
-
 	const handleChangePin = async (): Promise<void> => {
 		if (!newPin.trim()) {
 			Alert.alert('Error', 'Please enter new PIN');
@@ -304,7 +298,6 @@ export const ProfileScreen = () => {
 			setIsLoading(false);
 		}
 	};
-
 	const handleToggleBiometric = async (value: boolean): Promise<void> => {
 		try {
 			setIsLoading(true);
@@ -326,7 +319,6 @@ export const ProfileScreen = () => {
 			setIsLoading(false);
 		}
 	};
-
 	const handleRemovePin = async (): Promise<void> => {
 		Alert.alert(
 			'Remove PIN',
@@ -358,7 +350,6 @@ export const ProfileScreen = () => {
 			]
 		);
 	};
-
 	const resetForms = (): void => {
 		setEmail(user?.email || '');
 		setCurrentPasswordForEmail('');
@@ -369,12 +360,10 @@ export const ProfileScreen = () => {
 		setNewPin('');
 		setConfirmNewPin('');
 	};
-
 	const handleBackToMain = (): void => {
 		setActiveSection('main');
 		resetForms();
 	};
-
 	const renderThemeSettings = () => (
 		<View style={[styles.card, { marginBottom: 12 }]}>
 			<Text style={[styles.subheader, { marginBottom: 16 }]}>
@@ -392,7 +381,6 @@ export const ProfileScreen = () => {
 				>
 					Theme
 				</Text>
-
 				<View
 					style={[
 						styles.row,
@@ -425,7 +413,6 @@ export const ProfileScreen = () => {
 							☀️ Light
 						</Text>
 					</TouchableOpacity>
-
 					<TouchableOpacity
 						style={[
 							{
@@ -450,7 +437,6 @@ export const ProfileScreen = () => {
 					</TouchableOpacity>
 				</View>
 			</View>
-
 			<View
 				style={[
 					styles.row,
@@ -472,8 +458,6 @@ export const ProfileScreen = () => {
 			</View>
 		</View>
 	);
-
-	// Render Backup/Restore Section
 	if (activeSection === 'backup') {
 		if (user?.isAdmin) {
 			return (
@@ -749,8 +733,6 @@ export const ProfileScreen = () => {
 			</ScrollView>
 		);
 	}
-
-	// Render other sections (email, password, pin, biometric)
 	if (activeSection !== 'main') {
 		return (
 			<ScrollView
@@ -1001,16 +983,12 @@ export const ProfileScreen = () => {
 			</ScrollView>
 		);
 	}
-
-	// Main Profile View
 	return (
 		<ScrollView
 			style={styles.container}
-			contentContainerStyle={{ padding: 20 }}
+			contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
 		>
 			<Text style={styles.header}>👤 Profile Settings</Text>
-
-			{/* User Info Card */}
 			<View style={[styles.card, { marginBottom: 24 }]}>
 				<View style={[styles.row, { alignItems: 'center', marginBottom: 12 }]}>
 					<Text style={{ fontSize: 24, marginRight: 12 }}>👤</Text>
@@ -1054,15 +1032,10 @@ export const ProfileScreen = () => {
 					Member since {new Date(user?.createdAt || '').toLocaleDateString()}
 				</Text>
 			</View>
-
-			{/* Security Settings */}
 			<Text style={[styles.subheader, { marginBottom: 16 }]}>
 				Security Settings
 			</Text>
-
 			{renderThemeSettings()}
-
-			{/* Email Setting */}
 			<TouchableOpacity
 				style={[styles.card, { marginBottom: 12 }]}
 				onPress={() => setActiveSection('email')}
@@ -1089,8 +1062,6 @@ export const ProfileScreen = () => {
 					<Text style={{ color: colors.primary }}>→</Text>
 				</View>
 			</TouchableOpacity>
-
-			{/* Password Setting */}
 			<TouchableOpacity
 				style={[styles.card, { marginBottom: 12 }]}
 				onPress={() => setActiveSection('password')}
@@ -1117,8 +1088,6 @@ export const ProfileScreen = () => {
 					<Text style={{ color: colors.primary }}>→</Text>
 				</View>
 			</TouchableOpacity>
-
-			{/* PIN Setting */}
 			<TouchableOpacity
 				style={[styles.card, { marginBottom: 12 }]}
 				onPress={() => setActiveSection('pin')}
@@ -1145,8 +1114,6 @@ export const ProfileScreen = () => {
 					<Text style={{ color: colors.primary }}>→</Text>
 				</View>
 			</TouchableOpacity>
-
-			{/* Biometric Setting */}
 			<TouchableOpacity
 				style={[styles.card, { marginBottom: 12 }]}
 				onPress={() => setActiveSection('biometric')}
@@ -1173,8 +1140,6 @@ export const ProfileScreen = () => {
 					<Text style={{ color: colors.primary }}>→</Text>
 				</View>
 			</TouchableOpacity>
-
-			{/* Backup & Restore Setting */}
 			{!user?.isAdmin && (
 				<TouchableOpacity
 					style={[styles.card, { marginBottom: 24 }]}
@@ -1207,7 +1172,6 @@ export const ProfileScreen = () => {
 					</View>
 				</TouchableOpacity>
 			)}
-
 			{user?.isAdmin && (
 				<View
 					style={[
@@ -1230,8 +1194,6 @@ export const ProfileScreen = () => {
 					</View>
 				</View>
 			)}
-
-			{/* App Info */}
 			<View style={[styles.card, { marginBottom: 24 }]}>
 				<Text style={[styles.subheader, { marginBottom: 12 }]}>
 					ℹ️ App Information
@@ -1271,8 +1233,6 @@ export const ProfileScreen = () => {
 					<Text style={{ color: colors.dark, fontSize: 12 }}>1.0.0</Text>
 				</View>
 			</View>
-
-			{/* Logout Button */}
 			<TouchableOpacity
 				style={[styles.button, styles.buttonDanger]}
 				onPress={() => {
