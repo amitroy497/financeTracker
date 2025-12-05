@@ -512,60 +512,6 @@ export const ProfileScreen = () => {
 					</View>
 				)}
 			</View>
-			<View style={{ marginTop: 16 }}>
-				<Text
-					style={{
-						color: colors.text,
-						fontSize: 14,
-						fontWeight: '600',
-						marginBottom: 8,
-					}}
-				>
-					Preview
-				</Text>
-				<View
-					style={{
-						backgroundColor: colors.cardBackground,
-						padding: 16,
-						borderRadius: 8,
-						borderWidth: 1,
-						borderColor: colors.border,
-					}}
-				>
-					<View style={[styles.row, { marginBottom: 8 }]}>
-						<View
-							style={{
-								width: 40,
-								height: 40,
-								backgroundColor: colors.primary,
-								borderRadius: 20,
-								marginRight: 12,
-							}}
-						/>
-						<View style={{ flex: 1 }}>
-							<Text style={{ color: colors.text, fontWeight: '600' }}>
-								Sample Card
-							</Text>
-							<Text style={{ color: colors.gray, fontSize: 12 }}>
-								This is how your app looks
-							</Text>
-						</View>
-					</View>
-					<View
-						style={{
-							height: 1,
-							backgroundColor: colors.border,
-							marginVertical: 8,
-						}}
-					/>
-					<Text style={{ color: colors.text, fontSize: 12 }}>
-						Text color: {colors.text}
-					</Text>
-					<Text style={{ color: colors.gray, fontSize: 12 }}>
-						Background: {colors.background}
-					</Text>
-				</View>
-			</View>
 		</View>
 	);
 

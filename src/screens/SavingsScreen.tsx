@@ -765,7 +765,6 @@ export const SavingsScreen = () => {
 						{
 							justifyContent: 'space-between',
 							alignItems: 'center',
-							marginBottom: 12,
 						},
 					]}
 				>

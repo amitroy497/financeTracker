@@ -735,7 +735,6 @@ export const ExpensesScreen = () => {
 						{
 							justifyContent: 'space-between',
 							alignItems: 'center',
-							marginBottom: 12,
 						},
 					]}
 				>

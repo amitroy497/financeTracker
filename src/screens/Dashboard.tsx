@@ -525,7 +525,12 @@ export const Dashboard = () => {
 	return (
 		<View style={styles.container}>
 			{/* Header */}
-			<View style={[styles.card, { backgroundColor: colors.primary }]}>
+			<View
+				style={[
+					styles.card,
+					{ backgroundColor: colors.primary, marginTop: 20 },
+				]}
+			>
 				<Text
 					style={[styles.header, { color: colors.white, textAlign: 'left' }]}
 				>
