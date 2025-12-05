@@ -1,5 +1,9 @@
 import { AuthProvider } from '@/auth';
-import { StatusBarComponent } from '@/components';
+import {
+	AutoThemeIndicator,
+	StatusBarComponent,
+	SystemThemeListener,
+} from '@/components';
 import { useAuth } from '@/hooks';
 import { BottomTabNavigator } from '@/Navigation/BottomTabNavigator';
 import { AuthScreen } from '@/screens';
@@ -19,6 +23,8 @@ const AppContent: React.FC = () => {
 
 	return (
 		<StatusBarComponent>
+			<SystemThemeListener />
+			<AutoThemeIndicator />
 			{isAuthenticated ? <BottomTabNavigator /> : <AuthScreen />}
 		</StatusBarComponent>
 	);

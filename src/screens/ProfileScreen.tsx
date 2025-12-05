@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 
 export const ProfileScreen = () => {
-	const { theme, colors, setTheme } = useTheme();
+	const { theme, colors, setTheme, toggleAutoTheme, autoTheme } = useTheme();
 	const styles = createStyles(colors);
 	const {
 		user,
@@ -369,8 +369,41 @@ export const ProfileScreen = () => {
 			<Text style={[styles.subheader, { marginBottom: 16 }]}>
 				🎨 Appearance Settings
 			</Text>
-
 			<View style={{ marginBottom: 20 }}>
+				<View
+					style={[
+						styles.row,
+						{
+							justifyContent: 'space-between',
+							alignItems: 'center',
+							marginBottom: 12,
+						},
+					]}
+				>
+					<View style={{ flex: 1 }}>
+						<Text
+							style={{
+								color: colors.text,
+								fontSize: 16,
+								fontWeight: '600',
+								marginBottom: 4,
+							}}
+						>
+							Auto Theme
+						</Text>
+						<Text style={{ color: colors.gray, fontSize: 12 }}>
+							Follow system appearance settings
+						</Text>
+					</View>
+					<Switch
+						value={autoTheme || false}
+						onValueChange={toggleAutoTheme}
+						trackColor={{ false: colors.lightGray, true: colors.primary }}
+						thumbColor={colors.white}
+					/>
+				</View>
+			</View>
+			<View style={{ marginBottom: 20, opacity: autoTheme ? 0.6 : 1 }}>
 				<Text
 					style={{
 						color: colors.text,
@@ -381,6 +414,23 @@ export const ProfileScreen = () => {
 				>
 					Theme
 				</Text>
+				{autoTheme && (
+					<View
+						style={{
+							backgroundColor: colors.infoLight,
+							padding: 8,
+							borderRadius: 6,
+							marginBottom: 8,
+							flexDirection: 'row',
+							alignItems: 'center',
+						}}
+					>
+						<Text style={{ fontSize: 14, marginRight: 6 }}>ℹ️</Text>
+						<Text style={{ color: colors.text, fontSize: 12, flex: 1 }}>
+							Theme selection disabled when Auto Theme is enabled
+						</Text>
+					</View>
+				)}
 				<View
 					style={[
 						styles.row,
@@ -399,15 +449,20 @@ export const ProfileScreen = () => {
 								borderRadius: 8,
 								alignItems: 'center',
 								backgroundColor:
-									theme === 'light' ? colors.primary : 'transparent',
+									!autoTheme && theme === 'light'
+										? colors.primary
+										: 'transparent',
 							},
 						]}
-						onPress={() => setTheme('light')}
+						onPress={() => !autoTheme && setTheme('light')}
+						disabled={autoTheme}
 					>
 						<Text
 							style={{
-								color: theme === 'light' ? colors.white : colors.text,
+								color:
+									!autoTheme && theme === 'light' ? colors.white : colors.text,
 								fontWeight: '600',
+								opacity: autoTheme ? 0.5 : 1,
 							}}
 						>
 							☀️ Light
@@ -421,43 +476,99 @@ export const ProfileScreen = () => {
 								borderRadius: 8,
 								alignItems: 'center',
 								backgroundColor:
-									theme === 'dark' ? colors.primary : 'transparent',
+									!autoTheme && theme === 'dark'
+										? colors.primary
+										: 'transparent',
 							},
 						]}
-						onPress={() => setTheme('dark')}
+						onPress={() => !autoTheme && setTheme('dark')}
+						disabled={autoTheme}
 					>
 						<Text
 							style={{
-								color: theme === 'dark' ? colors.white : colors.text,
+								color:
+									!autoTheme && theme === 'dark' ? colors.white : colors.text,
 								fontWeight: '600',
+								opacity: autoTheme ? 0.5 : 1,
 							}}
 						>
 							🌙 Dark
 						</Text>
 					</TouchableOpacity>
 				</View>
+				{autoTheme && (
+					<View
+						style={{
+							marginTop: 12,
+							padding: 8,
+							backgroundColor: colors.lightGray,
+							borderRadius: 6,
+							alignItems: 'center',
+						}}
+					>
+						<Text style={{ color: colors.text, fontSize: 12 }}>
+							Currently using: {theme === 'light' ? 'Light' : 'Dark'} theme
+						</Text>
+					</View>
+				)}
 			</View>
-			<View
-				style={[
-					styles.row,
-					{ justifyContent: 'space-between', alignItems: 'center' },
-				]}
-			>
-				<Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-					Auto Theme
-				</Text>
-				<Switch
-					value={false}
-					onValueChange={(value) => {
-						// You can implement auto theme based on system settings here
-						Alert.alert('Info', 'Auto theme feature coming soon!');
+			<View style={{ marginTop: 16 }}>
+				<Text
+					style={{
+						color: colors.text,
+						fontSize: 14,
+						fontWeight: '600',
+						marginBottom: 8,
 					}}
-					trackColor={{ false: colors.lightGray, true: colors.primary }}
-					thumbColor={colors.white}
-				/>
+				>
+					Preview
+				</Text>
+				<View
+					style={{
+						backgroundColor: colors.cardBackground,
+						padding: 16,
+						borderRadius: 8,
+						borderWidth: 1,
+						borderColor: colors.border,
+					}}
+				>
+					<View style={[styles.row, { marginBottom: 8 }]}>
+						<View
+							style={{
+								width: 40,
+								height: 40,
+								backgroundColor: colors.primary,
+								borderRadius: 20,
+								marginRight: 12,
+							}}
+						/>
+						<View style={{ flex: 1 }}>
+							<Text style={{ color: colors.text, fontWeight: '600' }}>
+								Sample Card
+							</Text>
+							<Text style={{ color: colors.gray, fontSize: 12 }}>
+								This is how your app looks
+							</Text>
+						</View>
+					</View>
+					<View
+						style={{
+							height: 1,
+							backgroundColor: colors.border,
+							marginVertical: 8,
+						}}
+					/>
+					<Text style={{ color: colors.text, fontSize: 12 }}>
+						Text color: {colors.text}
+					</Text>
+					<Text style={{ color: colors.gray, fontSize: 12 }}>
+						Background: {colors.background}
+					</Text>
+				</View>
 			</View>
 		</View>
 	);
+
 	if (activeSection === 'backup') {
 		if (user?.isAdmin) {
 			return (

@@ -8,6 +8,7 @@ import React, {
 	useEffect,
 	useState,
 } from 'react';
+import { useColorScheme } from 'react-native';
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
@@ -16,62 +17,116 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+	const systemColorScheme = useColorScheme();
 	const [theme, setThemeState] = useState<Theme>('light');
+	const [autoTheme, setAutoTheme] = useState<boolean>(false);
 	const [colors, setColors] = useState<typeof lightColors | typeof darkColors>(
 		lightColors
 	);
 
+	// Load saved theme settings on mount
 	useEffect(() => {
-		loadTheme();
+		loadThemeSettings();
 	}, []);
 
-	const updateColors = useCallback(() => {
-		setColors(theme === 'light' ? lightColors : darkColors);
-	}, [theme]);
-
-	useEffect(() => {
-		updateColors();
-	}, [theme, updateColors]);
-
-	const loadTheme = async (): Promise<void> => {
+	// Load theme settings from AsyncStorage
+	const loadThemeSettings = async (): Promise<void> => {
 		try {
 			const savedTheme = await AsyncStorage.getItem('app_theme');
-			if (savedTheme === 'light' || savedTheme === 'dark') {
+			const savedAutoTheme = await AsyncStorage.getItem('auto_theme');
+
+			if (savedAutoTheme === 'true') {
+				setAutoTheme(true);
+				// If auto theme is enabled, use system theme
+				setThemeState(systemColorScheme === 'dark' ? 'dark' : 'light');
+			} else if (savedTheme === 'light' || savedTheme === 'dark') {
+				setAutoTheme(false);
 				setThemeState(savedTheme);
 			} else {
-				// Default to light theme
+				// Default to light theme with auto theme off
+				setAutoTheme(false);
 				setThemeState('light');
 				await AsyncStorage.setItem('app_theme', 'light');
+				await AsyncStorage.setItem('auto_theme', 'false');
 			}
 		} catch (error) {
-			console.error('Error loading theme:', error);
+			console.error('Error loading theme settings:', error);
+			setAutoTheme(false);
 			setThemeState('light');
 		}
 	};
 
-	const saveTheme = async (newTheme: Theme): Promise<void> => {
+	// Update colors when theme changes
+	useEffect(() => {
+		setColors(theme === 'light' ? lightColors : darkColors);
+	}, [theme]);
+
+	// Watch for system theme changes when auto theme is enabled
+	useEffect(() => {
+		if (autoTheme && systemColorScheme) {
+			setThemeState(systemColorScheme === 'dark' ? 'dark' : 'light');
+			saveThemeSettings(
+				systemColorScheme === 'dark' ? 'dark' : 'light',
+				autoTheme
+			);
+		}
+	}, [systemColorScheme, autoTheme]);
+
+	// Save theme settings to AsyncStorage
+	const saveThemeSettings = async (
+		newTheme: Theme,
+		auto: boolean
+	): Promise<void> => {
 		try {
 			await AsyncStorage.setItem('app_theme', newTheme);
+			await AsyncStorage.setItem('auto_theme', auto ? 'true' : 'false');
 		} catch (error) {
-			console.error('Error saving theme:', error);
+			console.error('Error saving theme settings:', error);
 		}
 	};
 
-	const setTheme = (newTheme: Theme): void => {
-		setThemeState(newTheme);
-		saveTheme(newTheme);
-	};
+	const setTheme = useCallback(
+		(newTheme: Theme): void => {
+			setThemeState(newTheme);
+			saveThemeSettings(newTheme, autoTheme);
+		},
+		[autoTheme]
+	);
 
-	const toggleTheme = (): void => {
+	const toggleTheme = useCallback((): void => {
 		const newTheme = theme === 'light' ? 'dark' : 'light';
 		setTheme(newTheme);
-	};
+	}, [theme, setTheme]);
+
+	const toggleAutoTheme = useCallback(async (): Promise<void> => {
+		const newAutoTheme = !autoTheme;
+		setAutoTheme(newAutoTheme);
+
+		if (newAutoTheme) {
+			// If enabling auto theme, use system theme
+			const systemTheme = systemColorScheme === 'dark' ? 'dark' : 'light';
+			setThemeState(systemTheme);
+			await saveThemeSettings(systemTheme, newAutoTheme);
+		} else {
+			// If disabling auto theme, keep current theme
+			await saveThemeSettings(theme, newAutoTheme);
+		}
+	}, [autoTheme, systemColorScheme, theme]);
+
+	const setManualTheme = useCallback((newTheme: Theme): void => {
+		setAutoTheme(false);
+		setThemeState(newTheme);
+		saveThemeSettings(newTheme, false);
+	}, []);
 
 	const value: ThemeContextType = {
 		theme,
 		colors,
+		autoTheme,
 		toggleTheme,
-		setTheme,
+		setTheme: setManualTheme, // Override setTheme to disable auto theme
+		toggleAutoTheme,
+		setAutoTheme: toggleAutoTheme, // Alias for consistency
 	};
 
 	return (

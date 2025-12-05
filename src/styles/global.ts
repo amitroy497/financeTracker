@@ -51,8 +51,11 @@ export type ThemeColors = typeof lightColors | typeof darkColors;
 export interface ThemeContextType {
 	theme: Theme;
 	colors: typeof lightColors | typeof darkColors;
+	autoTheme?: boolean;
 	toggleTheme: () => void;
 	setTheme: (theme: Theme) => void;
+	toggleAutoTheme?: () => Promise<void>;
+	setAutoTheme?: (enabled: boolean) => void;
 }
 
 // Create styles that adapt to theme
