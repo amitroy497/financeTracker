@@ -8,7 +8,7 @@ import React, {
 	useEffect,
 	useState,
 } from 'react';
-import { useColorScheme } from 'react-native';
+import { AppState, useColorScheme } from 'react-native';
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
@@ -23,54 +23,100 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 	const [colors, setColors] = useState<typeof lightColors | typeof darkColors>(
 		lightColors
 	);
+	const [appState, setAppState] = useState(AppState.currentState);
+	const [isInitialized, setIsInitialized] = useState(false);
 
 	// Load saved theme settings on mount
 	useEffect(() => {
 		loadThemeSettings();
 	}, []);
 
+	// Listen for app state changes to detect when app comes to foreground
+	useEffect(() => {
+		const subscription = AppState.addEventListener('change', (nextAppState) => {
+			if (appState.match(/inactive|background/) && nextAppState === 'active') {
+				// When app becomes active, check if auto theme is enabled and sync
+				if (autoTheme) {
+					console.log('App became active, syncing theme with system...');
+					syncWithSystemTheme();
+				}
+			}
+			setAppState(nextAppState);
+		});
+
+		return () => {
+			subscription.remove();
+		};
+	}, [autoTheme, appState]);
+
+	// Listen for system theme changes
+	useEffect(() => {
+		if (autoTheme && systemColorScheme && isInitialized) {
+			console.log('System theme changed to:', systemColorScheme);
+			syncWithSystemTheme();
+		}
+	}, [systemColorScheme, autoTheme, isInitialized]);
+
 	// Load theme settings from AsyncStorage
 	const loadThemeSettings = async (): Promise<void> => {
 		try {
-			const savedTheme = await AsyncStorage.getItem('app_theme');
-			const savedAutoTheme = await AsyncStorage.getItem('auto_theme');
+			const [savedTheme, savedAutoTheme] = await Promise.all([
+				AsyncStorage.getItem('app_theme'),
+				AsyncStorage.getItem('auto_theme'),
+			]);
 
-			if (savedAutoTheme === 'true') {
-				setAutoTheme(true);
+			console.log('Loading theme settings:', { savedTheme, savedAutoTheme });
+
+			// Parse auto theme setting
+			const isAutoTheme = savedAutoTheme === 'true';
+			setAutoTheme(isAutoTheme);
+
+			if (isAutoTheme && systemColorScheme) {
 				// If auto theme is enabled, use system theme
-				setThemeState(systemColorScheme === 'dark' ? 'dark' : 'light');
+				const initialTheme = systemColorScheme === 'dark' ? 'dark' : 'light';
+				console.log('Auto theme enabled, using system theme:', initialTheme);
+				setThemeState(initialTheme);
+				setColors(initialTheme === 'light' ? lightColors : darkColors);
+				await AsyncStorage.setItem('app_theme', initialTheme);
 			} else if (savedTheme === 'light' || savedTheme === 'dark') {
-				setAutoTheme(false);
+				// Use saved theme if auto theme is disabled
+				console.log('Using saved theme:', savedTheme);
 				setThemeState(savedTheme);
+				setColors(savedTheme === 'light' ? lightColors : darkColors);
 			} else {
-				// Default to light theme with auto theme off
-				setAutoTheme(false);
+				// Default to light theme
+				console.log('Using default light theme');
 				setThemeState('light');
-				await AsyncStorage.setItem('app_theme', 'light');
-				await AsyncStorage.setItem('auto_theme', 'false');
+				setColors(lightColors);
+				await Promise.all([
+					AsyncStorage.setItem('app_theme', 'light'),
+					AsyncStorage.setItem('auto_theme', 'false'),
+				]);
 			}
+
+			setIsInitialized(true);
 		} catch (error) {
 			console.error('Error loading theme settings:', error);
 			setAutoTheme(false);
 			setThemeState('light');
+			setColors(lightColors);
+			setIsInitialized(true);
 		}
 	};
 
-	// Update colors when theme changes
-	useEffect(() => {
-		setColors(theme === 'light' ? lightColors : darkColors);
-	}, [theme]);
+	// Sync theme with current system theme
+	const syncWithSystemTheme = useCallback(() => {
+		if (systemColorScheme && autoTheme) {
+			const newTheme = systemColorScheme === 'dark' ? 'dark' : 'light';
+			console.log('Syncing theme with system:', newTheme);
 
-	// Watch for system theme changes when auto theme is enabled
-	useEffect(() => {
-		if (autoTheme && systemColorScheme) {
-			setThemeState(systemColorScheme === 'dark' ? 'dark' : 'light');
-			saveThemeSettings(
-				systemColorScheme === 'dark' ? 'dark' : 'light',
-				autoTheme
-			);
+			if (theme !== newTheme) {
+				setThemeState(newTheme);
+				setColors(newTheme === 'light' ? lightColors : darkColors);
+				AsyncStorage.setItem('app_theme', newTheme).catch(console.error);
+			}
 		}
-	}, [systemColorScheme, autoTheme]);
+	}, [systemColorScheme, autoTheme, theme]);
 
 	// Save theme settings to AsyncStorage
 	const saveThemeSettings = async (
@@ -78,55 +124,61 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 		auto: boolean
 	): Promise<void> => {
 		try {
-			await AsyncStorage.setItem('app_theme', newTheme);
-			await AsyncStorage.setItem('auto_theme', auto ? 'true' : 'false');
+			console.log('Saving theme settings:', { newTheme, auto });
+			await Promise.all([
+				AsyncStorage.setItem('app_theme', newTheme),
+				AsyncStorage.setItem('auto_theme', auto ? 'true' : 'false'),
+			]);
 		} catch (error) {
 			console.error('Error saving theme settings:', error);
 		}
 	};
 
-	const setTheme = useCallback(
-		(newTheme: Theme): void => {
-			setThemeState(newTheme);
-			saveThemeSettings(newTheme, autoTheme);
-		},
-		[autoTheme]
-	);
+	const setTheme = useCallback((newTheme: Theme): void => {
+		console.log('Setting manual theme:', newTheme);
+		setThemeState(newTheme);
+		setColors(newTheme === 'light' ? lightColors : darkColors);
+		saveThemeSettings(newTheme, false); // Disable auto theme when manually setting
+		setAutoTheme(false);
+	}, []);
 
 	const toggleTheme = useCallback((): void => {
 		const newTheme = theme === 'light' ? 'dark' : 'light';
+		console.log('Toggling theme to:', newTheme);
 		setTheme(newTheme);
 	}, [theme, setTheme]);
 
 	const toggleAutoTheme = useCallback(async (): Promise<void> => {
 		const newAutoTheme = !autoTheme;
+		console.log('Toggling auto theme to:', newAutoTheme);
 		setAutoTheme(newAutoTheme);
 
-		if (newAutoTheme) {
-			// If enabling auto theme, use system theme
+		if (newAutoTheme && systemColorScheme) {
+			// If enabling auto theme, sync with system theme
 			const systemTheme = systemColorScheme === 'dark' ? 'dark' : 'light';
+			console.log('Enabling auto theme, syncing with system:', systemTheme);
 			setThemeState(systemTheme);
+			setColors(systemTheme === 'light' ? lightColors : darkColors);
 			await saveThemeSettings(systemTheme, newAutoTheme);
 		} else {
 			// If disabling auto theme, keep current theme
+			console.log('Disabling auto theme, keeping:', theme);
 			await saveThemeSettings(theme, newAutoTheme);
 		}
 	}, [autoTheme, systemColorScheme, theme]);
-
-	const setManualTheme = useCallback((newTheme: Theme): void => {
-		setAutoTheme(false);
-		setThemeState(newTheme);
-		saveThemeSettings(newTheme, false);
-	}, []);
 
 	const value: ThemeContextType = {
 		theme,
 		colors,
 		autoTheme,
 		toggleTheme,
-		setTheme: setManualTheme, // Override setTheme to disable auto theme
+		setTheme,
 		toggleAutoTheme,
-		setAutoTheme: toggleAutoTheme, // Alias for consistency
+		setAutoTheme: (enabled: boolean) => {
+			if (enabled !== autoTheme) {
+				toggleAutoTheme();
+			}
+		},
 	};
 
 	return (
@@ -134,7 +186,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 	);
 };
 
-// Custom hook to use theme
 export const useTheme = (): ThemeContextType => {
 	const context = useContext(ThemeContext);
 	if (!context) {

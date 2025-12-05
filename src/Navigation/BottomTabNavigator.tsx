@@ -16,7 +16,7 @@ export const BottomTabNavigator: React.FC = () => {
 
 	useEffect(() => {
 		setKey((prev) => prev + 1);
-	}, [theme]);
+	}, [theme, colors]);
 
 	const navigationTheme = React.useMemo(() => {
 		const baseTheme = theme === 'dark' ? DarkTheme : DefaultTheme;

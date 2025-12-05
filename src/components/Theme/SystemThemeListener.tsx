@@ -1,17 +1,17 @@
-// src/components/Theme/SystemThemeListener.tsx
 import { useTheme } from '@/theme';
 import React, { useEffect } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, useColorScheme } from 'react-native';
 
 export const SystemThemeListener: React.FC = () => {
-	const { autoTheme, toggleAutoTheme } = useTheme();
+	const { autoTheme } = useTheme();
+	const systemColorScheme = useColorScheme();
 
 	useEffect(() => {
-		if (!autoTheme) return;
-
 		const handleAppStateChange = (nextAppState: AppStateStatus) => {
-			if (nextAppState === 'active') {
-				toggleAutoTheme && toggleAutoTheme();
+			if (nextAppState === 'active' && autoTheme) {
+				// Force a re-evaluation of the system theme when app comes to foreground
+				console.log('App active, checking system theme:', systemColorScheme);
+				// The ThemeProvider will handle the actual theme sync
 			}
 		};
 
@@ -23,8 +23,7 @@ export const SystemThemeListener: React.FC = () => {
 		return () => {
 			subscription.remove();
 		};
-	}, [autoTheme]);
+	}, [autoTheme, systemColorScheme]);
 
-	// This component doesn't render anything
 	return null;
 };
