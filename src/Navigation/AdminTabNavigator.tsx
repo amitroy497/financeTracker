@@ -1,11 +1,8 @@
-import { useAuth } from '@/hooks';
 import { AdminScreen, ProfileScreen } from '@/screens';
 import { Text } from 'react-native';
 import { Tab } from './TabNavigator';
 
 export const AdminTabNavigator: React.FC = () => {
-	const { user } = useAuth();
-
 	return (
 		<Tab.Navigator
 			screenOptions={{

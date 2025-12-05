@@ -1,5 +1,3 @@
-// src/screens/AdminScreen.tsx
-
 import { UserForm } from '@/components';
 import { useAuth } from '@/hooks';
 import { authService } from '@/services/authService';
