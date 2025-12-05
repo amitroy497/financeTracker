@@ -8,6 +8,7 @@ import React from 'react';
 
 const AppContent: React.FC = () => {
 	const { isAuthenticated, isLoading } = useAuth();
+
 	if (isLoading) {
 		return (
 			<StatusBarComponent>
@@ -15,6 +16,7 @@ const AppContent: React.FC = () => {
 			</StatusBarComponent>
 		);
 	}
+
 	return (
 		<StatusBarComponent>
 			{isAuthenticated ? <BottomTabNavigator /> : <AuthScreen />}

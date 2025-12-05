@@ -348,6 +348,10 @@ export const AuthScreen = () => {
 		>
 			<View style={{ padding: 20 }}>
 				<Text style={styles.header}>🔐 Finance Tracker</Text>
+				<View style={styles.headerContainer}>
+					<Text style={styles.headerPower}>Created by </Text>
+					<Text style={styles.headerName}>Amit Roy</Text>
+				</View>
 				<Text
 					style={{ color: colors.gray, textAlign: 'center', marginBottom: 30 }}
 				>

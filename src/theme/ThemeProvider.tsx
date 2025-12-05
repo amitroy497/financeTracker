@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {
 	createContext,
 	ReactNode,
+	useCallback,
 	useContext,
 	useEffect,
 	useState,
@@ -20,15 +21,17 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 		lightColors
 	);
 
-	// Load saved theme on mount
 	useEffect(() => {
 		loadTheme();
 	}, []);
 
-	// Update colors when theme changes
-	useEffect(() => {
-		return setColors(theme === 'light' ? lightColors : darkColors);
+	const updateColors = useCallback(() => {
+		setColors(theme === 'light' ? lightColors : darkColors);
 	}, [theme]);
+
+	useEffect(() => {
+		updateColors();
+	}, [theme, updateColors]);
 
 	const loadTheme = async (): Promise<void> => {
 		try {

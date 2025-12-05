@@ -8,36 +8,35 @@ export const AdminTabNavigator: React.FC = () => {
 
 	return (
 		<Tab.Navigator
-			screenOptions={({ route }) => ({
+			screenOptions={{
+				headerShown: false,
 				tabBarStyle: {
 					backgroundColor: colors.cardBackground,
-					borderTopWidth: 1,
 					borderTopColor: colors.border,
-					elevation: 0,
-					shadowOpacity: 0,
+					borderTopWidth: 1,
+					height: 60,
+					paddingBottom: 5,
+					paddingTop: 5,
 				},
 				tabBarActiveTintColor: colors.primary,
 				tabBarInactiveTintColor: colors.gray,
-				tabBarActiveBackgroundColor: colors.lightGray,
-				tabBarInactiveBackgroundColor: colors.cardBackground,
 				headerStyle: {
-					backgroundColor: colors.cardBackground,
+					backgroundColor: colors.background,
 					elevation: 0,
 					shadowOpacity: 0,
+					borderBottomWidth: 1,
+					borderBottomColor: colors.border,
 				},
 				headerTitleStyle: {
-					fontWeight: '600',
 					color: colors.text,
+					fontWeight: '600',
 				},
 				headerTintColor: colors.primary,
 				tabBarLabelStyle: {
 					fontSize: 12,
 					fontWeight: '500',
 				},
-				tabBarIconStyle: {
-					marginTop: 4, // Adjust icon position if needed
-				},
-			})}
+			}}
 		>
 			<Tab.Screen
 				name='Admin'

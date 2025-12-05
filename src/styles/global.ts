@@ -74,6 +74,21 @@ export const createStyles = (colors: ThemeColors) =>
 			marginBottom: 20,
 			color: colors.text,
 		},
+		headerContainer: {
+			flexDirection: 'row' as const,
+			justifyContent: 'center' as const,
+			marginBottom: 10,
+			alignItems: 'center' as const,
+		},
+		headerPower: {
+			fontSize: 16,
+			color: colors.text,
+		},
+		headerName: {
+			fontSize: 18,
+			fontWeight: 'bold' as const,
+			color: colors.text,
+		},
 		subHeading: {
 			fontSize: 18,
 			fontWeight: 'bold' as const,
