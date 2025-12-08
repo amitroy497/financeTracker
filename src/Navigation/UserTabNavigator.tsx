@@ -1,5 +1,6 @@
 import {
 	Dashboard,
+	DividendsScreen,
 	ExpensesScreen,
 	ProfileScreen,
 	SavingsScreen,
@@ -68,6 +69,16 @@ export const UserTabNavigator: React.FC = () => {
 				component={SavingsScreen}
 				options={{
 					title: 'Savings',
+					tabBarIcon: ({ color, size }) => (
+						<Text style={{ color, fontSize: size }}>💰</Text>
+					),
+				}}
+			/>
+			<Tab.Screen
+				name='Dividends'
+				component={DividendsScreen}
+				options={{
+					title: 'Dividends',
 					tabBarIcon: ({ color, size }) => (
 						<Text style={{ color, fontSize: size }}>💰</Text>
 					),

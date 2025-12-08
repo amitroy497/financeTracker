@@ -201,17 +201,14 @@ export interface DashboardData {
 	npsAccounts: NationalPensionScheme[];
 }
 
-// Navigation types
 export type AppTabParamList = {
 	Dashboard: undefined;
 	Expenses: undefined;
 	Savings: undefined;
-	Assets: undefined;
+	Dividends: undefined;
 	Profile: undefined;
 	Admin?: undefined;
 };
-
-// Add these new types for asset data storage
 
 export interface AssetData {
 	summary: AssetSummary;
@@ -438,8 +435,10 @@ export interface YearlyFinancialData {
 	year: string; // Format: "2024-2025" for financial year
 	totalValue?: number;
 	totalExpenses?: number;
+	totalIncome?: number;
 	categoryTotals: { [category: string]: number };
 	monthlyTotals: { [month: string]: number }; // Format: "YYYY-MM"
+	companyTotals?: { [company: string]: number };
 	createdAt: string;
 	updatedAt: string;
 }
@@ -451,17 +450,10 @@ export interface UserDataExport {
 	exportDate: string;
 	userId: string;
 	username: string;
-
-	// Assets data
 	assets: AssetData;
-
-	// Expenses data
-	expenses: any[]; // From ExpensesScreen
-
-	// Savings data
-	savings: any[]; // From SavingsScreen
-
-	// User settings
+	expenses: any[];
+	savings: any[];
+	dividends: any[];
 	userSettings: {
 		email?: string;
 		biometricEnabled: boolean;
@@ -677,3 +669,39 @@ export type UserTabParamList = {
 	Assets: undefined;
 	Profile: undefined;
 };
+
+export interface Dividend {
+	id: string;
+	amount: number;
+	company: string;
+	stockSymbol?: string;
+	category: string;
+	date: string;
+	createdAt: string;
+	notes?: string;
+	quantity?: number;
+	dividendPerShare?: number;
+}
+
+export interface DividendFormData {
+	id?: string;
+	amount: string;
+	company: string;
+	stockSymbol: string;
+	category: string;
+	date: string;
+	notes: string;
+	quantity: string;
+	dividendPerShare: string;
+}
+export interface DividendFormData {
+	id?: string;
+	amount: string;
+	company: string;
+	stockSymbol: string;
+	category: string;
+	date: string;
+	notes: string;
+	quantity: string;
+	dividendPerShare: string;
+}

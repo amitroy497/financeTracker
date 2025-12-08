@@ -6,13 +6,14 @@ import * as Sharing from 'expo-sharing';
 export class DataBackupService {
 	private static readonly EXPORT_VERSION = '1.0.0';
 
-	// Get all file paths for a user
 	private static async getUserDataFilePaths(userId: string): Promise<{
 		assetsPath: string;
 		expensesPath: string;
 		savingsPath: string;
 		yearlyExpensesPath: string;
 		yearlyFinancialPath: string;
+		dividendsPath: string;
+		yearlyDividendsPath: string;
 	}> {
 		const baseDir = FileSystem.documentDirectory;
 		return {
@@ -21,10 +22,11 @@ export class DataBackupService {
 			savingsPath: `${baseDir}savings_${userId}.json`,
 			yearlyExpensesPath: `${baseDir}yearly_expenses_${userId}.json`,
 			yearlyFinancialPath: `${baseDir}yearly_financial_${userId}.json`,
+			dividendsPath: `${baseDir}dividends_${userId}.json`,
+			yearlyDividendsPath: `${baseDir}yearly_dividends_${userId}.json`,
 		};
 	}
 
-	// Export all user data
 	static async exportUserData(
 		userId: string,
 		username: string
@@ -32,19 +34,22 @@ export class DataBackupService {
 		try {
 			const filePaths = await this.getUserDataFilePaths(userId);
 
-			// Read all data files
 			const [
 				assetsData,
 				expensesData,
 				savingsData,
 				yearlyExpensesData,
 				yearlyFinancialData,
+				dividendsData,
+				yearlyDividendsData,
 			] = await Promise.all([
 				this.readJsonFile(filePaths.assetsPath),
 				this.readJsonFile(filePaths.expensesPath),
 				this.readJsonFile(filePaths.savingsPath),
 				this.readJsonFile(filePaths.yearlyExpensesPath),
 				this.readJsonFile(filePaths.yearlyFinancialPath),
+				this.readJsonFile(filePaths.dividendsPath),
+				this.readJsonFile(filePaths.yearlyDividendsPath),
 			]);
 
 			// Create export object
@@ -82,6 +87,7 @@ export class DataBackupService {
 				},
 				expenses: expensesData?.expenses || [],
 				savings: savingsData?.savings || [],
+				dividends: dividendsData?.dividends || [],
 				userSettings: {
 					biometricEnabled: false,
 				},
@@ -107,7 +113,6 @@ export class DataBackupService {
 		}
 	}
 
-	// Import user data
 	static async importUserData(
 		userId: string,
 		importData: UserDataExport
@@ -115,14 +120,12 @@ export class DataBackupService {
 		try {
 			const filePaths = await this.getUserDataFilePaths(userId);
 
-			// Validate export version
 			if (importData.version !== this.EXPORT_VERSION) {
 				throw new Error(
 					`Invalid export file version. Expected ${this.EXPORT_VERSION}, got ${importData.version}`
 				);
 			}
 
-			// Create user_data directory if it doesn't exist
 			const userDataDir = `${FileSystem.documentDirectory}user_data/`;
 			const dirInfo = await FileSystem.getInfoAsync(userDataDir);
 			if (!dirInfo.exists) {
@@ -131,27 +134,27 @@ export class DataBackupService {
 				});
 			}
 
-			// Write all data files
 			await Promise.all([
-				// Assets data
 				FileSystem.writeAsStringAsync(
 					filePaths.assetsPath,
 					JSON.stringify(importData.assets, null, 2)
 				),
 
-				// Expenses data
 				FileSystem.writeAsStringAsync(
 					filePaths.expensesPath,
 					JSON.stringify({ expenses: importData.expenses }, null, 2)
 				),
 
-				// Savings data
 				FileSystem.writeAsStringAsync(
 					filePaths.savingsPath,
 					JSON.stringify({ savings: importData.savings }, null, 2)
 				),
 
-				// Initialize yearly data files
+				FileSystem.writeAsStringAsync(
+					filePaths.dividendsPath,
+					JSON.stringify({ dividends: importData.dividends || [] }, null, 2)
+				),
+
 				this.initializeYearlyFiles(userId),
 			]);
 
@@ -278,6 +281,16 @@ export class DataBackupService {
 				updatedAt: new Date().toISOString(),
 			};
 
+			const yearlyDividendsData = {
+				year: financialYear,
+				totalIncome: 0,
+				categoryTotals: {},
+				monthlyTotals: {},
+				companyTotals: {},
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString(),
+			};
+
 			await Promise.all([
 				FileSystem.writeAsStringAsync(
 					filePaths.yearlyExpensesPath,
@@ -287,14 +300,15 @@ export class DataBackupService {
 					filePaths.yearlyFinancialPath,
 					JSON.stringify(yearlyFinancialData, null, 2)
 				),
+				FileSystem.writeAsStringAsync(
+					filePaths.yearlyDividendsPath,
+					JSON.stringify(yearlyDividendsData, null, 2)
+				),
 			]);
 		} catch (error) {
 			console.error('Error initializing yearly files:', error);
 		}
 	}
-
-	// src/utils/dataBackup.ts
-	// Update the getExportInfo method to exclude admin data:
 
 	static async getExportInfo(userId: string): Promise<{
 		lastExport?: string;
@@ -302,11 +316,9 @@ export class DataBackupService {
 		itemsCount: number;
 	}> {
 		try {
-			// Check if this is an admin user
 			const authService = require('@/services/authService').authService;
 			const user = await authService.getUserById(userId);
 
-			// For admin users, return minimal info or empty
 			if (user?.isAdmin) {
 				return {
 					itemsCount: 0,
@@ -318,6 +330,7 @@ export class DataBackupService {
 				FileSystem.getInfoAsync(filePaths.assetsPath),
 				FileSystem.getInfoAsync(filePaths.expensesPath),
 				FileSystem.getInfoAsync(filePaths.savingsPath),
+				FileSystem.getInfoAsync(filePaths.dividendsPath),
 			]);
 
 			let totalSize = 0;
@@ -332,10 +345,10 @@ export class DataBackupService {
 				}
 			});
 
-			// Count items
 			const assetsData = await this.readJsonFile(filePaths.assetsPath);
 			const expensesData = await this.readJsonFile(filePaths.expensesPath);
 			const savingsData = await this.readJsonFile(filePaths.savingsPath);
+			const dividendsData = await this.readJsonFile(filePaths.dividendsPath);
 
 			const itemsCount =
 				(assetsData?.bankAccounts?.length || 0) +
@@ -349,7 +362,8 @@ export class DataBackupService {
 				(assetsData?.frbBonds?.length || 0) +
 				(assetsData?.npsAccounts?.length || 0) +
 				(expensesData?.expenses?.length || 0) +
-				(savingsData?.savings?.length || 0);
+				(savingsData?.savings?.length || 0) +
+				(dividendsData?.dividends?.length || 0);
 
 			return {
 				lastExport: lastModified
@@ -364,7 +378,6 @@ export class DataBackupService {
 		}
 	}
 
-	// Check if user has any data
 	static async hasUserData(userId: string): Promise<boolean> {
 		try {
 			const info = await this.getExportInfo(userId);
