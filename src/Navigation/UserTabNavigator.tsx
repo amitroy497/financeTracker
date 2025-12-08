@@ -70,7 +70,7 @@ export const UserTabNavigator: React.FC = () => {
 				options={{
 					title: 'Savings',
 					tabBarIcon: ({ color, size }) => (
-						<Text style={{ color, fontSize: size }}>💰</Text>
+						<Text style={{ color, fontSize: size }}>🐖</Text>
 					),
 				}}
 			/>
@@ -80,7 +80,7 @@ export const UserTabNavigator: React.FC = () => {
 				options={{
 					title: 'Dividends',
 					tabBarIcon: ({ color, size }) => (
-						<Text style={{ color, fontSize: size }}>💰</Text>
+						<Text style={{ color, fontSize: size }}>📥</Text>
 					),
 				}}
 			/>

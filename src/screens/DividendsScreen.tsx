@@ -767,7 +767,7 @@ export const DividendsScreen = () => {
 						},
 					]}
 				>
-					<Text style={styles.header}>💰 Dividend Tracker</Text>
+					<Text style={styles.header}>📥 Dividend Tracker</Text>
 				</View>
 				<View style={{ alignItems: 'flex-end', marginBottom: 16 }}>
 					<TouchableOpacity onPress={() => setShowCategoryTiles(true)}>

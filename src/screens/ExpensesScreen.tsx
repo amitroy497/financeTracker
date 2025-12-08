@@ -738,7 +738,7 @@ export const ExpensesScreen = () => {
 						},
 					]}
 				>
-					<Text style={styles.header}>💰 Expense Tracker</Text>
+					<Text style={styles.header}>💸 Expense Tracker</Text>
 				</View>
 				<View style={{ alignItems: 'flex-end', marginBottom: 16 }}>
 					<TouchableOpacity onPress={() => setShowCategoryTiles(true)}>

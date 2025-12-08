@@ -1,4 +1,8 @@
 {
+	"cli": {
+		"version": ">= 10.1.0",
+		"appVersionSource": "local"
+	},
 	"build": {
 		"preview": {
 			"android": {

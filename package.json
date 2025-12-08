@@ -14,7 +14,8 @@
 		"prebuild": "npm run type-check",
 		"version:patch": "npm install && git add . && git commit -m \"chore: update\" && npm version patch -m \"chore(release): bump patch to %s\" && git push --follow-tags",
 		"version:minor": "npm install && git add . && git commit -m \"chore: update\" && npm version minor -m \"chore(release): bump minor to %s\" && git push --follow-tags",
-		"version:major": "npm install && git add . && git commit -m \"chore: update\" && npm version major -m \"chore(release): bump major to %s\" && git push --follow-tags"
+		"version:major": "npm install && git add . && git commit -m \"chore: update\" && npm version major -m \"chore(release): bump major to %s\" && git push --follow-tags",
+		"auto:patch-build": "ts-node scripts/autoPatchBuild.ts"
 	},
 	"dependencies": {
 		"@expo/vector-icons": "^15.0.3",
@@ -48,6 +49,7 @@
 		"@types/react-native-vector-icons": "^6.4.18",
 		"babel-plugin-module-resolver": "^5.0.2",
 		"babel-preset-expo": "^54.0.7",
+		"ts-node": "^10.9.2",
 		"typescript": "~5.9.2"
 	},
 	"private": true

@@ -768,7 +768,7 @@ export const SavingsScreen = () => {
 						},
 					]}
 				>
-					<Text style={styles.header}>💰 Savings Tracker</Text>
+					<Text style={styles.header}>🐖 Savings Tracker</Text>
 				</View>
 				<View style={{ alignItems: 'flex-end', marginBottom: 16 }}>
 					<TouchableOpacity onPress={() => setShowCategoryTiles(true)}>
