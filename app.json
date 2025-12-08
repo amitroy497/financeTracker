@@ -2,7 +2,7 @@
   "expo": {
     "name": "RoyTracker",
     "slug": "RoyTracker",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "10006"
+      "buildNumber": "10007"
     },
     "android": {
       "adaptiveIcon": {
@@ -32,7 +32,7 @@
         "android.permission.INTERNET"
       ],
       "package": "com.amitroy2024.RoyTracker",
-      "versionCode": 10006
+      "versionCode": 10007
     },
     "web": {
       "favicon": "./assets/favicon.png"
