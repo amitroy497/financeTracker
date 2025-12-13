@@ -1,3 +1,5 @@
+import { KeyboardType } from 'react-native';
+
 // Item types
 export interface Item {
 	id: string;
@@ -134,35 +136,46 @@ export interface AssetSummary {
 	fixedDeposits: number;
 	recurringDeposits: number;
 	mutualFunds: number;
+	goldETFs: number;
+	stocks: number;
+	equityETFs: number;
+	ppf: number;
+	frb: number;
+	nps: number;
 	otherAssets: number;
 }
 
 export interface BankAccount {
 	id: string;
+	accountName: string;
 	bankName: string;
-	accountNumber: string;
+	accountNumber?: string;
 	accountType: 'Savings' | 'Current' | 'Salary';
 	balance: number;
-	currency: string;
+	currency?: string;
+	interestRate?: number;
+	notes?: string;
 	lastUpdated: string;
+	createdAt?: string;
 }
 
 export interface FixedDeposit {
 	id: string;
 	bankName: string;
-	depositNumber: string;
+	depositNumber?: string;
 	amount: number;
 	interestRate: number;
 	startDate: string;
 	maturityDate: string;
 	tenure: number; // in months
 	status: 'Active' | 'Matured';
+	description?: string;
 }
 
 export interface RecurringDeposit {
 	id: string;
 	bankName: string;
-	accountNumber: string;
+	accountNumber?: string;
 	monthlyAmount: number;
 	totalAmount: number;
 	interestRate: number;
@@ -170,19 +183,21 @@ export interface RecurringDeposit {
 	maturityDate: string;
 	tenure: number; // in months
 	completedMonths: number;
+	description?: string;
 }
 
 export interface MutualFund {
 	id: string;
-	fundName: string;
+	schemeName: string;
 	fundHouse: string;
-	folioNumber: string;
-	investmentType: 'Equity' | 'Debt' | 'Hybrid' | 'ELSS';
-	currentValue: number;
+	folioNumber?: string;
+	fundType: 'Equity' | 'Debt' | 'Hybrid' | 'ELSS' | string;
 	investedAmount: number;
 	units: number;
 	nav: number;
+	currentValue: number;
 	returns: number;
+	notes?: string;
 	lastUpdated: string;
 }
 
@@ -220,39 +235,45 @@ export interface AssetData {
 }
 
 export interface CreateBankAccountData {
+	accountName?: string;
 	bankName: string;
-	accountNumber: string;
+	accountNumber?: string;
 	accountType: 'Savings' | 'Current' | 'Salary';
 	balance: number;
-	currency: string;
+	currency?: string;
+	interestRate?: number;
+	notes?: string;
 }
 
 export interface CreateFixedDepositData {
 	bankName: string;
-	depositNumber: string;
+	depositNumber?: string;
 	amount: number;
 	interestRate: number;
 	startDate: string;
 	tenure: number;
+	description?: string;
 }
 
 export interface CreateRecurringDepositData {
 	bankName: string;
-	accountNumber: string;
+	accountNumber?: string;
 	monthlyAmount: number;
 	interestRate: number;
 	startDate: string;
 	tenure: number;
+	description?: string;
 }
 
 export interface CreateMutualFundData {
-	fundName: string;
+	schemeName: string;
 	fundHouse: string;
-	folioNumber: string;
-	investmentType: 'Equity' | 'Debt' | 'Hybrid' | 'ELSS';
+	folioNumber?: string;
+	fundType: 'Equity' | 'Debt' | 'Hybrid' | 'ELSS' | string;
 	investedAmount: number;
 	units: number;
 	nav: number;
+	notes?: string;
 }
 
 // Add new asset types
@@ -260,71 +281,77 @@ export interface CreateMutualFundData {
 export interface GoldETF {
 	id: string;
 	etfName: string;
-	symbol: string;
+	symbol?: string;
 	units: number;
 	currentPrice: number;
 	investedAmount: number;
 	currentValue: number;
 	returns: number;
+	notes?: string;
 	lastUpdated: string;
 }
 
 export interface Stock {
 	id: string;
 	companyName: string;
-	symbol: string;
-	exchange: 'NSE' | 'BSE';
+	symbol?: string;
+	exchange?: 'NSE' | 'BSE';
 	quantity: number;
 	averagePrice: number;
 	currentPrice: number;
 	investedAmount: number;
 	currentValue: number;
 	returns: number;
+	notes?: string;
 	lastUpdated: string;
 }
 
 export interface EquityETF {
 	id: string;
 	etfName: string;
-	symbol: string;
+	symbol?: string;
 	units: number;
 	currentNav: number;
 	investedAmount: number;
 	currentValue: number;
 	returns: number;
+	notes?: string;
 	lastUpdated: string;
 }
 
 export interface PublicProvidentFund {
 	id: string;
-	accountNumber: string;
-	financialYear: string;
+	accountNumber?: string;
+	financialYear?: string;
 	totalDeposits: number;
 	currentBalance: number;
 	interestRate: number;
 	maturityDate: string;
+	notes?: string;
 	lastUpdated: string;
 }
 
 export interface FloatingRateBond {
 	id: string;
 	bondName: string;
-	certificateNumber: string;
+	certificateNumber?: string;
 	investmentAmount: number;
 	currentValue: number;
 	interestRate: number;
-	purchaseDate: string;
+	purchaseDate?: string;
 	maturityDate: string;
+	notes?: string;
 	lastUpdated: string;
 }
 
 export interface NationalPensionScheme {
 	id: string;
-	pranNumber: string;
+	pranNumber?: string;
 	totalContribution: number;
 	currentValue: number;
 	returns: number;
-	lastContributionDate: string;
+	lastContributionDate?: string;
+	notes?: string;
 	lastUpdated: string;
 }
 
@@ -363,51 +390,57 @@ export interface AssetSummary {
 // Create interfaces for new asset types
 export interface CreateGoldETFData {
 	etfName: string;
-	symbol: string;
+	symbol?: string;
 	units: number;
 	currentPrice: number;
 	investedAmount: number;
+	notes?: string;
 }
 
 export interface CreateStockData {
 	companyName: string;
-	symbol: string;
-	exchange: 'NSE' | 'BSE';
+	symbol?: string;
+	exchange?: 'NSE' | 'BSE';
 	quantity: number;
 	averagePrice: number;
 	currentPrice: number;
+	notes?: string;
 }
 
 export interface CreateEquityETFData {
 	etfName: string;
-	symbol: string;
+	symbol?: string;
 	units: number;
 	currentNav: number;
 	investedAmount: number;
+	notes?: string;
 }
 
 export interface CreatePPFData {
-	accountNumber: string;
-	financialYear: string;
+	accountNumber?: string;
+	financialYear?: string;
 	totalDeposits: number;
 	interestRate: number;
 	maturityDate: string;
+	notes?: string;
 }
 
 export interface CreateFRBData {
 	bondName: string;
-	certificateNumber: string;
+	certificateNumber?: string;
 	investmentAmount: number;
 	interestRate: number;
-	purchaseDate: string;
+	purchaseDate?: string;
 	maturityDate: string;
+	notes?: string;
 }
 
 export interface CreateNPSData {
-	pranNumber: string;
+	pranNumber?: string;
 	totalContribution: number;
 	currentValue: number;
-	lastContributionDate: string;
+	lastContributionDate?: string;
+	notes?: string;
 }
 
 export const SAVINGS_TYPES = [
@@ -510,62 +543,83 @@ export type AssetCardsProps = {
 	summary: AssetSummary;
 };
 
+// Updated component prop types with onEdit and onDelete
 export type BankAccountsProps = {
 	accounts: BankAccount[];
+	onEdit?: (assetType: string, assetId: string) => void;
+	onDelete?: (assetType: string, assetId: string) => void;
 	onRefresh: () => void;
 	userId: string;
 };
 
 export type EquityETFsProps = {
 	etfs: EquityETF[];
+	onEdit?: (assetType: string, assetId: string) => void;
+	onDelete?: (assetType: string, assetId: string) => void;
 	onRefresh: () => void;
 	userId: string;
 };
 
 export type FixedDepositsProps = {
 	deposits: FixedDeposit[];
+	onEdit?: (assetType: string, assetId: string) => void;
+	onDelete?: (assetType: string, assetId: string) => void;
 	onRefresh: () => void;
 	userId: string;
 };
 
 export type FloatingRateBondsProps = {
 	bonds: FloatingRateBond[];
+	onEdit?: (assetType: string, assetId: string) => void;
+	onDelete?: (assetType: string, assetId: string) => void;
 	onRefresh: () => void;
 	userId: string;
 };
 
 export type GoldETFsProps = {
 	etfs: GoldETF[];
+	onEdit?: (assetType: string, assetId: string) => void;
+	onDelete?: (assetType: string, assetId: string) => void;
 	onRefresh: () => void;
 	userId: string;
 };
 
 export type MutualFundsProps = {
 	funds: MutualFund[];
+	onEdit?: (assetType: string, assetId: string) => void;
+	onDelete?: (assetType: string, assetId: string) => void;
 	onRefresh: () => void;
 	userId: string;
 };
 
 export type NPSAccountsProps = {
 	accounts: NationalPensionScheme[];
+	onEdit?: (assetType: string, assetId: string) => void;
+	onDelete?: (assetType: string, assetId: string) => void;
 	onRefresh: () => void;
 	userId: string;
 };
 
 export type PPFAccountsProps = {
 	accounts: PublicProvidentFund[];
+	onEdit?: (assetType: string, assetId: string) => void;
+	onDelete?: (assetType: string, assetId: string) => void;
 	onRefresh: () => void;
 	userId: string;
 };
 
 export type RecurringDepositsProps = {
 	deposits: RecurringDeposit[];
+	onEdit?: (assetType: string, assetId: string) => void;
+	onDelete?: (assetType: string, assetId: string) => void;
 	onRefresh: () => void;
 	userId: string;
 };
 
 export type StocksProps = {
 	stocks: Stock[];
+	onEdit?: (assetType: string, assetId: string) => void;
+	onDelete?: (assetType: string, assetId: string) => void;
 	onRefresh: () => void;
 	userId: string;
 };
@@ -622,6 +676,7 @@ export type SavingFormData = {
 	expectedReturn: string;
 	maturityDate: string;
 };
+
 export interface CreateUserData {
 	username: string;
 	email?: string;
@@ -694,14 +749,59 @@ export interface DividendFormData {
 	quantity: string;
 	dividendPerShare: string;
 }
-export interface DividendFormData {
+
+// Asset component types with edit/delete support
+export type AssetComponentProps = {
+	onEdit?: (assetType: string, assetId: string) => void;
+	onDelete?: (assetType: string, assetId: string) => void;
+	onRefresh: () => void;
+	userId: string;
+};
+
+// Type for the asset form modal in Dashboard
+export interface AssetFormData {
 	id?: string;
 	amount: string;
-	company: string;
-	stockSymbol: string;
+	description: string;
 	category: string;
-	date: string;
-	notes: string;
-	quantity: string;
-	dividendPerShare: string;
+	accountNumber?: string;
+	interestRate?: string;
+	startDate?: string;
+	tenure?: string;
+	maturityDate?: string;
+	units?: string;
+	nav?: string;
+	currentPrice?: string;
+	quantity?: string;
+	averagePrice?: string;
+	currentNav?: string;
+	totalDeposits?: string;
+	totalContribution?: string;
+	investmentAmount?: string;
+	notes?: string;
 }
+
+export type InputComponentProps = {
+	label: string;
+	value: string;
+	placeholder?: string;
+	onChangeText: (text: string) => void;
+	isEllipsis?: boolean;
+	keyboardType?: KeyboardType;
+	multiline?: boolean;
+	numberOfLines?: number;
+	isMandatory?: boolean;
+};
+
+export type FormField = {
+	id: string;
+	label: string;
+	placeholder: string;
+	value: string;
+	onChangeText: (text: string) => void;
+	keyboardType?: KeyboardType;
+	multiline?: boolean;
+	numberOfLines?: number;
+	isEllipsis?: boolean;
+	isMandatory: boolean;
+};

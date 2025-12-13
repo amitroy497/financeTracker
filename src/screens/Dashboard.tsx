@@ -553,7 +553,6 @@ export const Dashboard = () => {
 				)}
 			</View>
 
-			{/* Navigation Tabs */}
 			<ScrollView
 				horizontal
 				showsHorizontalScrollIndicator={false}

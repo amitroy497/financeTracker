@@ -42,7 +42,6 @@ export const DividendsScreen = () => {
 	const [showCategoryTiles, setShowCategoryTiles] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
 
-	// Form state
 	const [formData, setFormData] = useState<DividendFormData>({
 		amount: '',
 		company: '',
@@ -54,15 +53,12 @@ export const DividendsScreen = () => {
 		dividendPerShare: '',
 	});
 
-	// Date state for the picker
 	const [selectedDate, setSelectedDate] = useState(new Date());
 
-	// Load dividends on component mount
 	useEffect(() => {
 		loadDividends();
 	}, [user]);
 
-	// Filter dividends when search, category, or month changes
 	useEffect(() => {
 		filterDividends();
 		calculateYearlyData();
@@ -78,14 +74,10 @@ export const DividendsScreen = () => {
 		return `${FileSystem.documentDirectory}yearly_dividends_${user.id}.json`;
 	};
 
-	// Get current financial year (April to March)
 	const getCurrentFinancialYear = (): string => {
 		const now = new Date();
 		const year = now.getFullYear();
-		const month = now.getMonth() + 1; // 1-12
-
-		// If month is April (4) or later, financial year is current year - next year
-		// If month is Jan-Mar, financial year is previous year - current year
+		const month = now.getMonth() + 1;
 		if (month >= 4) {
 			return `${year}-${year + 1}`;
 		} else {
@@ -93,12 +85,10 @@ export const DividendsScreen = () => {
 		}
 	};
 
-	// Get financial year from a date
 	const getFinancialYearFromDate = (dateString: string): string => {
 		const date = new Date(dateString);
 		const year = date.getFullYear();
-		const month = date.getMonth() + 1; // 1-12
-
+		const month = date.getMonth() + 1;
 		if (month >= 4) {
 			return `${year}-${year + 1}`;
 		} else {
@@ -108,17 +98,14 @@ export const DividendsScreen = () => {
 
 	const loadDividends = async (): Promise<void> => {
 		if (!user) return;
-
 		try {
 			const filePath = getDividendsFilePath();
 			const fileInfo = await FileSystem.getInfoAsync(filePath);
-
 			if (fileInfo.exists) {
 				const fileContent = await FileSystem.readAsStringAsync(filePath);
 				const data = JSON.parse(fileContent);
 				setDividends(data.dividends || []);
 			} else {
-				// Initialize empty dividends file
 				const initialData = { dividends: [] };
 				await FileSystem.writeAsStringAsync(
 					filePath,
@@ -126,8 +113,6 @@ export const DividendsScreen = () => {
 				);
 				setDividends([]);
 			}
-
-			// Load yearly financial data
 			await loadYearlyData();
 		} catch (error) {
 			console.error('Error loading dividends:', error);
@@ -139,7 +124,6 @@ export const DividendsScreen = () => {
 
 	const loadYearlyData = async (): Promise<void> => {
 		if (!user) return;
-
 		try {
 			const filePath = getYearlyDataFilePath();
 			const fileInfo = await FileSystem.getInfoAsync(filePath);
@@ -149,7 +133,6 @@ export const DividendsScreen = () => {
 				const data = JSON.parse(fileContent);
 				setYearlyData(data);
 			} else {
-				// Initialize yearly data for current financial year
 				const currentFY = getCurrentFinancialYear();
 				const initialYearlyData: YearlyFinancialData = {
 					year: currentFY,
@@ -168,7 +151,6 @@ export const DividendsScreen = () => {
 
 	const saveDividends = async (updatedDividends: Dividend[]): Promise<void> => {
 		if (!user) return;
-
 		try {
 			const filePath = getDividendsFilePath();
 			const data = { dividends: updatedDividends };
@@ -187,7 +169,6 @@ export const DividendsScreen = () => {
 		updatedYearlyData: YearlyFinancialData
 	): Promise<void> => {
 		if (!user) return;
-
 		try {
 			const filePath = getYearlyDataFilePath();
 			await FileSystem.writeAsStringAsync(
@@ -204,14 +185,11 @@ export const DividendsScreen = () => {
 		if (!dividends.length) return;
 
 		const currentFY = getCurrentFinancialYear();
-
-		// Filter dividends for current financial year
 		const fyDividends = dividends.filter((dividend) => {
 			const dividendFY = getFinancialYearFromDate(dividend.date);
 			return dividendFY === currentFY;
 		});
 
-		// Calculate totals
 		const totalIncome = fyDividends.reduce(
 			(total, dividend) => total + dividend.amount,
 			0
@@ -222,13 +200,11 @@ export const DividendsScreen = () => {
 		const companyTotals: { [company: string]: number } = {};
 
 		fyDividends.forEach((dividend) => {
-			// Category totals
 			if (!categoryTotals[dividend.category]) {
 				categoryTotals[dividend.category] = 0;
 			}
 			categoryTotals[dividend.category] += dividend.amount;
 
-			// Monthly totals
 			const dividendDate = new Date(dividend.date);
 			const monthKey = `${dividendDate.getFullYear()}-${(
 				dividendDate.getMonth() + 1
@@ -241,7 +217,6 @@ export const DividendsScreen = () => {
 			}
 			monthlyTotals[monthKey] += dividend.amount;
 
-			// Company totals
 			if (!companyTotals[dividend.company]) {
 				companyTotals[dividend.company] = 0;
 			}
@@ -263,8 +238,6 @@ export const DividendsScreen = () => {
 
 	const filterDividends = (): void => {
 		let filtered = [...dividends];
-
-		// Filter by search query
 		if (searchQuery) {
 			filtered = filtered.filter(
 				(dividend) =>
@@ -276,15 +249,11 @@ export const DividendsScreen = () => {
 					dividend.notes?.toLowerCase().includes(searchQuery.toLowerCase())
 			);
 		}
-
-		// Filter by category
 		if (selectedCategory !== 'all') {
 			filtered = filtered.filter(
 				(dividend) => dividend.category === selectedCategory
 			);
 		}
-
-		// Filter by month
 		if (selectedMonth) {
 			filtered = filtered.filter((dividend) => {
 				const dividendDate = new Date(dividend.date);
@@ -296,12 +265,9 @@ export const DividendsScreen = () => {
 				return dividendMonth === selectedMonth;
 			});
 		}
-
-		// Sort by date (newest first)
 		filtered.sort(
 			(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
 		);
-
 		setFilteredDividends(filtered);
 	};
 
@@ -326,9 +292,7 @@ export const DividendsScreen = () => {
 		const dividendPerShare = formData.dividendPerShare
 			? parseFloat(formData.dividendPerShare)
 			: 0;
-
 		if (isEditing && formData.id) {
-			// Update existing dividend
 			const updatedDividends = dividends.map((dividend) =>
 				dividend.id === formData.id
 					? {
@@ -344,7 +308,6 @@ export const DividendsScreen = () => {
 					  }
 					: dividend
 			);
-
 			try {
 				await saveDividends(updatedDividends);
 				setShowAddModal(false);
@@ -354,7 +317,6 @@ export const DividendsScreen = () => {
 				Alert.alert('Error', 'Failed to update dividend');
 			}
 		} else {
-			// Add new dividend
 			const newDividend: Dividend = {
 				id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
 				amount,
@@ -367,7 +329,6 @@ export const DividendsScreen = () => {
 				quantity: quantity || undefined,
 				dividendPerShare: dividendPerShare || undefined,
 			};
-
 			try {
 				const updatedDividends = [newDividend, ...dividends];
 				await saveDividends(updatedDividends);
@@ -1234,29 +1195,26 @@ export const DividendsScreen = () => {
 								}
 								placeholderTextColor={colors.gray}
 							/>
-
-							<View style={[styles.row, { marginBottom: 12 }]}>
-								<TextInput
-									style={[styles.input, { flex: 1, marginRight: 8 }]}
-									placeholder='Quantity (Optional)'
-									value={formData.quantity}
-									onChangeText={(text) =>
-										setFormData({ ...formData, quantity: text })
-									}
-									placeholderTextColor={colors.gray}
-									keyboardType='numeric'
-								/>
-								<TextInput
-									style={[styles.input, { flex: 1, marginLeft: 8 }]}
-									placeholder='Dividend/Share (₹)'
-									value={formData.dividendPerShare}
-									onChangeText={(text) =>
-										setFormData({ ...formData, dividendPerShare: text })
-									}
-									placeholderTextColor={colors.gray}
-									keyboardType='numeric'
-								/>
-							</View>
+							<TextInput
+								style={styles.input}
+								placeholder='Quantity (Optional)'
+								value={formData.quantity}
+								onChangeText={(text) =>
+									setFormData({ ...formData, quantity: text })
+								}
+								placeholderTextColor={colors.gray}
+								keyboardType='numeric'
+							/>
+							<TextInput
+								style={styles.input}
+								placeholder='Dividend/Share (₹)'
+								value={formData.dividendPerShare}
+								onChangeText={(text) =>
+									setFormData({ ...formData, dividendPerShare: text })
+								}
+								placeholderTextColor={colors.gray}
+								keyboardType='numeric'
+							/>
 
 							<TouchableOpacity
 								style={[styles.input, { justifyContent: 'center' }]}
@@ -1272,8 +1230,6 @@ export const DividendsScreen = () => {
 										: 'Select Category'}
 								</Text>
 							</TouchableOpacity>
-
-							{/* Dividend Date */}
 							<TouchableOpacity
 								style={[styles.input, { justifyContent: 'center' }]}
 								onPress={() => setShowDatePicker(true)}
@@ -1282,7 +1238,6 @@ export const DividendsScreen = () => {
 									📅 Date: {formatDateForDisplay(formData.date)}
 								</Text>
 							</TouchableOpacity>
-
 							<TextInput
 								style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
 								placeholder='Notes (Optional)'
@@ -1294,8 +1249,6 @@ export const DividendsScreen = () => {
 								multiline
 								numberOfLines={3}
 							/>
-
-							{/* Date Picker */}
 							{showDatePicker && (
 								<DateTimePicker
 									value={selectedDate}
@@ -1305,7 +1258,6 @@ export const DividendsScreen = () => {
 									maximumDate={new Date()}
 								/>
 							)}
-
 							<View style={[styles.row, { marginTop: 20, marginBottom: 20 }]}>
 								<TouchableOpacity
 									style={[
@@ -1337,8 +1289,6 @@ export const DividendsScreen = () => {
 					</ScrollView>
 				</View>
 			</Modal>
-
-			{/* Date Actions Modal */}
 			<Modal
 				visible={showDateActionsModal}
 				animationType='slide'
@@ -1364,7 +1314,6 @@ export const DividendsScreen = () => {
 							📅 Actions for {formatDate(selectedDateForActions)}
 						</Text>
 
-						{/* Dividends for this date */}
 						<View style={{ marginBottom: 20 }}>
 							<Text
 								style={{ color: colors.gray, fontSize: 14, marginBottom: 8 }}
@@ -1435,8 +1384,6 @@ export const DividendsScreen = () => {
 									);
 								})}
 						</View>
-
-						{/* Action Buttons */}
 						<View style={{ marginBottom: 20 }}>
 							<TouchableOpacity
 								style={[
@@ -1466,7 +1413,6 @@ export const DividendsScreen = () => {
 								</TouchableOpacity>
 							)}
 						</View>
-
 						<TouchableOpacity
 							style={[styles.button, styles.buttonSecondary]}
 							onPress={() => setShowDateActionsModal(false)}
@@ -1476,8 +1422,6 @@ export const DividendsScreen = () => {
 					</View>
 				</View>
 			</Modal>
-
-			{/* Category Selection Modal */}
 			<Modal
 				visible={showCategoryModal}
 				animationType='slide'

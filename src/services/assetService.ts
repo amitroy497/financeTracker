@@ -31,6 +31,13 @@ const getAssetDataPath = (userId: string): string => {
 // Initialize asset data file
 const initializeAssetData = async (userId: string): Promise<void> => {
 	try {
+		// Create directory if it doesn't exist
+		const directory = `${FileSystem.documentDirectory}user_data`;
+		const dirInfo = await FileSystem.getInfoAsync(directory);
+		if (!dirInfo.exists) {
+			await FileSystem.makeDirectoryAsync(directory, { intermediates: true });
+		}
+
 		const assetDataPath = getAssetDataPath(userId);
 		const fileInfo = await FileSystem.getInfoAsync(assetDataPath);
 
@@ -84,7 +91,7 @@ const calculateMaturityDate = (startDate: string, tenure: number): string => {
 
 // Calculate current value for funds
 const calculateFundCurrentValue = (units: number, nav: number): number => {
-	return units * nav;
+	return parseFloat((units * nav).toFixed(2));
 };
 
 // Calculate returns for investments
@@ -92,7 +99,10 @@ const calculateReturns = (
 	currentValue: number,
 	investedAmount: number
 ): number => {
-	return ((currentValue - investedAmount) / investedAmount) * 100;
+	if (investedAmount === 0) return 0;
+	return parseFloat(
+		(((currentValue - investedAmount) / investedAmount) * 100).toFixed(2)
+	);
 };
 
 // Calculate years to maturity
@@ -100,59 +110,117 @@ const calculateYearsToMaturity = (maturityDate: string): number => {
 	const today = new Date();
 	const maturity = new Date(maturityDate);
 	const diffTime = maturity.getTime() - today.getTime();
-	return Math.max(0, diffTime / (1000 * 60 * 60 * 24 * 365.25));
+	const years = Math.max(0, diffTime / (1000 * 60 * 60 * 24 * 365.25));
+	return parseFloat(years.toFixed(2));
+};
+
+// Safe parse float with decimal handling
+const safeParseFloat = (
+	value: string | number | undefined,
+	defaultValue: number = 0
+): number => {
+	if (value === undefined || value === null || value === '')
+		return defaultValue;
+
+	const num = typeof value === 'string' ? parseFloat(value) : value;
+	return isNaN(num) ? defaultValue : parseFloat(num.toFixed(2));
+};
+
+// Safe parse int
+const safeParseInt = (
+	value: string | number | undefined,
+	defaultValue: number = 0
+): number => {
+	if (value === undefined || value === null || value === '')
+		return defaultValue;
+
+	const num =
+		typeof value === 'string' ? parseInt(value, 10) : Math.round(value);
+	return isNaN(num) ? defaultValue : num;
 };
 
 // Update summary when data changes
 const updateSummary = (data: AssetData): AssetData => {
-	const cash = data.bankAccounts.reduce(
-		(sum, account) => sum + account.balance,
-		0
+	const cash = parseFloat(
+		data.bankAccounts
+			.reduce((sum, account) => sum + (account.balance || 0), 0)
+			.toFixed(2)
 	);
-	const fixedDeposits = data.fixedDeposits
-		.filter((fd) => fd.status === 'Active')
-		.reduce((sum, fd) => sum + fd.amount, 0);
-	const recurringDeposits = data.recurringDeposits.reduce(
-		(sum, rd) => sum + rd.totalAmount,
-		0
+
+	const fixedDeposits = parseFloat(
+		data.fixedDeposits
+			.filter((fd) => fd.status === 'Active')
+			.reduce((sum, fd) => sum + (fd.amount || 0), 0)
+			.toFixed(2)
 	);
-	const mutualFunds = data.mutualFunds.reduce(
-		(sum, mf) => sum + mf.currentValue,
-		0
+
+	const recurringDeposits = parseFloat(
+		data.recurringDeposits
+			.reduce((sum, rd) => sum + (rd.totalAmount || 0), 0)
+			.toFixed(2)
 	);
-	const goldETFs = data.goldETFs.reduce(
-		(sum, etf) => sum + etf.currentValue,
-		0
+
+	const mutualFunds = parseFloat(
+		data.mutualFunds
+			.reduce((sum, mf) => sum + (mf.currentValue || 0), 0)
+			.toFixed(2)
 	);
-	const stocks = data.stocks.reduce(
-		(sum, stock) => sum + stock.currentValue,
-		0
+
+	const goldETFs = parseFloat(
+		data.goldETFs
+			.reduce((sum, etf) => sum + (etf.currentValue || 0), 0)
+			.toFixed(2)
 	);
-	const equityETFs = data.equityETFs.reduce(
-		(sum, etf) => sum + etf.currentValue,
-		0
+
+	const stocks = parseFloat(
+		data.stocks
+			.reduce((sum, stock) => sum + (stock.currentValue || 0), 0)
+			.toFixed(2)
 	);
-	const ppf = data.ppfAccounts.reduce(
-		(sum, ppf) => sum + ppf.currentBalance,
-		0
+
+	const equityETFs = parseFloat(
+		data.equityETFs
+			.reduce((sum, etf) => sum + (etf.currentValue || 0), 0)
+			.toFixed(2)
 	);
-	const frb = data.frbBonds.reduce((sum, bond) => sum + bond.currentValue, 0);
-	const nps = data.npsAccounts.reduce((sum, nps) => sum + nps.currentValue, 0);
+
+	const ppf = parseFloat(
+		data.ppfAccounts
+			.reduce((sum, ppf) => sum + (ppf.currentBalance || 0), 0)
+			.toFixed(2)
+	);
+
+	const frb = parseFloat(
+		data.frbBonds
+			.reduce((sum, bond) => sum + (bond.currentValue || 0), 0)
+			.toFixed(2)
+	);
+
+	const nps = parseFloat(
+		data.npsAccounts
+			.reduce((sum, nps) => sum + (nps.currentValue || 0), 0)
+			.toFixed(2)
+	);
+
+	const totalAssets = parseFloat(
+		(
+			cash +
+			fixedDeposits +
+			recurringDeposits +
+			mutualFunds +
+			goldETFs +
+			stocks +
+			equityETFs +
+			ppf +
+			frb +
+			nps
+		).toFixed(2)
+	);
 
 	return {
 		...data,
 		summary: {
-			totalAssets:
-				cash +
-				fixedDeposits +
-				recurringDeposits +
-				mutualFunds +
-				goldETFs +
-				stocks +
-				equityETFs +
-				ppf +
-				frb +
-				nps,
+			totalAssets,
 			cash,
 			fixedDeposits,
 			recurringDeposits,
@@ -169,21 +237,43 @@ const updateSummary = (data: AssetData): AssetData => {
 	};
 };
 
+// Read asset data file
+const readAssetData = async (userId: string): Promise<AssetData> => {
+	try {
+		await initializeAssetData(userId);
+		const assetDataPath = getAssetDataPath(userId);
+
+		const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
+		return JSON.parse(fileContent);
+	} catch (error) {
+		console.error('Error reading asset data:', error);
+		throw error;
+	}
+};
+
+// Write asset data file
+const writeAssetData = async (
+	userId: string,
+	data: AssetData
+): Promise<void> => {
+	try {
+		const assetDataPath = getAssetDataPath(userId);
+		const updatedData = updateSummary(data);
+
+		await FileSystem.writeAsStringAsync(
+			assetDataPath,
+			JSON.stringify(updatedData, null, 2)
+		);
+	} catch (error) {
+		console.error('Error writing asset data:', error);
+		throw error;
+	}
+};
+
 export const assetService = {
 	// Get all asset data
 	getAssetData: async (userId: string): Promise<AssetData> => {
-		try {
-			await initializeAssetData(userId);
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
-
-			return data;
-		} catch (error) {
-			console.error('Error getting asset data:', error);
-			throw error;
-		}
+		return readAssetData(userId);
 	},
 
 	// Bank Account CRUD Operations
@@ -192,25 +282,27 @@ export const assetService = {
 		accountData: CreateBankAccountData
 	): Promise<BankAccount> => {
 		try {
-			await initializeAssetData(userId);
-			const assetDataPath = getAssetDataPath(userId);
+			const data = await readAssetData(userId);
 
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const balance = safeParseFloat(accountData.balance, 0);
+			const interestRate = accountData.interestRate
+				? safeParseFloat(accountData.interestRate)
+				: undefined;
 
 			const newAccount: BankAccount = {
 				id: generateId(),
-				...accountData,
+				accountName: accountData.accountName || 'Bank Account',
+				bankName: accountData.bankName || 'Bank',
+				balance,
+				accountNumber: accountData.accountNumber,
+				accountType: accountData.accountType || 'Savings',
+				interestRate,
+				notes: accountData.notes,
 				lastUpdated: new Date().toISOString(),
 			};
 
 			data.bankAccounts.push(newAccount);
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return newAccount;
 		} catch (error) {
@@ -225,10 +317,7 @@ export const assetService = {
 		updateData: Partial<CreateBankAccountData>
 	): Promise<BankAccount> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const accountIndex = data.bankAccounts.findIndex(
 				(account) => account.id === accountId
@@ -237,19 +326,26 @@ export const assetService = {
 				throw new Error('Bank account not found');
 			}
 
-			data.bankAccounts[accountIndex] = {
+			const updatedAccount = {
 				...data.bankAccounts[accountIndex],
 				...updateData,
 				lastUpdated: new Date().toISOString(),
 			};
 
-			const updatedData = updateSummary(data);
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			// Handle decimal parsing for numeric fields
+			if (updateData.balance !== undefined) {
+				updatedAccount.balance = safeParseFloat(updateData.balance);
+			}
+			if (updateData.interestRate !== undefined) {
+				updatedAccount.interestRate = updateData.interestRate
+					? safeParseFloat(updateData.interestRate)
+					: undefined;
+			}
 
-			return data.bankAccounts[accountIndex];
+			data.bankAccounts[accountIndex] = updatedAccount;
+			await writeAssetData(userId, data);
+
+			return updatedAccount;
 		} catch (error) {
 			console.error('Error updating bank account:', error);
 			throw error;
@@ -261,10 +357,7 @@ export const assetService = {
 		accountId: string
 	): Promise<boolean> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const initialLength = data.bankAccounts.length;
 			data.bankAccounts = data.bankAccounts.filter(
@@ -275,12 +368,7 @@ export const assetService = {
 				throw new Error('Bank account not found');
 			}
 
-			const updatedData = updateSummary(data);
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
-
+			await writeAssetData(userId, data);
 			return true;
 		} catch (error) {
 			console.error('Error deleting bank account:', error);
@@ -294,31 +382,30 @@ export const assetService = {
 		fdData: CreateFixedDepositData
 	): Promise<FixedDeposit> => {
 		try {
-			await initializeAssetData(userId);
-			const assetDataPath = getAssetDataPath(userId);
+			const data = await readAssetData(userId);
 
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const amount = safeParseFloat(fdData.amount, 0);
+			const interestRate = safeParseFloat(fdData.interestRate, 0);
+			const tenure = safeParseInt(fdData.tenure, 12);
+			const startDate =
+				fdData.startDate || new Date().toISOString().split('T')[0];
 
-			const maturityDate = calculateMaturityDate(
-				fdData.startDate,
-				fdData.tenure
-			);
+			const maturityDate = calculateMaturityDate(startDate, tenure);
 
 			const newFD: FixedDeposit = {
 				id: generateId(),
-				...fdData,
+				bankName: fdData.bankName || 'Bank',
+				amount,
+				interestRate,
+				startDate,
+				tenure,
 				maturityDate,
 				status: 'Active',
+				description: fdData.description,
 			};
 
 			data.fixedDeposits.push(newFD);
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return newFD;
 		} catch (error) {
@@ -333,36 +420,42 @@ export const assetService = {
 		updateData: Partial<CreateFixedDepositData>
 	): Promise<FixedDeposit> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const fdIndex = data.fixedDeposits.findIndex((fd) => fd.id === fdId);
 			if (fdIndex === -1) {
 				throw new Error('Fixed deposit not found');
 			}
 
+			const currentFD = data.fixedDeposits[fdIndex];
 			const updatedFD = {
-				...data.fixedDeposits[fdIndex],
+				...currentFD,
 				...updateData,
 			};
 
+			// Handle decimal parsing for numeric fields
+			if (updateData.amount !== undefined) {
+				updatedFD.amount = safeParseFloat(updateData.amount);
+			}
+			if (updateData.interestRate !== undefined) {
+				updatedFD.interestRate = safeParseFloat(updateData.interestRate);
+			}
+			if (updateData.tenure !== undefined) {
+				updatedFD.tenure = safeParseInt(updateData.tenure);
+			}
+
 			// Recalculate maturity date if tenure or start date changed
-			if (updateData.startDate || updateData.tenure) {
-				updatedFD.maturityDate = calculateMaturityDate(
-					updateData.startDate || updatedFD.startDate,
-					updateData.tenure || updatedFD.tenure
-				);
+			if (updateData.startDate || updateData.tenure !== undefined) {
+				const startDate = updateData.startDate || updatedFD.startDate;
+				const tenure =
+					updateData.tenure !== undefined
+						? safeParseInt(updateData.tenure)
+						: updatedFD.tenure;
+				updatedFD.maturityDate = calculateMaturityDate(startDate, tenure);
 			}
 
 			data.fixedDeposits[fdIndex] = updatedFD;
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return updatedFD;
 		} catch (error) {
@@ -376,10 +469,7 @@ export const assetService = {
 		fdId: string
 	): Promise<boolean> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const initialLength = data.fixedDeposits.length;
 			data.fixedDeposits = data.fixedDeposits.filter((fd) => fd.id !== fdId);
@@ -388,12 +478,7 @@ export const assetService = {
 				throw new Error('Fixed deposit not found');
 			}
 
-			const updatedData = updateSummary(data);
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
-
+			await writeAssetData(userId, data);
 			return true;
 		} catch (error) {
 			console.error('Error deleting fixed deposit:', error);
@@ -407,33 +492,32 @@ export const assetService = {
 		rdData: CreateRecurringDepositData
 	): Promise<RecurringDeposit> => {
 		try {
-			await initializeAssetData(userId);
-			const assetDataPath = getAssetDataPath(userId);
+			const data = await readAssetData(userId);
 
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const monthlyAmount = safeParseFloat(rdData.monthlyAmount, 0);
+			const interestRate = safeParseFloat(rdData.interestRate, 0);
+			const tenure = safeParseInt(rdData.tenure, 12);
+			const startDate =
+				rdData.startDate || new Date().toISOString().split('T')[0];
 
-			const maturityDate = calculateMaturityDate(
-				rdData.startDate,
-				rdData.tenure
-			);
-			const totalAmount = rdData.monthlyAmount * rdData.tenure;
+			const maturityDate = calculateMaturityDate(startDate, tenure);
+			const totalAmount = parseFloat((monthlyAmount * tenure).toFixed(2));
 
 			const newRD: RecurringDeposit = {
 				id: generateId(),
-				...rdData,
+				bankName: rdData.bankName || 'Bank',
+				monthlyAmount,
+				interestRate,
+				startDate,
+				tenure,
 				totalAmount,
 				maturityDate,
 				completedMonths: 0,
+				description: rdData.description,
 			};
 
 			data.recurringDeposits.push(newRD);
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return newRD;
 		} catch (error) {
@@ -448,39 +532,53 @@ export const assetService = {
 		updateData: Partial<CreateRecurringDepositData>
 	): Promise<RecurringDeposit> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const rdIndex = data.recurringDeposits.findIndex((rd) => rd.id === rdId);
 			if (rdIndex === -1) {
 				throw new Error('Recurring deposit not found');
 			}
 
+			const currentRD = data.recurringDeposits[rdIndex];
 			const updatedRD = {
-				...data.recurringDeposits[rdIndex],
+				...currentRD,
 				...updateData,
 			};
 
+			// Handle decimal parsing for numeric fields
+			if (updateData.monthlyAmount !== undefined) {
+				updatedRD.monthlyAmount = safeParseFloat(updateData.monthlyAmount);
+			}
+			if (updateData.interestRate !== undefined) {
+				updatedRD.interestRate = safeParseFloat(updateData.interestRate);
+			}
+			if (updateData.tenure !== undefined) {
+				updatedRD.tenure = safeParseInt(updateData.tenure);
+			}
+
 			// Recalculate total amount and maturity date if relevant fields change
-			if (updateData.monthlyAmount || updateData.tenure) {
-				updatedRD.totalAmount =
-					(updateData.monthlyAmount || updatedRD.monthlyAmount) *
-					(updateData.tenure || updatedRD.tenure);
+			if (
+				updateData.monthlyAmount !== undefined ||
+				updateData.tenure !== undefined
+			) {
+				const monthlyAmount =
+					updateData.monthlyAmount !== undefined
+						? safeParseFloat(updateData.monthlyAmount)
+						: updatedRD.monthlyAmount;
+				const tenure =
+					updateData.tenure !== undefined
+						? safeParseInt(updateData.tenure)
+						: updatedRD.tenure;
+
+				updatedRD.totalAmount = parseFloat((monthlyAmount * tenure).toFixed(2));
 				updatedRD.maturityDate = calculateMaturityDate(
 					updateData.startDate || updatedRD.startDate,
-					updateData.tenure || updatedRD.tenure
+					tenure
 				);
 			}
 
 			data.recurringDeposits[rdIndex] = updatedRD;
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return updatedRD;
 		} catch (error) {
@@ -494,10 +592,7 @@ export const assetService = {
 		rdId: string
 	): Promise<boolean> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const initialLength = data.recurringDeposits.length;
 			data.recurringDeposits = data.recurringDeposits.filter(
@@ -508,12 +603,7 @@ export const assetService = {
 				throw new Error('Recurring deposit not found');
 			}
 
-			const updatedData = updateSummary(data);
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
-
+			await writeAssetData(userId, data);
 			return true;
 		} catch (error) {
 			console.error('Error deleting recurring deposit:', error);
@@ -527,30 +617,31 @@ export const assetService = {
 		mfData: CreateMutualFundData
 	): Promise<MutualFund> => {
 		try {
-			await initializeAssetData(userId);
-			const assetDataPath = getAssetDataPath(userId);
+			const data = await readAssetData(userId);
 
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const investedAmount = safeParseFloat(mfData.investedAmount, 0);
+			const units = safeParseFloat(mfData.units, 0);
+			const nav = safeParseFloat(mfData.nav, 0);
 
-			const currentValue = calculateFundCurrentValue(mfData.units, mfData.nav);
-			const returns = calculateReturns(currentValue, mfData.investedAmount);
+			const currentValue = calculateFundCurrentValue(units, nav);
+			const returns = calculateReturns(currentValue, investedAmount);
 
 			const newMF: MutualFund = {
 				id: generateId(),
-				...mfData,
+				schemeName: mfData.schemeName || 'Mutual Fund',
+				investedAmount,
+				units,
+				nav,
 				currentValue,
 				returns,
+				fundHouse: mfData.fundHouse || '',
+				fundType: mfData.fundType || 'Equity',
+				notes: mfData.notes,
 				lastUpdated: new Date().toISOString(),
 			};
 
 			data.mutualFunds.push(newMF);
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return newMF;
 		} catch (error) {
@@ -565,41 +656,53 @@ export const assetService = {
 		updateData: Partial<CreateMutualFundData>
 	): Promise<MutualFund> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const mfIndex = data.mutualFunds.findIndex((mf) => mf.id === mfId);
 			if (mfIndex === -1) {
 				throw new Error('Mutual fund not found');
 			}
 
+			const currentMF = data.mutualFunds[mfIndex];
 			const updatedMF = {
-				...data.mutualFunds[mfIndex],
+				...currentMF,
 				...updateData,
 				lastUpdated: new Date().toISOString(),
 			};
 
+			// Handle decimal parsing for numeric fields
+			if (updateData.investedAmount !== undefined) {
+				updatedMF.investedAmount = safeParseFloat(updateData.investedAmount);
+			}
+			if (updateData.units !== undefined) {
+				updatedMF.units = safeParseFloat(updateData.units);
+			}
+			if (updateData.nav !== undefined) {
+				updatedMF.nav = safeParseFloat(updateData.nav);
+			}
+
 			// Recalculate current value and returns if units or NAV change
-			if (updateData.units || updateData.nav) {
-				updatedMF.currentValue = calculateFundCurrentValue(
-					updateData.units || updatedMF.units,
-					updateData.nav || updatedMF.nav
-				);
+			if (updateData.units !== undefined || updateData.nav !== undefined) {
+				const units =
+					updateData.units !== undefined
+						? safeParseFloat(updateData.units)
+						: updatedMF.units;
+				const nav =
+					updateData.nav !== undefined
+						? safeParseFloat(updateData.nav)
+						: updatedMF.nav;
+
+				updatedMF.currentValue = calculateFundCurrentValue(units, nav);
 				updatedMF.returns = calculateReturns(
 					updatedMF.currentValue,
-					updateData.investedAmount || updatedMF.investedAmount
+					updateData.investedAmount !== undefined
+						? safeParseFloat(updateData.investedAmount)
+						: updatedMF.investedAmount
 				);
 			}
 
 			data.mutualFunds[mfIndex] = updatedMF;
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return updatedMF;
 		} catch (error) {
@@ -610,10 +713,7 @@ export const assetService = {
 
 	deleteMutualFund: async (userId: string, mfId: string): Promise<boolean> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const initialLength = data.mutualFunds.length;
 			data.mutualFunds = data.mutualFunds.filter((mf) => mf.id !== mfId);
@@ -622,12 +722,7 @@ export const assetService = {
 				throw new Error('Mutual fund not found');
 			}
 
-			const updatedData = updateSummary(data);
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
-
+			await writeAssetData(userId, data);
 			return true;
 		} catch (error) {
 			console.error('Error deleting mutual fund:', error);
@@ -641,30 +736,29 @@ export const assetService = {
 		etfData: CreateGoldETFData
 	): Promise<GoldETF> => {
 		try {
-			await initializeAssetData(userId);
-			const assetDataPath = getAssetDataPath(userId);
+			const data = await readAssetData(userId);
 
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const investedAmount = safeParseFloat(etfData.investedAmount, 0);
+			const units = safeParseFloat(etfData.units, 0);
+			const currentPrice = safeParseFloat(etfData.currentPrice, 0);
 
-			const currentValue = etfData.units * etfData.currentPrice;
-			const returns = calculateReturns(currentValue, etfData.investedAmount);
+			const currentValue = parseFloat((units * currentPrice).toFixed(2));
+			const returns = calculateReturns(currentValue, investedAmount);
 
 			const newETF: GoldETF = {
 				id: generateId(),
-				...etfData,
+				etfName: etfData.etfName || 'Gold ETF',
+				investedAmount,
+				units,
+				currentPrice,
 				currentValue,
 				returns,
+				notes: etfData.notes,
 				lastUpdated: new Date().toISOString(),
 			};
 
 			data.goldETFs.push(newETF);
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return newETF;
 		} catch (error) {
@@ -679,40 +773,56 @@ export const assetService = {
 		updateData: Partial<CreateGoldETFData>
 	): Promise<GoldETF> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const etfIndex = data.goldETFs.findIndex((etf) => etf.id === etfId);
 			if (etfIndex === -1) {
 				throw new Error('Gold ETF not found');
 			}
 
+			const currentETF = data.goldETFs[etfIndex];
 			const updatedETF = {
-				...data.goldETFs[etfIndex],
+				...currentETF,
 				...updateData,
 				lastUpdated: new Date().toISOString(),
 			};
 
+			// Handle decimal parsing for numeric fields
+			if (updateData.investedAmount !== undefined) {
+				updatedETF.investedAmount = safeParseFloat(updateData.investedAmount);
+			}
+			if (updateData.units !== undefined) {
+				updatedETF.units = safeParseFloat(updateData.units);
+			}
+			if (updateData.currentPrice !== undefined) {
+				updatedETF.currentPrice = safeParseFloat(updateData.currentPrice);
+			}
+
 			// Recalculate current value and returns
-			if (updateData.units || updateData.currentPrice) {
-				updatedETF.currentValue =
-					(updateData.units || updatedETF.units) *
-					(updateData.currentPrice || updatedETF.currentPrice);
+			if (
+				updateData.units !== undefined ||
+				updateData.currentPrice !== undefined
+			) {
+				const units =
+					updateData.units !== undefined
+						? safeParseFloat(updateData.units)
+						: updatedETF.units;
+				const currentPrice =
+					updateData.currentPrice !== undefined
+						? safeParseFloat(updateData.currentPrice)
+						: updatedETF.currentPrice;
+
+				updatedETF.currentValue = parseFloat((units * currentPrice).toFixed(2));
 				updatedETF.returns = calculateReturns(
 					updatedETF.currentValue,
-					updateData.investedAmount || updatedETF.investedAmount
+					updateData.investedAmount !== undefined
+						? safeParseFloat(updateData.investedAmount)
+						: updatedETF.investedAmount
 				);
 			}
 
 			data.goldETFs[etfIndex] = updatedETF;
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return updatedETF;
 		} catch (error) {
@@ -723,10 +833,7 @@ export const assetService = {
 
 	deleteGoldETF: async (userId: string, etfId: string): Promise<boolean> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const initialLength = data.goldETFs.length;
 			data.goldETFs = data.goldETFs.filter((etf) => etf.id !== etfId);
@@ -735,12 +842,7 @@ export const assetService = {
 				throw new Error('Gold ETF not found');
 			}
 
-			const updatedData = updateSummary(data);
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
-
+			await writeAssetData(userId, data);
 			return true;
 		} catch (error) {
 			console.error('Error deleting gold ETF:', error);
@@ -754,32 +856,31 @@ export const assetService = {
 		stockData: CreateStockData
 	): Promise<Stock> => {
 		try {
-			await initializeAssetData(userId);
-			const assetDataPath = getAssetDataPath(userId);
+			const data = await readAssetData(userId);
 
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const quantity = safeParseInt(stockData.quantity, 0);
+			const averagePrice = safeParseFloat(stockData.averagePrice, 0);
+			const currentPrice = safeParseFloat(stockData.currentPrice, 0);
 
-			const investedAmount = stockData.quantity * stockData.averagePrice;
-			const currentValue = stockData.quantity * stockData.currentPrice;
+			const investedAmount = parseFloat((quantity * averagePrice).toFixed(2));
+			const currentValue = parseFloat((quantity * currentPrice).toFixed(2));
 			const returns = calculateReturns(currentValue, investedAmount);
 
 			const newStock: Stock = {
 				id: generateId(),
-				...stockData,
+				companyName: stockData.companyName || 'Stock',
+				quantity,
+				averagePrice,
+				currentPrice,
 				investedAmount,
 				currentValue,
 				returns,
+				notes: stockData.notes,
 				lastUpdated: new Date().toISOString(),
 			};
 
 			data.stocks.push(newStock);
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return newStock;
 		} catch (error) {
@@ -794,34 +895,56 @@ export const assetService = {
 		updateData: Partial<CreateStockData>
 	): Promise<Stock> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const stockIndex = data.stocks.findIndex((stock) => stock.id === stockId);
 			if (stockIndex === -1) {
 				throw new Error('Stock not found');
 			}
 
+			const currentStock = data.stocks[stockIndex];
 			const updatedStock = {
-				...data.stocks[stockIndex],
+				...currentStock,
 				...updateData,
 				lastUpdated: new Date().toISOString(),
 			};
 
+			// Handle decimal parsing for numeric fields
+			if (updateData.quantity !== undefined) {
+				updatedStock.quantity = safeParseInt(updateData.quantity);
+			}
+			if (updateData.averagePrice !== undefined) {
+				updatedStock.averagePrice = safeParseFloat(updateData.averagePrice);
+			}
+			if (updateData.currentPrice !== undefined) {
+				updatedStock.currentPrice = safeParseFloat(updateData.currentPrice);
+			}
+
 			// Recalculate invested amount, current value and returns
 			if (
-				updateData.quantity ||
-				updateData.averagePrice ||
-				updateData.currentPrice
+				updateData.quantity !== undefined ||
+				updateData.averagePrice !== undefined ||
+				updateData.currentPrice !== undefined
 			) {
-				updatedStock.investedAmount =
-					(updateData.quantity || updatedStock.quantity) *
-					(updateData.averagePrice || updatedStock.averagePrice);
-				updatedStock.currentValue =
-					(updateData.quantity || updatedStock.quantity) *
-					(updateData.currentPrice || updatedStock.currentPrice);
+				const quantity =
+					updateData.quantity !== undefined
+						? safeParseInt(updateData.quantity)
+						: updatedStock.quantity;
+				const averagePrice =
+					updateData.averagePrice !== undefined
+						? safeParseFloat(updateData.averagePrice)
+						: updatedStock.averagePrice;
+				const currentPrice =
+					updateData.currentPrice !== undefined
+						? safeParseFloat(updateData.currentPrice)
+						: updatedStock.currentPrice;
+
+				updatedStock.investedAmount = parseFloat(
+					(quantity * averagePrice).toFixed(2)
+				);
+				updatedStock.currentValue = parseFloat(
+					(quantity * currentPrice).toFixed(2)
+				);
 				updatedStock.returns = calculateReturns(
 					updatedStock.currentValue,
 					updatedStock.investedAmount
@@ -829,12 +952,7 @@ export const assetService = {
 			}
 
 			data.stocks[stockIndex] = updatedStock;
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return updatedStock;
 		} catch (error) {
@@ -845,10 +963,7 @@ export const assetService = {
 
 	deleteStock: async (userId: string, stockId: string): Promise<boolean> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const initialLength = data.stocks.length;
 			data.stocks = data.stocks.filter((stock) => stock.id !== stockId);
@@ -857,12 +972,7 @@ export const assetService = {
 				throw new Error('Stock not found');
 			}
 
-			const updatedData = updateSummary(data);
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
-
+			await writeAssetData(userId, data);
 			return true;
 		} catch (error) {
 			console.error('Error deleting stock:', error);
@@ -876,33 +986,29 @@ export const assetService = {
 		etfData: CreateEquityETFData
 	): Promise<EquityETF> => {
 		try {
-			await initializeAssetData(userId);
-			const assetDataPath = getAssetDataPath(userId);
+			const data = await readAssetData(userId);
 
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const investedAmount = safeParseFloat(etfData.investedAmount, 0);
+			const units = safeParseFloat(etfData.units, 0);
+			const currentNav = safeParseFloat(etfData.currentNav, 0);
 
-			const currentValue = calculateFundCurrentValue(
-				etfData.units,
-				etfData.currentNav
-			);
-			const returns = calculateReturns(currentValue, etfData.investedAmount);
+			const currentValue = calculateFundCurrentValue(units, currentNav);
+			const returns = calculateReturns(currentValue, investedAmount);
 
 			const newETF: EquityETF = {
 				id: generateId(),
-				...etfData,
+				etfName: etfData.etfName || 'Equity ETF',
+				investedAmount,
+				units,
+				currentNav,
 				currentValue,
 				returns,
+				notes: etfData.notes,
 				lastUpdated: new Date().toISOString(),
 			};
 
 			data.equityETFs.push(newETF);
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return newETF;
 		} catch (error) {
@@ -917,41 +1023,56 @@ export const assetService = {
 		updateData: Partial<CreateEquityETFData>
 	): Promise<EquityETF> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const etfIndex = data.equityETFs.findIndex((etf) => etf.id === etfId);
 			if (etfIndex === -1) {
 				throw new Error('Equity ETF not found');
 			}
 
+			const currentETF = data.equityETFs[etfIndex];
 			const updatedETF = {
-				...data.equityETFs[etfIndex],
+				...currentETF,
 				...updateData,
 				lastUpdated: new Date().toISOString(),
 			};
 
+			// Handle decimal parsing for numeric fields
+			if (updateData.investedAmount !== undefined) {
+				updatedETF.investedAmount = safeParseFloat(updateData.investedAmount);
+			}
+			if (updateData.units !== undefined) {
+				updatedETF.units = safeParseFloat(updateData.units);
+			}
+			if (updateData.currentNav !== undefined) {
+				updatedETF.currentNav = safeParseFloat(updateData.currentNav);
+			}
+
 			// Recalculate current value and returns if units or NAV change
-			if (updateData.units || updateData.currentNav) {
-				updatedETF.currentValue = calculateFundCurrentValue(
-					updateData.units || updatedETF.units,
-					updateData.currentNav || updatedETF.currentNav
-				);
+			if (
+				updateData.units !== undefined ||
+				updateData.currentNav !== undefined
+			) {
+				const units =
+					updateData.units !== undefined
+						? safeParseFloat(updateData.units)
+						: updatedETF.units;
+				const currentNav =
+					updateData.currentNav !== undefined
+						? safeParseFloat(updateData.currentNav)
+						: updatedETF.currentNav;
+
+				updatedETF.currentValue = calculateFundCurrentValue(units, currentNav);
 				updatedETF.returns = calculateReturns(
 					updatedETF.currentValue,
-					updateData.investedAmount || updatedETF.investedAmount
+					updateData.investedAmount !== undefined
+						? safeParseFloat(updateData.investedAmount)
+						: updatedETF.investedAmount
 				);
 			}
 
 			data.equityETFs[etfIndex] = updatedETF;
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return updatedETF;
 		} catch (error) {
@@ -962,10 +1083,7 @@ export const assetService = {
 
 	deleteEquityETF: async (userId: string, etfId: string): Promise<boolean> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const initialLength = data.equityETFs.length;
 			data.equityETFs = data.equityETFs.filter((etf) => etf.id !== etfId);
@@ -974,12 +1092,7 @@ export const assetService = {
 				throw new Error('Equity ETF not found');
 			}
 
-			const updatedData = updateSummary(data);
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
-
+			await writeAssetData(userId, data);
 			return true;
 		} catch (error) {
 			console.error('Error deleting equity ETF:', error);
@@ -993,31 +1106,35 @@ export const assetService = {
 		ppfData: CreatePPFData
 	): Promise<PublicProvidentFund> => {
 		try {
-			await initializeAssetData(userId);
-			const assetDataPath = getAssetDataPath(userId);
+			const data = await readAssetData(userId);
 
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const totalDeposits = safeParseFloat(ppfData.totalDeposits, 0);
+			const interestRate = safeParseFloat(ppfData.interestRate, 0);
+			const maturityDate =
+				ppfData.maturityDate ||
+				new Date(new Date().setFullYear(new Date().getFullYear() + 15))
+					.toISOString()
+					.split('T')[0];
 
 			// Calculate current balance with compound interest (simplified)
-			const years = calculateYearsToMaturity(ppfData.maturityDate);
-			const currentBalance =
-				ppfData.totalDeposits * Math.pow(1 + ppfData.interestRate / 100, years);
+			const years = calculateYearsToMaturity(maturityDate);
+			const currentBalance = parseFloat(
+				(totalDeposits * Math.pow(1 + interestRate / 100, years)).toFixed(2)
+			);
 
 			const newPPF: PublicProvidentFund = {
 				id: generateId(),
-				...ppfData,
+				accountNumber: ppfData.accountNumber || '',
+				totalDeposits,
+				interestRate,
+				maturityDate,
 				currentBalance,
+				notes: ppfData.notes,
 				lastUpdated: new Date().toISOString(),
 			};
 
 			data.ppfAccounts.push(newPPF);
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return newPPF;
 		} catch (error) {
@@ -1032,46 +1149,52 @@ export const assetService = {
 		updateData: Partial<CreatePPFData>
 	): Promise<PublicProvidentFund> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const ppfIndex = data.ppfAccounts.findIndex((ppf) => ppf.id === ppfId);
 			if (ppfIndex === -1) {
 				throw new Error('PPF account not found');
 			}
 
+			const currentPPF = data.ppfAccounts[ppfIndex];
 			const updatedPPF = {
-				...data.ppfAccounts[ppfIndex],
+				...currentPPF,
 				...updateData,
 				lastUpdated: new Date().toISOString(),
 			};
 
+			// Handle decimal parsing for numeric fields
+			if (updateData.totalDeposits !== undefined) {
+				updatedPPF.totalDeposits = safeParseFloat(updateData.totalDeposits);
+			}
+			if (updateData.interestRate !== undefined) {
+				updatedPPF.interestRate = safeParseFloat(updateData.interestRate);
+			}
+
 			// Recalculate current balance if relevant fields change
 			if (
-				updateData.totalDeposits ||
-				updateData.interestRate ||
+				updateData.totalDeposits !== undefined ||
+				updateData.interestRate !== undefined ||
 				updateData.maturityDate
 			) {
-				const years = calculateYearsToMaturity(
-					updateData.maturityDate || updatedPPF.maturityDate
+				const totalDeposits =
+					updateData.totalDeposits !== undefined
+						? safeParseFloat(updateData.totalDeposits)
+						: updatedPPF.totalDeposits;
+				const interestRate =
+					updateData.interestRate !== undefined
+						? safeParseFloat(updateData.interestRate)
+						: updatedPPF.interestRate;
+				const maturityDate = updateData.maturityDate || updatedPPF.maturityDate;
+
+				const years = calculateYearsToMaturity(maturityDate);
+				updatedPPF.currentBalance = parseFloat(
+					(totalDeposits * Math.pow(1 + interestRate / 100, years)).toFixed(2)
 				);
-				updatedPPF.currentBalance =
-					(updateData.totalDeposits || updatedPPF.totalDeposits) *
-					Math.pow(
-						1 + (updateData.interestRate || updatedPPF.interestRate) / 100,
-						years
-					);
 			}
 
 			data.ppfAccounts[ppfIndex] = updatedPPF;
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return updatedPPF;
 		} catch (error) {
@@ -1082,10 +1205,7 @@ export const assetService = {
 
 	deletePPF: async (userId: string, ppfId: string): Promise<boolean> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const initialLength = data.ppfAccounts.length;
 			data.ppfAccounts = data.ppfAccounts.filter((ppf) => ppf.id !== ppfId);
@@ -1094,12 +1214,7 @@ export const assetService = {
 				throw new Error('PPF account not found');
 			}
 
-			const updatedData = updateSummary(data);
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
-
+			await writeAssetData(userId, data);
 			return true;
 		} catch (error) {
 			console.error('Error deleting PPF account:', error);
@@ -1113,32 +1228,35 @@ export const assetService = {
 		frbData: CreateFRBData
 	): Promise<FloatingRateBond> => {
 		try {
-			await initializeAssetData(userId);
-			const assetDataPath = getAssetDataPath(userId);
+			const data = await readAssetData(userId);
 
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const investmentAmount = safeParseFloat(frbData.investmentAmount, 0);
+			const interestRate = safeParseFloat(frbData.interestRate, 0);
+			const maturityDate =
+				frbData.maturityDate ||
+				new Date(new Date().setFullYear(new Date().getFullYear() + 5))
+					.toISOString()
+					.split('T')[0];
 
 			// Calculate current value with interest
-			const years = calculateYearsToMaturity(frbData.maturityDate);
-			const currentValue =
-				frbData.investmentAmount *
-				Math.pow(1 + frbData.interestRate / 100, years);
+			const years = calculateYearsToMaturity(maturityDate);
+			const currentValue = parseFloat(
+				(investmentAmount * Math.pow(1 + interestRate / 100, years)).toFixed(2)
+			);
 
 			const newFRB: FloatingRateBond = {
 				id: generateId(),
-				...frbData,
+				bondName: frbData.bondName || 'Floating Rate Bond',
+				investmentAmount,
+				interestRate,
+				maturityDate,
 				currentValue,
+				notes: frbData.notes,
 				lastUpdated: new Date().toISOString(),
 			};
 
 			data.frbBonds.push(newFRB);
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return newFRB;
 		} catch (error) {
@@ -1153,46 +1271,56 @@ export const assetService = {
 		updateData: Partial<CreateFRBData>
 	): Promise<FloatingRateBond> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const frbIndex = data.frbBonds.findIndex((frb) => frb.id === frbId);
 			if (frbIndex === -1) {
 				throw new Error('Floating rate bond not found');
 			}
 
+			const currentFRB = data.frbBonds[frbIndex];
 			const updatedFRB = {
-				...data.frbBonds[frbIndex],
+				...currentFRB,
 				...updateData,
 				lastUpdated: new Date().toISOString(),
 			};
 
+			// Handle decimal parsing for numeric fields
+			if (updateData.investmentAmount !== undefined) {
+				updatedFRB.investmentAmount = safeParseFloat(
+					updateData.investmentAmount
+				);
+			}
+			if (updateData.interestRate !== undefined) {
+				updatedFRB.interestRate = safeParseFloat(updateData.interestRate);
+			}
+
 			// Recalculate current value if relevant fields change
 			if (
-				updateData.investmentAmount ||
-				updateData.interestRate ||
+				updateData.investmentAmount !== undefined ||
+				updateData.interestRate !== undefined ||
 				updateData.maturityDate
 			) {
-				const years = calculateYearsToMaturity(
-					updateData.maturityDate || updatedFRB.maturityDate
+				const investmentAmount =
+					updateData.investmentAmount !== undefined
+						? safeParseFloat(updateData.investmentAmount)
+						: updatedFRB.investmentAmount;
+				const interestRate =
+					updateData.interestRate !== undefined
+						? safeParseFloat(updateData.interestRate)
+						: updatedFRB.interestRate;
+				const maturityDate = updateData.maturityDate || updatedFRB.maturityDate;
+
+				const years = calculateYearsToMaturity(maturityDate);
+				updatedFRB.currentValue = parseFloat(
+					(investmentAmount * Math.pow(1 + interestRate / 100, years)).toFixed(
+						2
+					)
 				);
-				updatedFRB.currentValue =
-					(updateData.investmentAmount || updatedFRB.investmentAmount) *
-					Math.pow(
-						1 + (updateData.interestRate || updatedFRB.interestRate) / 100,
-						years
-					);
 			}
 
 			data.frbBonds[frbIndex] = updatedFRB;
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return updatedFRB;
 		} catch (error) {
@@ -1203,10 +1331,7 @@ export const assetService = {
 
 	deleteFRB: async (userId: string, frbId: string): Promise<boolean> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const initialLength = data.frbBonds.length;
 			data.frbBonds = data.frbBonds.filter((frb) => frb.id !== frbId);
@@ -1215,12 +1340,7 @@ export const assetService = {
 				throw new Error('Floating rate bond not found');
 			}
 
-			const updatedData = updateSummary(data);
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
-
+			await writeAssetData(userId, data);
 			return true;
 		} catch (error) {
 			console.error('Error deleting floating rate bond:', error);
@@ -1234,31 +1354,28 @@ export const assetService = {
 		npsData: CreateNPSData
 	): Promise<NationalPensionScheme> => {
 		try {
-			await initializeAssetData(userId);
-			const assetDataPath = getAssetDataPath(userId);
+			const data = await readAssetData(userId);
 
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
-
-			const returns = calculateReturns(
+			const totalContribution = safeParseFloat(npsData.totalContribution, 0);
+			const currentValue = safeParseFloat(
 				npsData.currentValue,
-				npsData.totalContribution
+				totalContribution
 			);
+
+			const returns = calculateReturns(currentValue, totalContribution);
 
 			const newNPS: NationalPensionScheme = {
 				id: generateId(),
-				...npsData,
+				pranNumber: npsData.pranNumber || '',
+				totalContribution,
+				currentValue,
 				returns,
+				notes: npsData.notes,
 				lastUpdated: new Date().toISOString(),
 			};
 
 			data.npsAccounts.push(newNPS);
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return newNPS;
 		} catch (error) {
@@ -1273,37 +1390,49 @@ export const assetService = {
 		updateData: Partial<CreateNPSData>
 	): Promise<NationalPensionScheme> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const npsIndex = data.npsAccounts.findIndex((nps) => nps.id === npsId);
 			if (npsIndex === -1) {
 				throw new Error('NPS account not found');
 			}
 
+			const currentNPS = data.npsAccounts[npsIndex];
 			const updatedNPS = {
-				...data.npsAccounts[npsIndex],
+				...currentNPS,
 				...updateData,
 				lastUpdated: new Date().toISOString(),
 			};
 
-			// Recalculate returns if current value or total contribution changes
-			if (updateData.currentValue || updateData.totalContribution) {
-				updatedNPS.returns = calculateReturns(
-					updateData.currentValue || updatedNPS.currentValue,
-					updateData.totalContribution || updatedNPS.totalContribution
+			// Handle decimal parsing for numeric fields
+			if (updateData.totalContribution !== undefined) {
+				updatedNPS.totalContribution = safeParseFloat(
+					updateData.totalContribution
 				);
+			}
+			if (updateData.currentValue !== undefined) {
+				updatedNPS.currentValue = safeParseFloat(updateData.currentValue);
+			}
+
+			// Recalculate returns if current value or total contribution changes
+			if (
+				updateData.currentValue !== undefined ||
+				updateData.totalContribution !== undefined
+			) {
+				const currentValue =
+					updateData.currentValue !== undefined
+						? safeParseFloat(updateData.currentValue)
+						: updatedNPS.currentValue;
+				const totalContribution =
+					updateData.totalContribution !== undefined
+						? safeParseFloat(updateData.totalContribution)
+						: updatedNPS.totalContribution;
+
+				updatedNPS.returns = calculateReturns(currentValue, totalContribution);
 			}
 
 			data.npsAccounts[npsIndex] = updatedNPS;
-			const updatedData = updateSummary(data);
-
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
+			await writeAssetData(userId, data);
 
 			return updatedNPS;
 		} catch (error) {
@@ -1314,10 +1443,7 @@ export const assetService = {
 
 	deleteNPS: async (userId: string, npsId: string): Promise<boolean> => {
 		try {
-			const assetDataPath = getAssetDataPath(userId);
-
-			const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-			const data: AssetData = JSON.parse(fileContent);
+			const data = await readAssetData(userId);
 
 			const initialLength = data.npsAccounts.length;
 			data.npsAccounts = data.npsAccounts.filter((nps) => nps.id !== npsId);
@@ -1326,16 +1452,41 @@ export const assetService = {
 				throw new Error('NPS account not found');
 			}
 
-			const updatedData = updateSummary(data);
-			await FileSystem.writeAsStringAsync(
-				assetDataPath,
-				JSON.stringify(updatedData, null, 2)
-			);
-
+			await writeAssetData(userId, data);
 			return true;
 		} catch (error) {
 			console.error('Error deleting NPS account:', error);
 			throw error;
 		}
+	},
+
+	// Utility functions for decimal handling
+	formatAmount: (amount: string | number): number => {
+		return safeParseFloat(amount);
+	},
+
+	parseAmountInput: (value: string): string => {
+		// Allow decimal input with proper formatting
+		const decimalCount = (value.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			return value.slice(0, -1); // Remove the extra decimal point
+		}
+
+		// Allow only numbers and one decimal point
+		const regex = /^\d*\.?\d*$/;
+		if (!regex.test(value) && value !== '') {
+			return value.slice(0, -1);
+		}
+
+		return value;
+	},
+
+	formatCurrencyWithDecimal: (amount: number): string => {
+		return new Intl.NumberFormat('en-IN', {
+			style: 'currency',
+			currency: 'INR',
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		}).format(amount);
 	},
 };

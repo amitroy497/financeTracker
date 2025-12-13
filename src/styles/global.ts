@@ -28,6 +28,7 @@ export const darkColors = {
 	success: '#30d158',
 	danger: '#ff453a',
 	warning: '#ffd60a',
+	error: '#ff0000',
 	info: '#64d2ff',
 	light: '#1c1c1e',
 	dark: '#f5f5f7',
@@ -69,6 +70,10 @@ export const createStyles = (colors: ThemeColors) =>
 			flex: 1,
 			padding: 20,
 			backgroundColor: colors.background,
+		},
+		relative: {
+			position: 'relative' as const,
+			justifyContent: 'center',
 		},
 		header: {
 			fontSize: 28,
@@ -116,6 +121,22 @@ export const createStyles = (colors: ThemeColors) =>
 			color: colors.text,
 			marginBottom: 8,
 		},
+		mandatoryAsterisk: {
+			color: 'red',
+		},
+		inputContainer: {
+			paddingTop: 8,
+			borderTopWidth: 1,
+			borderBottomWidth: 1,
+			marginVertical: 12,
+			borderColor: colors.border,
+		},
+		label: {
+			fontSize: 16,
+			fontWeight: '500',
+			paddingHorizontal: 16,
+			paddingBottom: 8,
+		},
 		input: {
 			backgroundColor: colors.cardBackground,
 			padding: 16,
@@ -125,6 +146,20 @@ export const createStyles = (colors: ThemeColors) =>
 			borderColor: colors.border,
 			fontSize: 16,
 			color: colors.text,
+			alignItems: 'center' as const,
+		},
+		placeholderWrapper: {
+			position: 'absolute',
+			left: 16,
+			right: 16,
+			top: 0,
+			bottom: 0,
+			justifyContent: 'center',
+			height: 56,
+		},
+		placeholder: {
+			color: colors.gray,
+			fontSize: 16,
 		},
 		textArea: {
 			height: 100,

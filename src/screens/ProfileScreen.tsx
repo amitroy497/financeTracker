@@ -36,26 +36,21 @@ export const ProfileScreen = () => {
 		itemsCount: number;
 	} | null>(null);
 
-	// Email state
 	const [email, setEmail] = useState(user?.email || '');
 	const [currentPasswordForEmail, setCurrentPasswordForEmail] = useState('');
 
-	// Password state
 	const [currentPassword, setCurrentPassword] = useState('');
 	const [newPassword, setNewPassword] = useState('');
 	const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
-	// PIN state
 	const [currentPin, setCurrentPin] = useState('');
 	const [newPin, setNewPin] = useState('');
 	const [confirmNewPin, setConfirmNewPin] = useState('');
 
-	// Biometric state
 	const [useBiometric, setUseBiometric] = useState(
 		user?.biometricEnabled || false
 	);
 
-	// Load export info when backup section is active
 	useEffect(() => {
 		if (user && activeSection === 'backup') {
 			loadExportInfo();
@@ -796,25 +791,35 @@ export const ProfileScreen = () => {
 				style={styles.container}
 				contentContainerStyle={{ padding: 20 }}
 			>
-				{/* Header with Back Button */}
-				<View style={[styles.row, { marginBottom: 30, alignItems: 'center' }]}>
+				<View style={{ marginBottom: 30 }}>
 					<TouchableOpacity
 						onPress={handleBackToMain}
 						style={{ marginRight: 15 }}
 					>
-						<Text style={{ color: colors.primary, fontSize: 18 }}>←</Text>
+						<Text
+							style={{
+								color: colors.primary,
+								fontSize: 22,
+								fontWeight: 'bold',
+							}}
+						>
+							←
+						</Text>
 					</TouchableOpacity>
 					<Text style={styles.header}>
-						{activeSection === 'email' && 'Update Email'}
-						{activeSection === 'password' && 'Change Password'}
-						{activeSection === 'pin' && user?.pinHash
-							? 'Change PIN'
-							: 'Set PIN'}
-						{activeSection === 'biometric' && 'Biometric Settings'}
+						{activeSection === 'email'
+							? 'Update Email'
+							: activeSection === 'password'
+							? 'Change Password'
+							: activeSection === 'pin'
+							? user?.pinHash
+								? 'Change PIN'
+								: 'Set PIN'
+							: activeSection === 'biometric'
+							? 'Biometric Settings'
+							: 'Profile Settings'}
 					</Text>
 				</View>
-
-				{/* Update Email Section */}
 				{activeSection === 'email' && (
 					<>
 						<TextInput
@@ -989,7 +994,6 @@ export const ProfileScreen = () => {
 					</>
 				)}
 
-				{/* Biometric Settings Section */}
 				{activeSection === 'biometric' && (
 					<>
 						{biometricSupported ? (

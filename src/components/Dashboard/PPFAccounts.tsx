@@ -47,17 +47,17 @@ export const PPFAccounts = ({
 	};
 
 	const handleAddAccount = async (): Promise<void> => {
-		if (!newAccount.accountNumber.trim()) {
+		if (!newAccount?.accountNumber?.trim()) {
 			Alert.alert('Error', 'Please enter account number');
 			return;
 		}
 
-		if (newAccount.totalDeposits <= 0) {
+		if (newAccount?.totalDeposits <= 0) {
 			Alert.alert('Error', 'Total deposits must be greater than 0');
 			return;
 		}
 
-		if (newAccount.interestRate <= 0) {
+		if (newAccount?.interestRate <= 0) {
 			Alert.alert('Error', 'Interest rate must be greater than 0');
 			return;
 		}
@@ -175,7 +175,10 @@ export const PPFAccounts = ({
 								},
 							]}
 							onLongPress={() =>
-								handleDeleteAccount(account.id, account.accountNumber)
+								handleDeleteAccount(
+									account.id,
+									account?.accountNumber as string
+								)
 							}
 						>
 							<View
