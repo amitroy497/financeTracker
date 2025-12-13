@@ -1,24 +1,13 @@
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { AssetCardsProps } from '@/types';
+import { formatCurrency, getPercentage } from '@/utils';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
 export const AssetCards = ({ summary }: AssetCardsProps) => {
 	const { colors } = useTheme();
 	const styles = createStyles(colors);
-	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0,
-		}).format(amount);
-	};
-
-	const getPercentage = (amount: number, total: number): string => {
-		return total > 0 ? ((amount / total) * 100).toFixed(1) + '%' : '0%';
-	};
 
 	const assetTypes = [
 		{

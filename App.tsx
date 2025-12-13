@@ -8,10 +8,26 @@ import { useAuth } from '@/hooks';
 import { BottomTabNavigator } from '@/Navigation/BottomTabNavigator';
 import { AuthScreen } from '@/screens';
 import { ThemeProvider } from '@/theme';
-import React from 'react';
+import * as NavigationBar from 'expo-navigation-bar';
+import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 
 const AppContent: React.FC = () => {
 	const { isAuthenticated, isLoading } = useAuth();
+
+	useEffect(() => {
+		const setupEdgeToEdge = async () => {
+			if (Platform.OS === 'android') {
+				try {
+					await NavigationBar.setVisibilityAsync('hidden');
+				} catch (error) {
+					console.log('Navigation bar setup error:', error);
+				}
+			}
+		};
+
+		setupEdgeToEdge();
+	}, []);
 
 	if (isLoading) {
 		return (

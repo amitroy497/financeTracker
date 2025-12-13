@@ -3,7 +3,7 @@ import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { BankAccount, BankAccountsProps, CreateBankAccountData } from '@/types';
-import { maskAccountNumber } from '@/utils';
+import { formatCurrency, maskAccountNumber } from '@/utils';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -44,15 +44,6 @@ export const BankAccounts = ({
 		balance: 0,
 		currency: 'INR',
 	});
-
-	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(amount);
-	};
 
 	const toggleAccountNumberVisibility = (accountId: string): void => {
 		const newUnmaskedAccounts = new Set(unmaskedAccounts);
@@ -115,10 +106,8 @@ export const BankAccounts = ({
 			return;
 		}
 
-		// Clean account number - remove any decimal points or non-digits
 		const cleanedAccountNumber = newAccount.accountNumber.replace(/\D/g, '');
 
-		// Validate account number (only digits after cleaning, at least 9 characters)
 		const accountNumberRegex = /^\d+$/;
 		if (!accountNumberRegex.test(cleanedAccountNumber)) {
 			Alert.alert('Error', 'Please enter a valid account number');
@@ -135,7 +124,7 @@ export const BankAccounts = ({
 			await assetService.createBankAccount(userId, {
 				accountName: newAccount.accountName || newAccount.bankName,
 				bankName: newAccount.bankName,
-				accountNumber: cleanedAccountNumber, // Use cleaned number
+				accountNumber: cleanedAccountNumber,
 				accountType: newAccount.accountType,
 				balance: newAccount.balance,
 				currency: newAccount.currency,
@@ -186,11 +175,8 @@ export const BankAccounts = ({
 			Alert.alert('Error', 'Balance cannot be negative');
 			return;
 		}
-
-		// Clean account number - remove any decimal points or non-digits
 		const cleanedAccountNumber = newAccount.accountNumber.replace(/\D/g, '');
 
-		// Validate account number (only digits after cleaning, at least 9 characters)
 		const accountNumberRegex = /^\d+$/;
 		if (!accountNumberRegex.test(cleanedAccountNumber)) {
 			Alert.alert('Error', 'Please enter a valid account number');
@@ -207,7 +193,7 @@ export const BankAccounts = ({
 			await assetService.updateBankAccount(userId, editingAccount.id, {
 				accountName: newAccount.accountName || newAccount.bankName,
 				bankName: newAccount.bankName,
-				accountNumber: cleanedAccountNumber, // Use cleaned number
+				accountNumber: cleanedAccountNumber,
 				accountType: newAccount.accountType,
 				balance: newAccount.balance,
 				currency: newAccount.currency,
@@ -236,11 +222,9 @@ export const BankAccounts = ({
 		accountId: string,
 		accountName: string
 	): Promise<void> => {
-		// Use the onDelete prop passed from Dashboard
 		if (onDelete) {
 			onDelete('cash', accountId);
 		} else {
-			// Fallback to direct service call if prop not provided
 			Alert.alert(
 				'Delete Bank Account',
 				`Are you sure you want to delete ${accountName}?`,
@@ -252,7 +236,6 @@ export const BankAccounts = ({
 						onPress: async () => {
 							try {
 								await assetService.deleteBankAccount(userId, accountId);
-								// Remove from unmasked accounts if present
 								const newUnmaskedAccounts = new Set(unmaskedAccounts);
 								newUnmaskedAccounts.delete(accountId);
 								setUnmaskedAccounts(newUnmaskedAccounts);
@@ -620,7 +603,6 @@ export const BankAccounts = ({
 				</Text>
 			</View>
 
-			{/* Bank Accounts List */}
 			<Text style={[styles.subHeading, { marginTop: 24, marginBottom: 16 }]}>
 				Bank Accounts
 			</Text>

@@ -1,6 +1,5 @@
 import { StyleSheet } from 'react-native';
 
-// Define theme colors
 export const lightColors = {
 	primary: '#007AFF',
 	secondary: '#6c757d',
@@ -44,11 +43,9 @@ export const darkColors = {
 	shadow: '#000000',
 } as const;
 
-// Theme type
 export type Theme = 'light' | 'dark';
 export type ThemeColors = typeof lightColors | typeof darkColors;
 
-// Theme context type
 export interface ThemeContextType {
 	theme: Theme;
 	colors: typeof lightColors | typeof darkColors;
@@ -59,7 +56,6 @@ export interface ThemeContextType {
 	setAutoTheme?: (enabled: boolean) => void;
 }
 
-// Create styles that adapt to theme
 export const createStyles = (colors: ThemeColors) =>
 	StyleSheet.create({
 		safeArea: {
@@ -291,6 +287,5 @@ export const createStyles = (colors: ThemeColors) =>
 		},
 	});
 
-// For backward compatibility
 export const colors = lightColors;
 export const styles = createStyles(lightColors);

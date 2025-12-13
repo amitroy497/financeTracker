@@ -7,6 +7,7 @@ import {
 	EquityETFsProps,
 	FormField,
 } from '@/types';
+import { formatCurrency, formatNumber } from '@/utils';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -41,24 +42,10 @@ export const EquityETFs = ({
 		notes: '',
 	});
 
-	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(amount);
-	};
-
-	const formatNumber = (num: number, decimals: number = 2): string => {
-		return num.toFixed(decimals);
-	};
-
 	const getReturnColor = (returns: number): string => {
 		return returns >= 0 ? colors.success : colors.danger;
 	};
 
-	// Handle numeric input with decimal validation
 	const handleNumericInput = (
 		field: keyof CreateEquityETFData,
 		value: string

@@ -1,7 +1,6 @@
 import { Item, ItemFormData } from '@/types';
 import _ from 'lodash';
 
-// Format date to readable string
 export const formatDate = (dateString: string): string => {
 	const date = new Date(dateString);
 	return date.toLocaleDateString('en-US', {
@@ -13,12 +12,10 @@ export const formatDate = (dateString: string): string => {
 	});
 };
 
-// Generate unique ID
 export const generateId = (): string => {
 	return Date.now().toString() + Math.random().toString(36).substr(2, 9);
 };
 
-// Validate item data
 export const validateItem = (item: Partial<ItemFormData>): string[] => {
 	const errors: string[] = [];
 
@@ -41,7 +38,6 @@ export const validateItem = (item: Partial<ItemFormData>): string[] => {
 	return errors;
 };
 
-// Format file size
 export const formatFileSize = (bytes: number): string => {
 	if (bytes === 0) return '0 Bytes';
 
@@ -52,7 +48,6 @@ export const formatFileSize = (bytes: number): string => {
 	return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-// Debounce function for search
 export const debounce = <T extends (...args: any[]) => void>(
 	func: T,
 	wait: number
@@ -64,7 +59,6 @@ export const debounce = <T extends (...args: any[]) => void>(
 	};
 };
 
-// Sort items by date
 export const sortItemsByDate = (
 	items: Item[],
 	ascending: boolean = false
@@ -76,7 +70,6 @@ export const sortItemsByDate = (
 	});
 };
 
-// Filter items by category
 export const filterItemsByCategory = (
 	items: Item[],
 	category: string
@@ -99,7 +92,6 @@ export const isDeepEmpty = (value: any): boolean => {
 	return false;
 };
 
-// Universal function that handles both arrays and single objects
 export const isDataEmpty = (data: any | any[] | null | undefined): boolean => {
 	if (_.isNil(data)) return true;
 	if (Array.isArray(data)) {
@@ -122,4 +114,21 @@ export const getCurrentMonth = (): string => {
 	return `${now.getFullYear()}-${(now.getMonth() + 1)
 		.toString()
 		.padStart(2, '0')}`;
+};
+
+export const formatCurrency = (amount: number): string => {
+	return new Intl.NumberFormat('en-IN', {
+		style: 'currency',
+		currency: 'INR',
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	}).format(amount);
+};
+
+export const getPercentage = (amount: number, total: number): string => {
+	return total > 0 ? ((amount / total) * 100).toFixed(1) + '%' : '0%';
+};
+
+export const formatNumber = (num: number, decimals: number = 2): string => {
+	return num.toFixed(decimals);
 };
