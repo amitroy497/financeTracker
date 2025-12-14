@@ -36,6 +36,11 @@ export const Stocks = ({
 		currentPrice: 0,
 	});
 
+	// Add state for input strings to allow decimal typing
+	const [quantityInput, setQuantityInput] = useState<string>('');
+	const [averagePriceInput, setAveragePriceInput] = useState<string>('');
+	const [currentPriceInput, setCurrentPriceInput] = useState<string>('');
+
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('en-IN', {
 			style: 'currency',
@@ -53,16 +58,79 @@ export const Stocks = ({
 		return exchange === 'NSE' ? colors.primary : colors.info;
 	};
 
-	// Handle numeric input with decimal validation
-	const handleNumericInput = (field: keyof CreateStockData, value: string) => {
-		const decimalCount = (value.match(/\./g) || []).length;
-		if (decimalCount > 1) return;
+	// Handle integer input for quantity
+	const handleQuantityInput = (text: string) => {
+		// Allow only numbers (integer input for quantity)
+		const cleanedText = text.replace(/[^0-9]/g, '');
 
-		const regex = /^\d*\.?\d*$/;
-		if (!regex.test(value) && value !== '') return;
+		setQuantityInput(cleanedText);
 
-		const numValue = parseFloat(value) || 0;
-		setNewStock({ ...newStock, [field]: numValue });
+		// Parse the value
+		const parsedValue = cleanedText === '' ? 0 : parseInt(cleanedText, 10);
+
+		if (!isNaN(parsedValue)) {
+			setNewStock({
+				...newStock,
+				quantity: parsedValue,
+			});
+		}
+	};
+
+	// Handle decimal input for prices
+	const handleDecimalInput = (
+		text: string,
+		type: 'averagePrice' | 'currentPrice'
+	) => {
+		// Allow only numbers and one decimal point
+		let cleanedText = text.replace(/[^0-9.]/g, '');
+
+		// Prevent more than one decimal point
+		const decimalCount = (cleanedText.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			// Remove extra decimal points
+			const firstDecimalIndex = cleanedText.indexOf('.');
+			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
+			const afterDecimal = cleanedText
+				.substring(firstDecimalIndex + 1)
+				.replace(/\./g, '');
+			cleanedText = beforeDecimal + afterDecimal;
+		}
+
+		// Limit to 2 decimal places for prices
+		const decimalIndex = cleanedText.indexOf('.');
+		if (decimalIndex !== -1) {
+			const decimalPart = cleanedText.substring(decimalIndex + 1);
+			if (decimalPart.length > 2) {
+				cleanedText = cleanedText.substring(0, decimalIndex + 3);
+			}
+		}
+
+		// Update the appropriate input state
+		if (type === 'averagePrice') {
+			setAveragePriceInput(cleanedText);
+		} else {
+			setCurrentPriceInput(cleanedText);
+		}
+
+		// Parse the value and update the stock data
+		let parsedValue: number;
+		if (cleanedText === '' || cleanedText === '.') {
+			parsedValue = 0;
+		} else {
+			parsedValue = parseFloat(cleanedText);
+			if (isNaN(parsedValue)) parsedValue = 0;
+		}
+
+		setNewStock({
+			...newStock,
+			[type]: parsedValue,
+		});
+	};
+
+	// Format number for display (show empty string for 0)
+	const formatNumberForInput = (num: number): string => {
+		if (num === 0) return '';
+		return num.toString();
 	};
 
 	const handleAddStock = async (): Promise<void> => {
@@ -95,6 +163,7 @@ export const Stocks = ({
 		try {
 			await assetService.createStock(userId, newStock);
 			setShowAddModal(false);
+			// Reset all states
 			setNewStock({
 				companyName: '',
 				symbol: '',
@@ -103,6 +172,9 @@ export const Stocks = ({
 				averagePrice: 0,
 				currentPrice: 0,
 			});
+			setQuantityInput('');
+			setAveragePriceInput('');
+			setCurrentPriceInput('');
 			onRefresh();
 			Alert.alert('Success', 'Stock added successfully!');
 		} catch (error) {
@@ -117,12 +189,16 @@ export const Stocks = ({
 		setEditingStock(stock);
 		setNewStock({
 			companyName: stock.companyName,
-			symbol: stock.symbol,
-			exchange: stock.exchange,
+			symbol: stock.symbol || '',
+			exchange: stock.exchange || 'NSE',
 			quantity: stock.quantity,
 			averagePrice: stock.averagePrice,
 			currentPrice: stock.currentPrice,
 		});
+		// Set input strings for display
+		setQuantityInput(formatNumberForInput(stock.quantity));
+		setAveragePriceInput(formatNumberForInput(stock.averagePrice));
+		setCurrentPriceInput(formatNumberForInput(stock.currentPrice));
 		setShowEditModal(true);
 	};
 
@@ -157,6 +233,7 @@ export const Stocks = ({
 			await assetService.updateStock(userId, editingStock.id, newStock);
 			setShowEditModal(false);
 			setEditingStock(null);
+			// Reset all states
 			setNewStock({
 				companyName: '',
 				symbol: '',
@@ -165,6 +242,9 @@ export const Stocks = ({
 				averagePrice: 0,
 				currentPrice: 0,
 			});
+			setQuantityInput('');
+			setAveragePriceInput('');
+			setCurrentPriceInput('');
 			onRefresh();
 			Alert.alert('Success', 'Stock updated successfully!');
 		} catch (error) {
@@ -404,6 +484,7 @@ export const Stocks = ({
 				} else {
 					setShowAddModal(false);
 				}
+				// Reset all states
 				setNewStock({
 					companyName: '',
 					symbol: '',
@@ -412,6 +493,9 @@ export const Stocks = ({
 					averagePrice: 0,
 					currentPrice: 0,
 				});
+				setQuantityInput('');
+				setAveragePriceInput('');
+				setCurrentPriceInput('');
 			}}
 		>
 			<View
@@ -501,13 +585,8 @@ export const Stocks = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Quantity'
-							value={newStock.quantity.toString()}
-							onChangeText={(text) =>
-								setNewStock({
-									...newStock,
-									quantity: parseInt(text) || 0,
-								})
-							}
+							value={quantityInput}
+							onChangeText={handleQuantityInput}
 							placeholderTextColor={colors.gray}
 							keyboardType='number-pad'
 						/>
@@ -515,8 +594,8 @@ export const Stocks = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Average Buy Price (₹)'
-							value={newStock.averagePrice.toString()}
-							onChangeText={(text) => handleNumericInput('averagePrice', text)}
+							value={averagePriceInput}
+							onChangeText={(text) => handleDecimalInput(text, 'averagePrice')}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
@@ -524,8 +603,8 @@ export const Stocks = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Current Market Price (₹)'
-							value={newStock.currentPrice.toString()}
-							onChangeText={(text) => handleNumericInput('currentPrice', text)}
+							value={currentPriceInput}
+							onChangeText={(text) => handleDecimalInput(text, 'currentPrice')}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
@@ -540,6 +619,7 @@ export const Stocks = ({
 									} else {
 										setShowAddModal(false);
 									}
+									// Reset all states
 									setNewStock({
 										companyName: '',
 										symbol: '',
@@ -548,6 +628,9 @@ export const Stocks = ({
 										averagePrice: 0,
 										currentPrice: 0,
 									});
+									setQuantityInput('');
+									setAveragePriceInput('');
+									setCurrentPriceInput('');
 								}}
 								disabled={isSubmitting}
 							>

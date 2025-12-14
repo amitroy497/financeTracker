@@ -48,6 +48,9 @@ export const FixedDeposits = ({
 		description: '',
 	});
 
+	const [amountInput, setAmountInput] = useState<string>('');
+	const [interestRateInput, setInterestRateInput] = useState<string>('');
+
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('en-IN', {
 			style: 'currency',
@@ -68,28 +71,73 @@ export const FixedDeposits = ({
 		return status === 'Active' ? colors.success : colors.gray;
 	};
 
-	// Handle numeric input with decimal validation
-	const handleNumericInput = (
-		field: keyof CreateFixedDepositData,
-		value: string
+	const handleDecimalInput = (
+		text: string,
+		type: 'amount' | 'interestRate'
 	) => {
-		const decimalCount = (value.match(/\./g) || []).length;
-		if (decimalCount > 1) return;
+		let cleanedText = text.replace(/[^0-9.]/g, '');
 
-		const regex = /^\d*\.?\d*$/;
-		if (!regex.test(value) && value !== '') return;
+		const decimalCount = (cleanedText.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			const firstDecimalIndex = cleanedText.indexOf('.');
+			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
+			const afterDecimal = cleanedText
+				.substring(firstDecimalIndex + 1)
+				.replace(/\./g, '');
+			cleanedText = beforeDecimal + afterDecimal;
+		}
 
-		const numValue = parseFloat(value) || 0;
-		setNewDeposit({ ...newDeposit, [field]: numValue });
+		const decimalIndex = cleanedText.indexOf('.');
+		if (decimalIndex !== -1) {
+			const decimalPart = cleanedText.substring(decimalIndex + 1);
+			if (decimalPart.length > 2) {
+				cleanedText = cleanedText.substring(0, decimalIndex + 3);
+			}
+		}
+
+		if (type === 'amount') {
+			setAmountInput(cleanedText);
+		} else {
+			setInterestRateInput(cleanedText);
+		}
+
+		let parsedValue: number;
+		if (cleanedText === '' || cleanedText === '.') {
+			parsedValue = 0;
+		} else {
+			parsedValue = parseFloat(cleanedText);
+			if (isNaN(parsedValue)) parsedValue = 0;
+		}
+
+		setNewDeposit({
+			...newDeposit,
+			[type === 'amount' ? 'amount' : 'interestRate']: parsedValue,
+		});
 	};
 
-	// Handle integer input
 	const handleIntegerInput = (
 		field: keyof CreateFixedDepositData,
 		value: string
 	) => {
 		const intValue = parseInt(value) || 0;
 		setNewDeposit({ ...newDeposit, [field]: intValue });
+	};
+
+	const handleTenureInput = (text: string) => {
+		const cleanedText = text.replace(/[^0-9]/g, '');
+		const parsedValue = cleanedText === '' ? 12 : parseInt(cleanedText, 10);
+
+		if (!isNaN(parsedValue)) {
+			setNewDeposit({
+				...newDeposit,
+				tenure: parsedValue,
+			});
+		}
+	};
+
+	const formatNumberForInput = (num: number): string => {
+		if (num === 0) return '';
+		return num.toString();
 	};
 
 	const handleAddDeposit = async (): Promise<void> => {
@@ -126,6 +174,8 @@ export const FixedDeposits = ({
 				tenure: 12,
 				description: '',
 			});
+			setAmountInput('');
+			setInterestRateInput('');
 			onRefresh();
 			Alert.alert('Success', 'Fixed deposit added successfully!');
 		} catch (error) {
@@ -147,6 +197,8 @@ export const FixedDeposits = ({
 			tenure: deposit.tenure,
 			description: deposit.description || '',
 		});
+		setAmountInput(formatNumberForInput(deposit.amount));
+		setInterestRateInput(formatNumberForInput(deposit.interestRate));
 		setShowEditModal(true);
 	};
 
@@ -189,6 +241,8 @@ export const FixedDeposits = ({
 				tenure: 12,
 				description: '',
 			});
+			setAmountInput('');
+			setInterestRateInput('');
 			onRefresh();
 			Alert.alert('Success', 'Fixed deposit updated successfully!');
 		} catch (error) {
@@ -203,7 +257,6 @@ export const FixedDeposits = ({
 		depositId: string,
 		bankName: string
 	): Promise<void> => {
-		// Use the onDelete prop if provided, otherwise use direct service call
 		if (onDelete) {
 			onDelete('fd', depositId);
 		} else {
@@ -231,7 +284,6 @@ export const FixedDeposits = ({
 		}
 	};
 
-	// Handle date picker
 	const handleDateChange = (event: any, date?: Date) => {
 		setShowDatePicker(false);
 		if (date) {
@@ -244,11 +296,8 @@ export const FixedDeposits = ({
 		}
 	};
 
-	// Open date picker
 	const openDatePicker = (field: 'startDate') => {
 		setDatePickerField(field);
-
-		// Set initial date from form data or current date
 		if (newDeposit[field]) {
 			setSelectedDate(new Date(newDeposit[field] as string));
 		} else {
@@ -322,7 +371,6 @@ export const FixedDeposits = ({
 								{isMatured ? 'Matured' : deposit.status}
 							</Text>
 						</View>
-
 						{deposit.depositNumber && (
 							<Text
 								style={{
@@ -334,7 +382,6 @@ export const FixedDeposits = ({
 								FD No: {deposit.depositNumber}
 							</Text>
 						)}
-
 						<Text
 							style={{
 								color: colors.gray,
@@ -345,7 +392,6 @@ export const FixedDeposits = ({
 							Interest: {deposit.interestRate}% • Tenure: {deposit.tenure}{' '}
 							months
 						</Text>
-
 						<View
 							style={[
 								styles.row,
@@ -371,7 +417,6 @@ export const FixedDeposits = ({
 							📅 {formatDate(deposit.startDate)} -{' '}
 							{formatDate(deposit.maturityDate)}
 						</Text>
-
 						{deposit.description && (
 							<Text
 								style={{
@@ -386,8 +431,6 @@ export const FixedDeposits = ({
 						)}
 					</View>
 				</View>
-
-				{/* Edit/Delete Buttons */}
 				<View
 					style={[styles.row, { marginTop: 12, justifyContent: 'flex-end' }]}
 				>
@@ -430,6 +473,8 @@ export const FixedDeposits = ({
 					tenure: 12,
 					description: '',
 				});
+				setAmountInput('');
+				setInterestRateInput('');
 			}}
 		>
 			<View
@@ -444,7 +489,6 @@ export const FixedDeposits = ({
 						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
 							{isEdit ? 'Edit Fixed Deposit' : 'Add Fixed Deposit'}
 						</Text>
-
 						<TextInput
 							style={styles.input}
 							placeholder='Bank Name'
@@ -454,7 +498,6 @@ export const FixedDeposits = ({
 							}
 							placeholderTextColor={colors.gray}
 						/>
-
 						<TextInput
 							style={styles.input}
 							placeholder='FD Number (Optional)'
@@ -464,25 +507,22 @@ export const FixedDeposits = ({
 							}
 							placeholderTextColor={colors.gray}
 						/>
-
 						<TextInput
 							style={styles.input}
 							placeholder='Amount (₹)'
-							value={newDeposit.amount.toString()}
-							onChangeText={(text) => handleNumericInput('amount', text)}
+							value={amountInput}
+							onChangeText={(text) => handleDecimalInput(text, 'amount')}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
-
 						<TextInput
 							style={styles.input}
 							placeholder='Interest Rate (%)'
-							value={newDeposit.interestRate.toString()}
-							onChangeText={(text) => handleNumericInput('interestRate', text)}
+							value={interestRateInput}
+							onChangeText={(text) => handleDecimalInput(text, 'interestRate')}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
-
 						<TouchableOpacity
 							style={[styles.input, { justifyContent: 'center' }]}
 							onPress={() => openDatePicker('startDate')}
@@ -491,16 +531,16 @@ export const FixedDeposits = ({
 								📅 Start Date: {formatDate(newDeposit.startDate)}
 							</Text>
 						</TouchableOpacity>
-
 						<TextInput
 							style={styles.input}
 							placeholder='Tenure (months)'
-							value={newDeposit.tenure.toString()}
-							onChangeText={(text) => handleIntegerInput('tenure', text)}
+							value={
+								newDeposit.tenure === 0 ? '' : newDeposit.tenure.toString()
+							}
+							onChangeText={handleTenureInput}
 							placeholderTextColor={colors.gray}
 							keyboardType='number-pad'
 						/>
-
 						<TextInput
 							style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
 							placeholder='Description (Optional)'
@@ -512,8 +552,6 @@ export const FixedDeposits = ({
 							multiline
 							numberOfLines={3}
 						/>
-
-						{/* Date Picker */}
 						{showDatePicker && (
 							<DateTimePicker
 								value={selectedDate}
@@ -522,7 +560,6 @@ export const FixedDeposits = ({
 								onChange={handleDateChange}
 							/>
 						)}
-
 						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
 							<TouchableOpacity
 								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
@@ -542,6 +579,8 @@ export const FixedDeposits = ({
 										tenure: 12,
 										description: '',
 									});
+									setAmountInput('');
+									setInterestRateInput('');
 								}}
 								disabled={isSubmitting}
 							>
@@ -566,7 +605,6 @@ export const FixedDeposits = ({
 
 	return (
 		<View style={{ padding: 20 }}>
-			{/* Summary Card */}
 			<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
 				<View style={[styles.row, styles.spaceBetween]}>
 					<View>
@@ -593,12 +631,9 @@ export const FixedDeposits = ({
 					</Text>
 				</View>
 			</View>
-
-			{/* Fixed Deposits List */}
 			<Text style={[styles.subHeading, { marginTop: 24, marginBottom: 16 }]}>
 				Fixed Deposits
 			</Text>
-
 			{deposits.length === 0 ? (
 				<View
 					style={[
@@ -620,8 +655,6 @@ export const FixedDeposits = ({
 					{deposits.map(renderDepositCard)}
 				</ScrollView>
 			)}
-
-			{/* Add New FD Button */}
 			<TouchableOpacity
 				style={[styles.button, styles.buttonPrimary, { marginTop: 16 }]}
 				onPress={() => setShowAddModal(true)}
@@ -629,7 +662,6 @@ export const FixedDeposits = ({
 				<Text style={styles.buttonText}>+ Add Fixed Deposit</Text>
 			</TouchableOpacity>
 
-			{/* Modals */}
 			{renderAddEditModal(false)}
 			{renderAddEditModal(true)}
 		</View>

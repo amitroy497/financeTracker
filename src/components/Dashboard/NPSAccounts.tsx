@@ -6,6 +6,7 @@ import {
 	NationalPensionScheme,
 	NPSAccountsProps,
 } from '@/types';
+import { formatNumber } from '@/utils';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import {
@@ -42,6 +43,11 @@ export const NPSAccounts = ({
 		notes: '',
 	});
 
+	// Add state for input strings to allow decimal typing
+	const [totalContributionInput, setTotalContributionInput] =
+		useState<string>('');
+	const [currentValueInput, setCurrentValueInput] = useState<string>('');
+
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('en-IN', {
 			style: 'currency',
@@ -51,24 +57,65 @@ export const NPSAccounts = ({
 		}).format(amount);
 	};
 
-	const formatNumber = (num: number, decimals: number = 2): string => {
-		return num.toFixed(decimals);
-	};
-
 	const getReturnColor = (returns: number): string => {
 		return returns >= 0 ? colors.success : colors.danger;
 	};
 
-	// Handle numeric input with decimal validation
-	const handleNumericInput = (field: keyof CreateNPSData, value: string) => {
-		const decimalCount = (value.match(/\./g) || []).length;
-		if (decimalCount > 1) return;
+	// Handle decimal input with proper validation
+	const handleDecimalInput = (
+		text: string,
+		type: 'totalContribution' | 'currentValue'
+	) => {
+		// Allow only numbers and one decimal point
+		let cleanedText = text.replace(/[^0-9.]/g, '');
 
-		const regex = /^\d*\.?\d*$/;
-		if (!regex.test(value) && value !== '') return;
+		// Prevent more than one decimal point
+		const decimalCount = (cleanedText.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			// Remove extra decimal points
+			const firstDecimalIndex = cleanedText.indexOf('.');
+			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
+			const afterDecimal = cleanedText
+				.substring(firstDecimalIndex + 1)
+				.replace(/\./g, '');
+			cleanedText = beforeDecimal + afterDecimal;
+		}
 
-		const numValue = parseFloat(value) || 0;
-		setNewAccount({ ...newAccount, [field]: numValue });
+		// Limit to 2 decimal places for both fields
+		const decimalIndex = cleanedText.indexOf('.');
+		if (decimalIndex !== -1) {
+			const decimalPart = cleanedText.substring(decimalIndex + 1);
+			if (decimalPart.length > 2) {
+				cleanedText = cleanedText.substring(0, decimalIndex + 3);
+			}
+		}
+
+		// Update the appropriate input state
+		if (type === 'totalContribution') {
+			setTotalContributionInput(cleanedText);
+		} else {
+			setCurrentValueInput(cleanedText);
+		}
+
+		// Parse the value and update the account data
+		let parsedValue: number;
+		if (cleanedText === '' || cleanedText === '.') {
+			parsedValue = 0;
+		} else {
+			parsedValue = parseFloat(cleanedText);
+			if (isNaN(parsedValue)) parsedValue = 0;
+		}
+
+		setNewAccount({
+			...newAccount,
+			[type]: parsedValue,
+		});
+	};
+
+	// Format number for display (show empty string for 0)
+	const formatNumberForInput = (num: number): string => {
+		if (num === 0) return '';
+		return num.toString();
 	};
 
 	const handleAddAccount = async (): Promise<void> => {
@@ -86,6 +133,7 @@ export const NPSAccounts = ({
 		try {
 			await assetService.createNPS(userId, newAccount);
 			setShowAddModal(false);
+			// Reset all states
 			setNewAccount({
 				pranNumber: '',
 				totalContribution: 0,
@@ -93,6 +141,8 @@ export const NPSAccounts = ({
 				lastContributionDate: new Date().toISOString().split('T')[0],
 				notes: '',
 			});
+			setTotalContributionInput('');
+			setCurrentValueInput('');
 			onRefresh();
 			Alert.alert('Success', 'NPS account added successfully!');
 		} catch (error) {
@@ -113,6 +163,11 @@ export const NPSAccounts = ({
 				account.lastContributionDate || new Date().toISOString().split('T')[0],
 			notes: account.notes || '',
 		});
+		// Set input strings for display
+		setTotalContributionInput(
+			formatNumberForInput(account.totalContribution || 0)
+		);
+		setCurrentValueInput(formatNumberForInput(account.currentValue || 0));
 		setShowEditModal(true);
 	};
 
@@ -137,6 +192,7 @@ export const NPSAccounts = ({
 			await assetService.updateNPS(userId, editingAccount.id, newAccount);
 			setShowEditModal(false);
 			setEditingAccount(null);
+			// Reset all states
 			setNewAccount({
 				pranNumber: '',
 				totalContribution: 0,
@@ -144,6 +200,8 @@ export const NPSAccounts = ({
 				lastContributionDate: new Date().toISOString().split('T')[0],
 				notes: '',
 			});
+			setTotalContributionInput('');
+			setCurrentValueInput('');
 			onRefresh();
 			Alert.alert('Success', 'NPS account updated successfully!');
 		} catch (error) {
@@ -358,6 +416,7 @@ export const NPSAccounts = ({
 				} else {
 					setShowAddModal(false);
 				}
+				// Reset all states
 				setNewAccount({
 					pranNumber: '',
 					totalContribution: 0,
@@ -365,6 +424,8 @@ export const NPSAccounts = ({
 					lastContributionDate: new Date().toISOString().split('T')[0],
 					notes: '',
 				});
+				setTotalContributionInput('');
+				setCurrentValueInput('');
 			}}
 		>
 			<View
@@ -393,9 +454,9 @@ export const NPSAccounts = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Total Contribution (₹)'
-							value={newAccount.totalContribution.toString()}
+							value={totalContributionInput}
 							onChangeText={(text) =>
-								handleNumericInput('totalContribution', text)
+								handleDecimalInput(text, 'totalContribution')
 							}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
@@ -404,8 +465,8 @@ export const NPSAccounts = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Current Portfolio Value (₹)'
-							value={newAccount.currentValue.toString()}
-							onChangeText={(text) => handleNumericInput('currentValue', text)}
+							value={currentValueInput}
+							onChangeText={(text) => handleDecimalInput(text, 'currentValue')}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
@@ -452,6 +513,7 @@ export const NPSAccounts = ({
 									} else {
 										setShowAddModal(false);
 									}
+									// Reset all states
 									setNewAccount({
 										pranNumber: '',
 										totalContribution: 0,
@@ -461,6 +523,8 @@ export const NPSAccounts = ({
 											.split('T')[0],
 										notes: '',
 									});
+									setTotalContributionInput('');
+									setCurrentValueInput('');
 								}}
 								disabled={isSubmitting}
 							>

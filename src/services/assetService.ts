@@ -114,7 +114,6 @@ const calculateYearsToMaturity = (maturityDate: string): number => {
 	return parseFloat(years.toFixed(2));
 };
 
-// Safe parse float with decimal handling
 const safeParseFloat = (
 	value: string | number | undefined,
 	defaultValue: number = 0
@@ -122,7 +121,23 @@ const safeParseFloat = (
 	if (value === undefined || value === null || value === '')
 		return defaultValue;
 
-	const num = typeof value === 'string' ? parseFloat(value) : value;
+	const strValue = typeof value === 'string' ? value : value.toString();
+
+	const cleanValue = strValue.replace(/[^0-9.]/g, '');
+	const decimalCount = (cleanValue.match(/\./g) || []).length;
+
+	if (decimalCount > 1) {
+		const firstDecimalIndex = cleanValue.indexOf('.');
+		const beforeDecimal = cleanValue.substring(0, firstDecimalIndex + 1);
+		const afterDecimal = cleanValue
+			.substring(firstDecimalIndex + 1)
+			.replace(/\./g, '');
+		const finalValue = beforeDecimal + afterDecimal;
+		const num = parseFloat(finalValue);
+		return isNaN(num) ? defaultValue : parseFloat(num.toFixed(2));
+	}
+
+	const num = parseFloat(cleanValue);
 	return isNaN(num) ? defaultValue : parseFloat(num.toFixed(2));
 };
 

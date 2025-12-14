@@ -30,6 +30,10 @@ export const PPFAccounts = ({
 		maturityDate: '2039-04-01',
 	});
 
+	// Add state for input strings to allow decimal typing
+	const [totalDepositsInput, setTotalDepositsInput] = useState<string>('');
+	const [interestRateInput, setInterestRateInput] = useState<string>('7.1');
+
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('en-IN', {
 			style: 'currency',
@@ -44,6 +48,98 @@ export const PPFAccounts = ({
 		const maturity = new Date(maturityDate);
 		const diffTime = maturity.getTime() - today.getTime();
 		return Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 365.25));
+	};
+
+	// Handle decimal input for total deposits
+	const handleTotalDepositsInput = (text: string) => {
+		// Allow only numbers and one decimal point
+		let cleanedText = text.replace(/[^0-9.]/g, '');
+
+		// Prevent more than one decimal point
+		const decimalCount = (cleanedText.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			// Remove extra decimal points
+			const firstDecimalIndex = cleanedText.indexOf('.');
+			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
+			const afterDecimal = cleanedText
+				.substring(firstDecimalIndex + 1)
+				.replace(/\./g, '');
+			cleanedText = beforeDecimal + afterDecimal;
+		}
+
+		// Limit to 2 decimal places
+		const decimalIndex = cleanedText.indexOf('.');
+		if (decimalIndex !== -1) {
+			const decimalPart = cleanedText.substring(decimalIndex + 1);
+			if (decimalPart.length > 2) {
+				cleanedText = cleanedText.substring(0, decimalIndex + 3);
+			}
+		}
+
+		setTotalDepositsInput(cleanedText);
+
+		// Parse the value and update the account data
+		let parsedValue: number;
+		if (cleanedText === '' || cleanedText === '.') {
+			parsedValue = 0;
+		} else {
+			parsedValue = parseFloat(cleanedText);
+			if (isNaN(parsedValue)) parsedValue = 0;
+		}
+
+		setNewAccount({
+			...newAccount,
+			totalDeposits: parsedValue,
+		});
+	};
+
+	// Handle decimal input for interest rate
+	const handleInterestRateInput = (text: string) => {
+		// Allow only numbers and one decimal point
+		let cleanedText = text.replace(/[^0-9.]/g, '');
+
+		// Prevent more than one decimal point
+		const decimalCount = (cleanedText.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			// Remove extra decimal points
+			const firstDecimalIndex = cleanedText.indexOf('.');
+			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
+			const afterDecimal = cleanedText
+				.substring(firstDecimalIndex + 1)
+				.replace(/\./g, '');
+			cleanedText = beforeDecimal + afterDecimal;
+		}
+
+		// Limit to 2 decimal places for interest rate
+		const decimalIndex = cleanedText.indexOf('.');
+		if (decimalIndex !== -1) {
+			const decimalPart = cleanedText.substring(decimalIndex + 1);
+			if (decimalPart.length > 2) {
+				cleanedText = cleanedText.substring(0, decimalIndex + 3);
+			}
+		}
+
+		setInterestRateInput(cleanedText);
+
+		// Parse the value and update the account data
+		let parsedValue: number;
+		if (cleanedText === '' || cleanedText === '.') {
+			parsedValue = 7.1; // Default value
+		} else {
+			parsedValue = parseFloat(cleanedText);
+			if (isNaN(parsedValue)) parsedValue = 7.1;
+		}
+
+		setNewAccount({
+			...newAccount,
+			interestRate: parsedValue,
+		});
+	};
+
+	// Format number for display (show empty string for 0)
+	const formatNumberForInput = (num: number): string => {
+		if (num === 0) return '';
+		return num.toString();
 	};
 
 	const handleAddAccount = async (): Promise<void> => {
@@ -62,10 +158,18 @@ export const PPFAccounts = ({
 			return;
 		}
 
+		// Validate maturity date format
+		const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+		if (!dateRegex.test(newAccount.maturityDate)) {
+			Alert.alert('Error', 'Please enter a valid date in YYYY-MM-DD format');
+			return;
+		}
+
 		setIsSubmitting(true);
 		try {
 			await assetService.createPPF(userId, newAccount);
 			setShowAddModal(false);
+			// Reset all states
 			setNewAccount({
 				accountNumber: '',
 				financialYear: '2024-25',
@@ -73,6 +177,8 @@ export const PPFAccounts = ({
 				interestRate: 7.1,
 				maturityDate: '2039-04-01',
 			});
+			setTotalDepositsInput('');
+			setInterestRateInput('7.1');
 			onRefresh();
 			Alert.alert('Success', 'PPF account added successfully!');
 		} catch (error) {
@@ -273,7 +379,19 @@ export const PPFAccounts = ({
 				visible={showAddModal}
 				animationType='slide'
 				transparent={true}
-				onRequestClose={() => setShowAddModal(false)}
+				onRequestClose={() => {
+					setShowAddModal(false);
+					// Reset all states
+					setNewAccount({
+						accountNumber: '',
+						financialYear: '2024-25',
+						totalDeposits: 0,
+						interestRate: 7.1,
+						maturityDate: '2039-04-01',
+					});
+					setTotalDepositsInput('');
+					setInterestRateInput('7.1');
+				}}
 			>
 				<View
 					style={{
@@ -310,13 +428,8 @@ export const PPFAccounts = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Total Deposits'
-							value={newAccount.totalDeposits.toString()}
-							onChangeText={(text) =>
-								setNewAccount({
-									...newAccount,
-									totalDeposits: parseFloat(text) || 0,
-								})
-							}
+							value={totalDepositsInput}
+							onChangeText={handleTotalDepositsInput}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
@@ -324,13 +437,8 @@ export const PPFAccounts = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Interest Rate (%)'
-							value={newAccount.interestRate.toString()}
-							onChangeText={(text) =>
-								setNewAccount({
-									...newAccount,
-									interestRate: parseFloat(text) || 7.1,
-								})
-							}
+							value={interestRateInput}
+							onChangeText={handleInterestRateInput}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
@@ -348,7 +456,19 @@ export const PPFAccounts = ({
 						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
 							<TouchableOpacity
 								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-								onPress={() => setShowAddModal(false)}
+								onPress={() => {
+									setShowAddModal(false);
+									// Reset all states
+									setNewAccount({
+										accountNumber: '',
+										financialYear: '2024-25',
+										totalDeposits: 0,
+										interestRate: 7.1,
+										maturityDate: '2039-04-01',
+									});
+									setTotalDepositsInput('');
+									setInterestRateInput('7.1');
+								}}
 								disabled={isSubmitting}
 							>
 								<Text style={styles.buttonText}>Cancel</Text>

@@ -42,22 +42,71 @@ export const EquityETFs = ({
 		notes: '',
 	});
 
+	const [unitsInput, setUnitsInput] = useState<string>('');
+	const [currentNavInput, setCurrentNavInput] = useState<string>('');
+	const [investedAmountInput, setInvestedAmountInput] = useState<string>('');
+
 	const getReturnColor = (returns: number): string => {
 		return returns >= 0 ? colors.success : colors.danger;
 	};
 
-	const handleNumericInput = (
-		field: keyof CreateEquityETFData,
-		value: string
+	const handleDecimalInput = (
+		text: string,
+		type: 'units' | 'currentNav' | 'investedAmount'
 	) => {
-		const decimalCount = (value.match(/\./g) || []).length;
-		if (decimalCount > 1) return;
+		let cleanedText = text.replace(/[^0-9.]/g, '');
 
-		const regex = /^\d*\.?\d*$/;
-		if (!regex.test(value) && value !== '') return;
+		const decimalCount = (cleanedText.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			const firstDecimalIndex = cleanedText.indexOf('.');
+			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
+			const afterDecimal = cleanedText
+				.substring(firstDecimalIndex + 1)
+				.replace(/\./g, '');
+			cleanedText = beforeDecimal + afterDecimal;
+		}
+		let maxDecimals = 2;
+		if (type === 'units') {
+			maxDecimals = 4;
+		}
 
-		const numValue = parseFloat(value) || 0;
-		setNewETF({ ...newETF, [field]: numValue });
+		const decimalIndex = cleanedText.indexOf('.');
+		if (decimalIndex !== -1) {
+			const decimalPart = cleanedText.substring(decimalIndex + 1);
+			if (decimalPart.length > maxDecimals) {
+				cleanedText = cleanedText.substring(0, decimalIndex + maxDecimals + 1);
+			}
+		}
+
+		switch (type) {
+			case 'units':
+				setUnitsInput(cleanedText);
+				break;
+			case 'currentNav':
+				setCurrentNavInput(cleanedText);
+				break;
+			case 'investedAmount':
+				setInvestedAmountInput(cleanedText);
+				break;
+		}
+
+		let parsedValue: number;
+		if (cleanedText === '' || cleanedText === '.') {
+			parsedValue = 0;
+		} else {
+			parsedValue = parseFloat(cleanedText);
+			if (isNaN(parsedValue)) parsedValue = 0;
+		}
+
+		setNewETF({
+			...newETF,
+			[type]: parsedValue,
+		});
+	};
+
+	const formatNumberForInput = (num: number): string => {
+		if (num === 0) return '';
+		return num.toString();
 	};
 
 	const handleAddETF = async (): Promise<void> => {
@@ -93,6 +142,9 @@ export const EquityETFs = ({
 				investedAmount: 0,
 				notes: '',
 			});
+			setUnitsInput('');
+			setCurrentNavInput('');
+			setInvestedAmountInput('');
 			onRefresh();
 			Alert.alert('Success', 'Equity ETF added successfully!');
 		} catch (error) {
@@ -113,6 +165,9 @@ export const EquityETFs = ({
 			investedAmount: etf.investedAmount,
 			notes: etf.notes || '',
 		});
+		setUnitsInput(formatNumberForInput(etf.units));
+		setCurrentNavInput(formatNumberForInput(etf.currentNav));
+		setInvestedAmountInput(formatNumberForInput(etf.investedAmount));
 		setShowEditModal(true);
 	};
 
@@ -150,6 +205,9 @@ export const EquityETFs = ({
 				investedAmount: 0,
 				notes: '',
 			});
+			setUnitsInput('');
+			setCurrentNavInput('');
+			setInvestedAmountInput('');
 			onRefresh();
 			Alert.alert('Success', 'Equity ETF updated successfully!');
 		} catch (error) {
@@ -311,7 +369,6 @@ export const EquityETFs = ({
 		</TouchableOpacity>
 	);
 
-	// Define form fields configuration
 	const formFields: FormField[] = [
 		{
 			id: 'etfName',
@@ -338,8 +395,8 @@ export const EquityETFs = ({
 			id: 'units',
 			label: 'Number of Units',
 			placeholder: 'Number of Units',
-			value: newETF.units.toString(),
-			onChangeText: (text: string) => handleNumericInput('units', text),
+			value: unitsInput,
+			onChangeText: (text: string) => handleDecimalInput(text, 'units'),
 			keyboardType: 'decimal-pad' as KeyboardType,
 			isMandatory: true,
 		},
@@ -347,8 +404,8 @@ export const EquityETFs = ({
 			id: 'currentNav',
 			label: 'Current NAV (per unit)',
 			placeholder: 'Current NAV (per unit)',
-			value: newETF.currentNav.toString(),
-			onChangeText: (text: string) => handleNumericInput('currentNav', text),
+			value: currentNavInput,
+			onChangeText: (text: string) => handleDecimalInput(text, 'currentNav'),
 			keyboardType: 'decimal-pad' as KeyboardType,
 			isMandatory: true,
 		},
@@ -356,9 +413,9 @@ export const EquityETFs = ({
 			id: 'investedAmount',
 			label: 'Total Invested Amount (₹)',
 			placeholder: 'Total Invested Amount (₹)',
-			value: newETF.investedAmount.toString(),
+			value: investedAmountInput,
 			onChangeText: (text: string) =>
-				handleNumericInput('investedAmount', text),
+				handleDecimalInput(text, 'investedAmount'),
 			keyboardType: 'decimal-pad' as KeyboardType,
 			isMandatory: true,
 		},
@@ -395,6 +452,9 @@ export const EquityETFs = ({
 					investedAmount: 0,
 					notes: '',
 				});
+				setUnitsInput('');
+				setCurrentNavInput('');
+				setInvestedAmountInput('');
 			}}
 		>
 			<View
@@ -441,6 +501,9 @@ export const EquityETFs = ({
 										investedAmount: 0,
 										notes: '',
 									});
+									setUnitsInput('');
+									setCurrentNavInput('');
+									setInvestedAmountInput('');
 								}}
 								disabled={isSubmitting}
 							>

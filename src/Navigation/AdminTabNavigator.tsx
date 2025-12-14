@@ -14,7 +14,7 @@ export const AdminTabNavigator: React.FC = () => {
 					backgroundColor: colors.cardBackground,
 					borderTopColor: colors.border,
 					borderTopWidth: 1,
-					height: 60,
+					height: 70,
 					paddingBottom: 5,
 					paddingTop: 5,
 				},

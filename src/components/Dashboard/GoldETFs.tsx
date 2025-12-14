@@ -2,6 +2,7 @@ import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { CreateGoldETFData, GoldETF, GoldETFsProps } from '@/types';
+import { formatNumber } from '@/utils';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -35,6 +36,11 @@ export const GoldETFs = ({
 		notes: '',
 	});
 
+	// Add state for input strings to allow decimal typing
+	const [unitsInput, setUnitsInput] = useState<string>('');
+	const [currentPriceInput, setCurrentPriceInput] = useState<string>('');
+	const [investedAmountInput, setInvestedAmountInput] = useState<string>('');
+
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('en-IN', {
 			style: 'currency',
@@ -44,27 +50,76 @@ export const GoldETFs = ({
 		}).format(amount);
 	};
 
-	const formatNumber = (num: number, decimals: number = 2): string => {
-		return num.toFixed(decimals);
-	};
-
 	const getReturnColor = (returns: number): string => {
 		return returns >= 0 ? colors.success : colors.danger;
 	};
 
-	// Handle numeric input with decimal validation
-	const handleNumericInput = (
-		field: keyof CreateGoldETFData,
-		value: string
+	// Handle decimal input with proper validation
+	const handleDecimalInput = (
+		text: string,
+		type: 'units' | 'currentPrice' | 'investedAmount'
 	) => {
-		const decimalCount = (value.match(/\./g) || []).length;
-		if (decimalCount > 1) return;
+		// Allow only numbers and one decimal point
+		let cleanedText = text.replace(/[^0-9.]/g, '');
 
-		const regex = /^\d*\.?\d*$/;
-		if (!regex.test(value) && value !== '') return;
+		// Prevent more than one decimal point
+		const decimalCount = (cleanedText.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			// Remove extra decimal points
+			const firstDecimalIndex = cleanedText.indexOf('.');
+			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
+			const afterDecimal = cleanedText
+				.substring(firstDecimalIndex + 1)
+				.replace(/\./g, '');
+			cleanedText = beforeDecimal + afterDecimal;
+		}
 
-		const numValue = parseFloat(value) || 0;
-		setNewETF({ ...newETF, [field]: numValue });
+		// For units, allow more decimal places (up to 4 for ETF units)
+		let maxDecimals = 2;
+		if (type === 'units') {
+			maxDecimals = 4; // Allow up to 4 decimal places for units
+		}
+
+		const decimalIndex = cleanedText.indexOf('.');
+		if (decimalIndex !== -1) {
+			const decimalPart = cleanedText.substring(decimalIndex + 1);
+			if (decimalPart.length > maxDecimals) {
+				cleanedText = cleanedText.substring(0, decimalIndex + maxDecimals + 1);
+			}
+		}
+
+		// Update the appropriate input state
+		switch (type) {
+			case 'units':
+				setUnitsInput(cleanedText);
+				break;
+			case 'currentPrice':
+				setCurrentPriceInput(cleanedText);
+				break;
+			case 'investedAmount':
+				setInvestedAmountInput(cleanedText);
+				break;
+		}
+
+		// Parse the value and update the ETF data
+		let parsedValue: number;
+		if (cleanedText === '' || cleanedText === '.') {
+			parsedValue = 0;
+		} else {
+			parsedValue = parseFloat(cleanedText);
+			if (isNaN(parsedValue)) parsedValue = 0;
+		}
+
+		setNewETF({
+			...newETF,
+			[type]: parsedValue,
+		});
+	};
+
+	// Format number for display (show empty string for 0)
+	const formatNumberForInput = (num: number): string => {
+		if (num === 0) return '';
+		return num.toString();
 	};
 
 	const handleAddETF = async (): Promise<void> => {
@@ -92,6 +147,7 @@ export const GoldETFs = ({
 		try {
 			await assetService.createGoldETF(userId, newETF);
 			setShowAddModal(false);
+			// Reset all states
 			setNewETF({
 				etfName: '',
 				symbol: '',
@@ -100,6 +156,9 @@ export const GoldETFs = ({
 				investedAmount: 0,
 				notes: '',
 			});
+			setUnitsInput('');
+			setCurrentPriceInput('');
+			setInvestedAmountInput('');
 			onRefresh();
 			Alert.alert('Success', 'Gold ETF added successfully!');
 		} catch (error) {
@@ -120,6 +179,10 @@ export const GoldETFs = ({
 			investedAmount: etf.investedAmount || 0,
 			notes: etf.notes || '',
 		});
+		// Set input strings for display
+		setUnitsInput(formatNumberForInput(etf.units));
+		setCurrentPriceInput(formatNumberForInput(etf.currentPrice || 0));
+		setInvestedAmountInput(formatNumberForInput(etf.investedAmount || 0));
 		setShowEditModal(true);
 	};
 
@@ -149,6 +212,7 @@ export const GoldETFs = ({
 			await assetService.updateGoldETF(userId, editingETF.id, newETF);
 			setShowEditModal(false);
 			setEditingETF(null);
+			// Reset all states
 			setNewETF({
 				etfName: '',
 				symbol: '',
@@ -157,6 +221,9 @@ export const GoldETFs = ({
 				investedAmount: 0,
 				notes: '',
 			});
+			setUnitsInput('');
+			setCurrentPriceInput('');
+			setInvestedAmountInput('');
 			onRefresh();
 			Alert.alert('Success', 'Gold ETF updated successfully!');
 		} catch (error) {
@@ -334,6 +401,7 @@ export const GoldETFs = ({
 				} else {
 					setShowAddModal(false);
 				}
+				// Reset all states
 				setNewETF({
 					etfName: '',
 					symbol: '',
@@ -342,6 +410,9 @@ export const GoldETFs = ({
 					investedAmount: 0,
 					notes: '',
 				});
+				setUnitsInput('');
+				setCurrentPriceInput('');
+				setInvestedAmountInput('');
 			}}
 		>
 			<View
@@ -378,8 +449,8 @@ export const GoldETFs = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Number of Units'
-							value={newETF.units.toString()}
-							onChangeText={(text) => handleNumericInput('units', text)}
+							value={unitsInput}
+							onChangeText={(text) => handleDecimalInput(text, 'units')}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
@@ -387,8 +458,8 @@ export const GoldETFs = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Current Price per Unit (₹)'
-							value={newETF.currentPrice.toString()}
-							onChangeText={(text) => handleNumericInput('currentPrice', text)}
+							value={currentPriceInput}
+							onChangeText={(text) => handleDecimalInput(text, 'currentPrice')}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
@@ -396,9 +467,9 @@ export const GoldETFs = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Total Invested Amount (₹)'
-							value={newETF.investedAmount.toString()}
+							value={investedAmountInput}
 							onChangeText={(text) =>
-								handleNumericInput('investedAmount', text)
+								handleDecimalInput(text, 'investedAmount')
 							}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
@@ -424,6 +495,7 @@ export const GoldETFs = ({
 									} else {
 										setShowAddModal(false);
 									}
+									// Reset all states
 									setNewETF({
 										etfName: '',
 										symbol: '',
@@ -432,6 +504,9 @@ export const GoldETFs = ({
 										investedAmount: 0,
 										notes: '',
 									});
+									setUnitsInput('');
+									setCurrentPriceInput('');
+									setInvestedAmountInput('');
 								}}
 								disabled={isSubmitting}
 							>

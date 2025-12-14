@@ -44,6 +44,9 @@ export const RecurringDeposits = ({
 		tenure: 12,
 	});
 
+	const [monthlyAmountInput, setMonthlyAmountInput] = useState<string>('');
+	const [interestRateInput, setInterestRateInput] = useState<string>('');
+
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('en-IN', {
 			style: 'currency',
@@ -67,19 +70,63 @@ export const RecurringDeposits = ({
 		return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 	};
 
-	// Handle numeric input with decimal validation
-	const handleNumericInput = (
-		field: keyof CreateRecurringDepositData,
-		value: string
+	const handleDecimalInput = (
+		text: string,
+		type: 'monthlyAmount' | 'interestRate'
 	) => {
-		const decimalCount = (value.match(/\./g) || []).length;
-		if (decimalCount > 1) return;
+		let cleanedText = text.replace(/[^0-9.]/g, '');
+		const decimalCount = (cleanedText.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			const firstDecimalIndex = cleanedText.indexOf('.');
+			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
+			const afterDecimal = cleanedText
+				.substring(firstDecimalIndex + 1)
+				.replace(/\./g, '');
+			cleanedText = beforeDecimal + afterDecimal;
+		}
 
-		const regex = /^\d*\.?\d*$/;
-		if (!regex.test(value) && value !== '') return;
+		const decimalIndex = cleanedText.indexOf('.');
+		if (decimalIndex !== -1) {
+			const decimalPart = cleanedText.substring(decimalIndex + 1);
+			if (decimalPart.length > 2) {
+				cleanedText = cleanedText.substring(0, decimalIndex + 3);
+			}
+		}
 
-		const numValue = parseFloat(value) || 0;
-		setNewDeposit({ ...newDeposit, [field]: numValue });
+		if (type === 'monthlyAmount') {
+			setMonthlyAmountInput(cleanedText);
+		} else {
+			setInterestRateInput(cleanedText);
+		}
+
+		let parsedValue: number;
+		if (cleanedText === '' || cleanedText === '.') {
+			parsedValue = 0;
+		} else {
+			parsedValue = parseFloat(cleanedText);
+			if (isNaN(parsedValue)) parsedValue = 0;
+		}
+
+		setNewDeposit({
+			...newDeposit,
+			[type === 'monthlyAmount' ? 'monthlyAmount' : 'interestRate']:
+				parsedValue,
+		});
+	};
+	const handleTenureInput = (text: string) => {
+		const cleanedText = text.replace(/[^0-9]/g, '');
+		const parsedValue = cleanedText === '' ? 12 : parseInt(cleanedText, 10);
+
+		if (!isNaN(parsedValue)) {
+			setNewDeposit({
+				...newDeposit,
+				tenure: parsedValue,
+			});
+		}
+	};
+	const formatNumberForInput = (num: number): string => {
+		if (num === 0) return '';
+		return num.toString();
 	};
 
 	const handleAddDeposit = async (): Promise<void> => {
@@ -120,6 +167,8 @@ export const RecurringDeposits = ({
 				startDate: new Date().toISOString().split('T')[0],
 				tenure: 12,
 			});
+			setMonthlyAmountInput('');
+			setInterestRateInput('');
 			onRefresh();
 			Alert.alert('Success', 'Recurring deposit added successfully!');
 		} catch (error) {
@@ -140,6 +189,8 @@ export const RecurringDeposits = ({
 			startDate: deposit.startDate,
 			tenure: deposit.tenure,
 		});
+		setMonthlyAmountInput(formatNumberForInput(deposit.monthlyAmount));
+		setInterestRateInput(formatNumberForInput(deposit.interestRate));
 		setShowEditModal(true);
 	};
 
@@ -186,6 +237,8 @@ export const RecurringDeposits = ({
 				startDate: new Date().toISOString().split('T')[0],
 				tenure: 12,
 			});
+			setMonthlyAmountInput('');
+			setInterestRateInput('');
 			onRefresh();
 			Alert.alert('Success', 'Recurring deposit updated successfully!');
 		} catch (error) {
@@ -200,7 +253,6 @@ export const RecurringDeposits = ({
 		depositId: string,
 		bankName: string
 	): Promise<void> => {
-		// Use the onDelete prop if provided, otherwise use direct service call
 		if (onDelete) {
 			onDelete('recurring-deposit', depositId);
 		} else {
@@ -231,7 +283,6 @@ export const RecurringDeposits = ({
 		}
 	};
 
-	// Handle date picker
 	const handleDateChange = (event: any, date?: Date) => {
 		setShowDatePicker(false);
 		if (date) {
@@ -241,7 +292,6 @@ export const RecurringDeposits = ({
 		}
 	};
 
-	// Open date picker
 	const openDatePicker = () => {
 		if (newDeposit.startDate) {
 			setSelectedDate(new Date(newDeposit.startDate));
@@ -321,8 +371,6 @@ export const RecurringDeposits = ({
 						<Text style={{ color: colors.gray, fontSize: 12, marginBottom: 8 }}>
 							{deposit.accountNumber} • {deposit.interestRate}% interest
 						</Text>
-
-						{/* Progress Bar */}
 						<View style={{ marginBottom: 12 }}>
 							<View
 								style={{
@@ -394,8 +442,6 @@ export const RecurringDeposits = ({
 						</Text>
 					</View>
 				</View>
-
-				{/* Edit/Delete Buttons */}
 				<View
 					style={[styles.row, { marginTop: 12, justifyContent: 'flex-end' }]}
 				>
@@ -437,6 +483,8 @@ export const RecurringDeposits = ({
 					startDate: new Date().toISOString().split('T')[0],
 					tenure: 12,
 				});
+				setMonthlyAmountInput('');
+				setInterestRateInput('');
 			}}
 		>
 			<View
@@ -475,8 +523,8 @@ export const RecurringDeposits = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Monthly Amount (₹)'
-							value={newDeposit.monthlyAmount.toString()}
-							onChangeText={(text) => handleNumericInput('monthlyAmount', text)}
+							value={monthlyAmountInput}
+							onChangeText={(text) => handleDecimalInput(text, 'monthlyAmount')}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
@@ -484,8 +532,8 @@ export const RecurringDeposits = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Interest Rate (%)'
-							value={newDeposit.interestRate.toString()}
-							onChangeText={(text) => handleNumericInput('interestRate', text)}
+							value={interestRateInput}
+							onChangeText={(text) => handleDecimalInput(text, 'interestRate')}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
@@ -502,18 +550,13 @@ export const RecurringDeposits = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Tenure (months)'
-							value={newDeposit.tenure.toString()}
-							onChangeText={(text) =>
-								setNewDeposit({
-									...newDeposit,
-									tenure: parseInt(text) || 12,
-								})
+							value={
+								newDeposit.tenure === 0 ? '' : newDeposit.tenure.toString()
 							}
+							onChangeText={handleTenureInput}
 							placeholderTextColor={colors.gray}
 							keyboardType='number-pad'
 						/>
-
-						{/* Date Picker */}
 						{showDatePicker && (
 							<DateTimePicker
 								value={selectedDate}
@@ -541,6 +584,8 @@ export const RecurringDeposits = ({
 										startDate: new Date().toISOString().split('T')[0],
 										tenure: 12,
 									});
+									setMonthlyAmountInput('');
+									setInterestRateInput('');
 								}}
 								disabled={isSubmitting}
 							>
@@ -565,7 +610,6 @@ export const RecurringDeposits = ({
 
 	return (
 		<View style={{ padding: 20 }}>
-			{/* Summary Card */}
 			<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
 				<View style={[styles.row, styles.spaceBetween]}>
 					<View>
@@ -593,7 +637,6 @@ export const RecurringDeposits = ({
 				</View>
 			</View>
 
-			{/* Recurring Deposits List */}
 			<Text style={[styles.subHeading, { marginTop: 24, marginBottom: 16 }]}>
 				Recurring Deposits
 			</Text>
@@ -622,7 +665,6 @@ export const RecurringDeposits = ({
 				</ScrollView>
 			)}
 
-			{/* Add New RD Button */}
 			<TouchableOpacity
 				style={[styles.button, styles.buttonPrimary, { marginTop: 16 }]}
 				onPress={() => setShowAddModal(true)}
@@ -630,7 +672,6 @@ export const RecurringDeposits = ({
 				<Text style={styles.buttonText}>+ Add Recurring Deposit</Text>
 			</TouchableOpacity>
 
-			{/* Modals */}
 			{renderAddEditModal(false)}
 			{renderAddEditModal(true)}
 		</View>

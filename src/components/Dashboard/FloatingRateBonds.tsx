@@ -48,6 +48,10 @@ export const FloatingRateBonds = ({
 		notes: '',
 	});
 
+	const [investmentAmountInput, setInvestmentAmountInput] =
+		useState<string>('');
+	const [interestRateInput, setInterestRateInput] = useState<string>('7.15');
+
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('en-IN', {
 			style: 'currency',
@@ -64,16 +68,59 @@ export const FloatingRateBonds = ({
 		return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 	};
 
-	// Handle numeric input with decimal validation
-	const handleNumericInput = (field: keyof CreateFRBData, value: string) => {
-		const decimalCount = (value.match(/\./g) || []).length;
-		if (decimalCount > 1) return;
+	const handleDecimalInput = (
+		text: string,
+		type: 'investmentAmount' | 'interestRate'
+	) => {
+		let cleanedText = text.replace(/[^0-9.]/g, '');
 
-		const regex = /^\d*\.?\d*$/;
-		if (!regex.test(value) && value !== '') return;
+		const decimalCount = (cleanedText.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			const firstDecimalIndex = cleanedText.indexOf('.');
+			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
+			const afterDecimal = cleanedText
+				.substring(firstDecimalIndex + 1)
+				.replace(/\./g, '');
+			cleanedText = beforeDecimal + afterDecimal;
+		}
 
-		const numValue = parseFloat(value) || 0;
-		setNewBond({ ...newBond, [field]: numValue });
+		const decimalIndex = cleanedText.indexOf('.');
+		if (decimalIndex !== -1) {
+			const decimalPart = cleanedText.substring(decimalIndex + 1);
+			if (decimalPart.length > 2) {
+				cleanedText = cleanedText.substring(0, decimalIndex + 3);
+			}
+		}
+
+		if (type === 'investmentAmount') {
+			setInvestmentAmountInput(cleanedText);
+		} else {
+			setInterestRateInput(cleanedText);
+		}
+
+		let parsedValue: number;
+		if (cleanedText === '' || cleanedText === '.') {
+			if (type === 'investmentAmount') {
+				parsedValue = 0;
+			} else {
+				parsedValue = 7.15;
+			}
+		} else {
+			parsedValue = parseFloat(cleanedText);
+			if (isNaN(parsedValue)) {
+				parsedValue = type === 'investmentAmount' ? 0 : 7.15;
+			}
+		}
+
+		setNewBond({
+			...newBond,
+			[type]: parsedValue,
+		});
+	};
+
+	const formatNumberForInput = (num: number): string => {
+		if (num === 0) return '';
+		return num.toString();
 	};
 
 	const handleAddBond = async (): Promise<void> => {
@@ -109,6 +156,8 @@ export const FloatingRateBonds = ({
 					.split('T')[0],
 				notes: '',
 			});
+			setInvestmentAmountInput('');
+			setInterestRateInput('7.15');
 			onRefresh();
 			Alert.alert('Success', 'Floating Rate Bond added successfully!');
 		} catch (error) {
@@ -130,6 +179,9 @@ export const FloatingRateBonds = ({
 			maturityDate: bond.maturityDate,
 			notes: bond.notes || '',
 		});
+		// Set input strings for display
+		setInvestmentAmountInput(formatNumberForInput(bond.investmentAmount));
+		setInterestRateInput(formatNumberForInput(bond.interestRate));
 		setShowEditModal(true);
 	};
 
@@ -167,6 +219,8 @@ export const FloatingRateBonds = ({
 					.split('T')[0],
 				notes: '',
 			});
+			setInvestmentAmountInput('');
+			setInterestRateInput('7.15');
 			onRefresh();
 			Alert.alert('Success', 'Floating Rate Bond updated successfully!');
 		} catch (error) {
@@ -418,6 +472,7 @@ export const FloatingRateBonds = ({
 				} else {
 					setShowAddModal(false);
 				}
+				// Reset all states
 				setNewBond({
 					bondName: '',
 					certificateNumber: '',
@@ -431,6 +486,8 @@ export const FloatingRateBonds = ({
 						.split('T')[0],
 					notes: '',
 				});
+				setInvestmentAmountInput('');
+				setInterestRateInput('7.15');
 			}}
 		>
 			<View
@@ -469,9 +526,9 @@ export const FloatingRateBonds = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Investment Amount (₹)'
-							value={newBond.investmentAmount.toString()}
+							value={investmentAmountInput}
 							onChangeText={(text) =>
-								handleNumericInput('investmentAmount', text)
+								handleDecimalInput(text, 'investmentAmount')
 							}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
@@ -480,8 +537,8 @@ export const FloatingRateBonds = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Interest Rate (%)'
-							value={newBond.interestRate.toString()}
-							onChangeText={(text) => handleNumericInput('interestRate', text)}
+							value={interestRateInput}
+							onChangeText={(text) => handleDecimalInput(text, 'interestRate')}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
@@ -534,6 +591,7 @@ export const FloatingRateBonds = ({
 									} else {
 										setShowAddModal(false);
 									}
+									// Reset all states
 									setNewBond({
 										bondName: '',
 										certificateNumber: '',
@@ -547,6 +605,8 @@ export const FloatingRateBonds = ({
 											.split('T')[0],
 										notes: '',
 									});
+									setInvestmentAmountInput('');
+									setInterestRateInput('7.15');
 								}}
 								disabled={isSubmitting}
 							>

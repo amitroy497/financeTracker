@@ -2,6 +2,7 @@ import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { CreateMutualFundData, MutualFund, MutualFundsProps } from '@/types';
+import { formatNumber } from '@/utils';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -37,6 +38,11 @@ export const MutualFunds = ({
 		notes: '',
 	});
 
+	// Add state for input strings to allow decimal typing
+	const [investedAmountInput, setInvestedAmountInput] = useState<string>('');
+	const [unitsInput, setUnitsInput] = useState<string>('');
+	const [navInput, setNavInput] = useState<string>('');
+
 	const formatCurrency = (amount: number): string => {
 		return new Intl.NumberFormat('en-IN', {
 			style: 'currency',
@@ -44,10 +50,6 @@ export const MutualFunds = ({
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2,
 		}).format(amount);
-	};
-
-	const formatNumber = (num: number, decimals: number = 2): string => {
-		return num.toFixed(decimals);
 	};
 
 	const getReturnColor = (returns: number): string => {
@@ -65,19 +67,72 @@ export const MutualFunds = ({
 		return colorsMap[type] || colors.gray;
 	};
 
-	// Handle numeric input with decimal validation
-	const handleNumericInput = (
-		field: keyof CreateMutualFundData,
-		value: string
+	// Handle decimal input with proper validation
+	const handleDecimalInput = (
+		text: string,
+		type: 'investedAmount' | 'units' | 'nav'
 	) => {
-		const decimalCount = (value.match(/\./g) || []).length;
-		if (decimalCount > 1) return;
+		// Allow only numbers and one decimal point
+		let cleanedText = text.replace(/[^0-9.]/g, '');
 
-		const regex = /^\d*\.?\d*$/;
-		if (!regex.test(value) && value !== '') return;
+		// Prevent more than one decimal point
+		const decimalCount = (cleanedText.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			// Remove extra decimal points
+			const firstDecimalIndex = cleanedText.indexOf('.');
+			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
+			const afterDecimal = cleanedText
+				.substring(firstDecimalIndex + 1)
+				.replace(/\./g, '');
+			cleanedText = beforeDecimal + afterDecimal;
+		}
 
-		const numValue = parseFloat(value) || 0;
-		setNewFund({ ...newFund, [field]: numValue });
+		// For NAV and units, allow more decimal places (up to 4 for units, 2 for others)
+		let maxDecimals = 2;
+		if (type === 'units') {
+			maxDecimals = 4; // Allow up to 4 decimal places for units
+		}
+
+		const decimalIndex = cleanedText.indexOf('.');
+		if (decimalIndex !== -1) {
+			const decimalPart = cleanedText.substring(decimalIndex + 1);
+			if (decimalPart.length > maxDecimals) {
+				cleanedText = cleanedText.substring(0, decimalIndex + maxDecimals + 1);
+			}
+		}
+
+		// Update the appropriate input state
+		switch (type) {
+			case 'investedAmount':
+				setInvestedAmountInput(cleanedText);
+				break;
+			case 'units':
+				setUnitsInput(cleanedText);
+				break;
+			case 'nav':
+				setNavInput(cleanedText);
+				break;
+		}
+
+		// Parse the value and update the fund data
+		let parsedValue: number;
+		if (cleanedText === '' || cleanedText === '.') {
+			parsedValue = 0;
+		} else {
+			parsedValue = parseFloat(cleanedText);
+			if (isNaN(parsedValue)) parsedValue = 0;
+		}
+
+		setNewFund({
+			...newFund,
+			[type]: parsedValue,
+		});
+	};
+
+	// Format number for display (show empty string for 0)
+	const formatNumberForInput = (num: number): string => {
+		if (num === 0) return '';
+		return num.toString();
 	};
 
 	const handleAddFund = async (): Promise<void> => {
@@ -105,6 +160,7 @@ export const MutualFunds = ({
 		try {
 			await assetService.createMutualFund(userId, newFund);
 			setShowAddModal(false);
+			// Reset all states
 			setNewFund({
 				schemeName: '',
 				fundHouse: '',
@@ -115,6 +171,9 @@ export const MutualFunds = ({
 				nav: 0,
 				notes: '',
 			});
+			setInvestedAmountInput('');
+			setUnitsInput('');
+			setNavInput('');
 			onRefresh();
 			Alert.alert('Success', 'Mutual fund added successfully!');
 		} catch (error) {
@@ -137,6 +196,10 @@ export const MutualFunds = ({
 			nav: fund.nav || 0,
 			notes: fund.notes || '',
 		});
+		// Set input strings for display
+		setInvestedAmountInput(formatNumberForInput(fund.investedAmount || 0));
+		setUnitsInput(formatNumberForInput(fund.units || 0));
+		setNavInput(formatNumberForInput(fund.nav || 0));
 		setShowEditModal(true);
 	};
 
@@ -170,6 +233,7 @@ export const MutualFunds = ({
 			await assetService.updateMutualFund(userId, editingFund.id, newFund);
 			setShowEditModal(false);
 			setEditingFund(null);
+			// Reset all states
 			setNewFund({
 				schemeName: '',
 				fundHouse: '',
@@ -180,6 +244,9 @@ export const MutualFunds = ({
 				nav: 0,
 				notes: '',
 			});
+			setInvestedAmountInput('');
+			setUnitsInput('');
+			setNavInput('');
 			onRefresh();
 			Alert.alert('Success', 'Mutual fund updated successfully!');
 		} catch (error) {
@@ -360,6 +427,7 @@ export const MutualFunds = ({
 				} else {
 					setShowAddModal(false);
 				}
+				// Reset all states
 				setNewFund({
 					schemeName: '',
 					fundHouse: '',
@@ -370,6 +438,9 @@ export const MutualFunds = ({
 					nav: 0,
 					notes: '',
 				});
+				setInvestedAmountInput('');
+				setUnitsInput('');
+				setNavInput('');
 			}}
 		>
 			<View
@@ -428,9 +499,9 @@ export const MutualFunds = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Total Invested Amount (₹)'
-							value={newFund.investedAmount.toString()}
+							value={investedAmountInput}
 							onChangeText={(text) =>
-								handleNumericInput('investedAmount', text)
+								handleDecimalInput(text, 'investedAmount')
 							}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
@@ -439,8 +510,8 @@ export const MutualFunds = ({
 						<TextInput
 							style={styles.input}
 							placeholder='Units'
-							value={newFund.units.toString()}
-							onChangeText={(text) => handleNumericInput('units', text)}
+							value={unitsInput}
+							onChangeText={(text) => handleDecimalInput(text, 'units')}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
@@ -448,8 +519,8 @@ export const MutualFunds = ({
 						<TextInput
 							style={styles.input}
 							placeholder='NAV (Net Asset Value)'
-							value={newFund.nav.toString()}
-							onChangeText={(text) => handleNumericInput('nav', text)}
+							value={navInput}
+							onChangeText={(text) => handleDecimalInput(text, 'nav')}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
@@ -474,6 +545,7 @@ export const MutualFunds = ({
 									} else {
 										setShowAddModal(false);
 									}
+									// Reset all states
 									setNewFund({
 										schemeName: '',
 										fundHouse: '',
@@ -484,6 +556,9 @@ export const MutualFunds = ({
 										nav: 0,
 										notes: '',
 									});
+									setInvestedAmountInput('');
+									setUnitsInput('');
+									setNavInput('');
 								}}
 								disabled={isSubmitting}
 							>

@@ -45,6 +45,8 @@ export const BankAccounts = ({
 		currency: 'INR',
 	});
 
+	const [balanceInput, setBalanceInput] = useState<string>('0');
+
 	const toggleAccountNumberVisibility = (accountId: string): void => {
 		const newUnmaskedAccounts = new Set(unmaskedAccounts);
 		if (newUnmaskedAccounts.has(accountId)) {
@@ -158,7 +160,34 @@ export const BankAccounts = ({
 			balance: account.balance || 0,
 			currency: account.currency || 'INR',
 		});
+		setBalanceInput(account.balance?.toString() || '0');
 		setShowEditModal(true);
+	};
+
+	const handleBalanceChange = (text: string) => {
+		let cleanedText = text.replace(/[^0-9.]/g, '');
+		const decimalCount = (cleanedText.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			cleanedText = cleanedText.slice(0, -1);
+		}
+
+		const decimalIndex = cleanedText.indexOf('.');
+		if (decimalIndex !== -1) {
+			const decimalPart = cleanedText.substring(decimalIndex + 1);
+			if (decimalPart.length > 2) {
+				cleanedText = cleanedText.substring(0, decimalIndex + 3);
+			}
+		}
+
+		setBalanceInput(cleanedText);
+
+		const parsedValue = cleanedText === '' ? 0 : parseFloat(cleanedText);
+		if (!isNaN(parsedValue)) {
+			setNewAccount({
+				...newAccount,
+				balance: parseFloat(parsedValue.toFixed(2)),
+			});
+		}
 	};
 
 	const handleUpdateAccount = async (): Promise<void> => {
@@ -348,8 +377,6 @@ export const BankAccounts = ({
 							account.lastUpdated || account.createdAt || new Date()
 						).toLocaleDateString()}
 					</Text>
-
-					{/* Edit/Delete Buttons */}
 					<View
 						style={[styles.row, { marginTop: 12, justifyContent: 'flex-end' }]}
 					>
@@ -407,7 +434,6 @@ export const BankAccounts = ({
 						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
 							{isEdit ? 'Edit Bank Account' : 'Add Bank Account'}
 						</Text>
-
 						<TextInput
 							style={styles.input}
 							placeholder='Account Name (Optional)'
@@ -469,8 +495,6 @@ export const BankAccounts = ({
 										placeholderTextColor={colors.gray}
 										autoFocus={true}
 									/>
-
-									{/* Bank List */}
 									<ScrollView
 										style={{ maxHeight: 150 }}
 										showsVerticalScrollIndicator={true}
@@ -502,13 +526,11 @@ export const BankAccounts = ({
 								</View>
 							)}
 						</View>
-
 						<TextInput
 							style={styles.input}
 							placeholder='Account Number'
 							value={newAccount.accountNumber}
 							onChangeText={(text) => {
-								// Remove any non-digit characters as user types
 								const cleanedText = text.replace(/\D/g, '');
 								setNewAccount({ ...newAccount, accountNumber: cleanedText });
 							}}
@@ -516,24 +538,14 @@ export const BankAccounts = ({
 							keyboardType='number-pad'
 							maxLength={18}
 						/>
-
 						<TextInput
 							style={styles.input}
 							placeholder='Balance (₹)'
-							value={newAccount.balance.toString()}
-							onChangeText={(text) => {
-								const value = text.replace(/[^0-9.]/g, '');
-								const decimalCount = (value.match(/\./g) || []).length;
-								if (decimalCount > 1) return;
-								setNewAccount({
-									...newAccount,
-									balance: parseFloat(value) || 0,
-								});
-							}}
+							value={balanceInput}
+							onChangeText={handleBalanceChange}
 							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
 						/>
-
 						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
 							<TouchableOpacity
 								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
@@ -559,7 +571,6 @@ export const BankAccounts = ({
 							>
 								<Text style={styles.buttonText}>Cancel</Text>
 							</TouchableOpacity>
-
 							<TouchableOpacity
 								style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
 								onPress={isEdit ? handleUpdateAccount : handleAddAccount}
@@ -602,11 +613,9 @@ export const BankAccounts = ({
 					{accounts.length !== 1 ? 's' : ''}
 				</Text>
 			</View>
-
 			<Text style={[styles.subHeading, { marginTop: 24, marginBottom: 16 }]}>
 				Bank Accounts
 			</Text>
-
 			{accounts.length === 0 ? (
 				<View
 					style={[

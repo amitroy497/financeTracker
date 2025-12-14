@@ -18,7 +18,6 @@ export interface ItemFormData {
 	category?: string;
 }
 
-// File system types
 export interface StorageInfo {
 	fileSize: number;
 	itemsCount: number;

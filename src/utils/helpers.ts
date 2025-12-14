@@ -132,3 +132,29 @@ export const getPercentage = (amount: number, total: number): string => {
 export const formatNumber = (num: number, decimals: number = 2): string => {
 	return num.toFixed(decimals);
 };
+
+export const formatStringNumber = (
+	value: string,
+	decimals: number = 2
+): number => {
+	if (!value || value === '' || value === '.') return 0;
+
+	// Remove all non-numeric characters except decimal point
+	let cleanedValue = value.replace(/[^0-9.]/g, '');
+
+	// Handle multiple decimal points
+	const parts = cleanedValue.split('.');
+	if (parts.length > 2) {
+		// If there are multiple decimal points, keep the first one
+		cleanedValue = parts[0] + '.' + parts.slice(1).join('');
+	}
+
+	// Parse to number
+	const num = parseFloat(cleanedValue);
+
+	// Return 0 if not a valid number
+	if (isNaN(num)) return 0;
+
+	// Round to specified decimal places
+	return parseFloat(num.toFixed(decimals));
+};

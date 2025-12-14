@@ -132,6 +132,7 @@ export const createStyles = (colors: ThemeColors) =>
 			fontWeight: '500',
 			paddingHorizontal: 16,
 			paddingBottom: 8,
+			color: colors.text,
 		},
 		input: {
 			backgroundColor: colors.cardBackground,
