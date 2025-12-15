@@ -1,3 +1,4 @@
+import { getBankIcon } from '@/assets';
 import { BANK_LIST } from '@/constants';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
@@ -8,13 +9,15 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
 	Alert,
+	Image,
+	KeyboardType,
 	Modal,
 	ScrollView,
 	Text,
-	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native';
+import { InputComponent } from '../UI';
 
 export const BankAccounts = ({
 	accounts,
@@ -63,19 +66,24 @@ export const BankAccounts = ({
 			: maskAccountNumber(account.accountNumber || '');
 	};
 
-	const getBankIcon = (bankName: string): string => {
-		const bankIcons: { [key: string]: string } = {
-			'Axis Bank': '🏦',
-			'Kotak Mahindra Bank': '💳',
-			'HDFC Bank': '🏛️',
-			'ICICI Bank': '🏢',
-			SBI: '🇮🇳',
-			'State Bank of India (SBI)': '🇮🇳',
-			Default: '🏦',
-		};
+	// const getBankIcon = (bankName: string) => {
+	// 	const bankImages: { [key: string]: any } = {
+	// 		'Axis Bank': require('@/assets/icons/banks/axis-bank.png'),
+	// 		'AU Small Finance Bank': require('@/assets/icons/banks/au-small-finance-bank.png'),
+	// 		'Federal Bank': require('@/assets/icons/banks/federal-bank.png'),
+	// 		'HDFC Bank': require('@/assets/icons/banks/hdfc-bank.png'),
+	// 		'ICICI Bank': require('@/assets/icons/banks/icici-bank.png'),
+	// 		'IDFC First Bank': require('@/assets/icons/banks/idfc-first-bank.png'),
+	// 		'Kotak Mahindra Bank': require('@/assets/icons/banks/kotak-mahindra-bank.png'),
+	// 		'Punjab National Bank': require('@/assets/icons/banks/punjab-national-bank.png'),
+	// 		'State Bank of India (SBI)': require('@/assets/icons/banks/sbi-bank.png'),
+	// 		'UCO Bank': require('@/assets/icons/banks/uco-bank.png'),
+	// 		'INDIAN Bank': require('@/assets/icons/banks/indian-bank.png'),
+	// 		Default: '🏦',
+	// 	};
 
-		return bankIcons[bankName] || bankIcons['Default'];
-	};
+	// 	return bankImages[bankName] || bankImages['Default'];
+	// };
 
 	const getAccountTypeColor = (type: string): string => {
 		const colorsMap: { [key: string]: string } = {
@@ -132,14 +140,7 @@ export const BankAccounts = ({
 				currency: newAccount.currency,
 			});
 			setShowAddModal(false);
-			setNewAccount({
-				accountName: '',
-				bankName: '',
-				accountNumber: '',
-				accountType: 'Savings',
-				balance: 0,
-				currency: 'INR',
-			});
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Bank account added successfully!');
 		} catch (error) {
@@ -229,14 +230,7 @@ export const BankAccounts = ({
 			});
 			setShowEditModal(false);
 			setEditingAccount(null);
-			setNewAccount({
-				accountName: '',
-				bankName: '',
-				accountNumber: '',
-				accountType: 'Savings',
-				balance: 0,
-				currency: 'INR',
-			});
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Bank account updated successfully!');
 		} catch (error) {
@@ -281,6 +275,20 @@ export const BankAccounts = ({
 		}
 	};
 
+	const resetForm = () => {
+		setNewAccount({
+			accountName: '',
+			bankName: '',
+			accountNumber: '',
+			accountType: 'Savings',
+			balance: 0,
+			currency: 'INR',
+		});
+		setBalanceInput('0');
+		setShowBankDropdown(false);
+		setBankSearch('');
+	};
+
 	const totalBalance = accounts.reduce(
 		(sum, account) => sum + (account.balance || 0),
 		0
@@ -295,7 +303,8 @@ export const BankAccounts = ({
 					marginBottom: 12,
 					borderLeftWidth: 4,
 					borderLeftColor: getAccountTypeColor(account.accountType),
-					padding: 16,
+					paddingVertical: 16,
+					paddingHorizontal: 8,
 				},
 			]}
 			onPress={() => handleEditAccount(account)}
@@ -307,9 +316,16 @@ export const BankAccounts = ({
 						justifyContent: 'flex-start',
 					}}
 				>
-					<Text style={{ fontSize: 20, marginRight: 12, marginTop: 2 }}>
-						{getBankIcon(account.bankName)}
-					</Text>
+					<Image
+						source={getBankIcon(account.bankName)}
+						style={{
+							width: 30,
+							height: 30,
+							marginRight: 12,
+							borderRadius: 8,
+						}}
+						resizeMode='contain'
+					/>
 				</View>
 				<View style={{ flex: 1, justifyContent: 'center' }}>
 					<View style={[styles.row, styles.spaceBetween]}>
@@ -403,189 +419,163 @@ export const BankAccounts = ({
 		</TouchableOpacity>
 	);
 
-	const renderAddEditModal = (isEdit: boolean) => (
-		<Modal
-			visible={isEdit ? showEditModal : showAddModal}
-			animationType='slide'
-			transparent={true}
-			onRequestClose={() => {
-				if (isEdit) {
-					setShowEditModal(false);
-					setEditingAccount(null);
-				} else {
-					setShowAddModal(false);
-				}
-				setShowBankDropdown(false);
-				setBankSearch('');
-			}}
-		>
-			<View
-				style={{
-					flex: 1,
-					justifyContent: 'center',
-					backgroundColor: 'rgba(0,0,0,0.5)',
+	const getModalInputFields = (isEdit: boolean) => {
+		const fields = [
+			{
+				id: 'accountName',
+				label: 'Account Name',
+				placeholder: 'Account Name (Optional)',
+				value: newAccount.accountName || '',
+				onChangeText: (text: string) =>
+					setNewAccount({ ...newAccount, accountName: text }),
+				keyboardType: 'default' as KeyboardType,
+				isMandatory: false,
+			},
+			{
+				id: 'bankName',
+				label: 'Select Bank',
+				placeholder: 'Search banks...',
+				value: newAccount.bankName || '',
+				onChangeText: undefined,
+				isSelectDropDown: true,
+				isMandatory: true,
+				dropdownProps: {
+					showDropDown: showBankDropdown,
+					setShowDropDown: setShowBankDropdown,
+					dropDownName: newAccount.bankName || '',
+					dropDownAlternativeName: newAccount.bankName || 'Select a bank',
+					dropdownSearchValue: bankSearch,
+					setDropDownSearchValue: setBankSearch,
+					dropdownOptions: filteredBanks,
+					handleDropDownSelectOption: handleSelectBank,
+					dropDownNotFoundText: 'No banks found',
+				},
+			},
+			{
+				id: 'accountNumber',
+				label: 'Account Number',
+				placeholder: 'Account Number',
+				value: newAccount.accountNumber || '',
+				onChangeText: (text: string) => {
+					const cleanedText = text.replace(/\D/g, '');
+					setNewAccount({ ...newAccount, accountNumber: cleanedText });
+				},
+				keyboardType: 'number-pad' as KeyboardType,
+				maxLength: 18,
+				isMandatory: true,
+			},
+			{
+				id: 'balance',
+				label: 'Balance',
+				placeholder: 'Balance (₹)',
+				value: balanceInput,
+				onChangeText: handleBalanceChange,
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+		];
+
+		return fields;
+	};
+
+	const renderAddEditModal = (isEdit: boolean) => {
+		const inputFields = getModalInputFields(isEdit);
+
+		return (
+			<Modal
+				visible={isEdit ? showEditModal : showAddModal}
+				animationType='slide'
+				transparent={true}
+				onRequestClose={() => {
+					if (isEdit) {
+						setShowEditModal(false);
+						setEditingAccount(null);
+					} else {
+						setShowAddModal(false);
+					}
+					setShowBankDropdown(false);
+					setBankSearch('');
 				}}
 			>
-				<View style={[styles.card, { margin: 20, maxHeight: '90%' }]}>
-					<ScrollView
-						showsVerticalScrollIndicator={false}
-						contentContainerStyle={{ flexGrow: 1 }}
-					>
-						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-							{isEdit ? 'Edit Bank Account' : 'Add Bank Account'}
-						</Text>
-						<TextInput
-							style={styles.input}
-							placeholder='Account Name (Optional)'
-							value={newAccount.accountName}
-							onChangeText={(text) =>
-								setNewAccount({ ...newAccount, accountName: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<View style={{ marginBottom: 16 }}>
-							<Text style={{ marginBottom: 8, color: colors.dark }}>
-								Select Bank
+				<View
+					style={{
+						flex: 1,
+						justifyContent: 'center',
+						backgroundColor: 'rgba(0,0,0,0.5)',
+					}}
+				>
+					<View style={[styles.card, { margin: 20, maxHeight: '90%' }]}>
+						<ScrollView
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ flexGrow: 1 }}
+						>
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								{isEdit ? 'Edit Bank Account' : 'Add Bank Account'}
 							</Text>
-							<TouchableOpacity
-								style={[
-									styles.input,
-									{
-										flexDirection: 'row',
-										justifyContent: 'space-between',
-										alignItems: 'center',
-									},
-								]}
-								onPress={() => setShowBankDropdown(!showBankDropdown)}
-							>
-								<Text
-									style={{
-										color: newAccount.bankName ? colors.dark : colors.gray,
-									}}
-								>
-									{newAccount.bankName || 'Select a bank'}
-								</Text>
-								<Text>{showBankDropdown ? '▲' : '▼'}</Text>
-							</TouchableOpacity>
-							{showBankDropdown && (
-								<View
-									style={{
-										backgroundColor: colors.white,
-										borderRadius: 8,
-										borderWidth: 1,
-										borderColor: colors.lightGray,
-										maxHeight: 200,
-										marginTop: 4,
-									}}
-								>
-									<TextInput
-										style={[
-											styles.input,
-											{
-												borderWidth: 0,
-												borderBottomWidth: 1,
-												borderRadius: 0,
-												marginBottom: 0,
-											},
-										]}
-										placeholder='Search banks...'
-										value={bankSearch}
-										onChangeText={setBankSearch}
-										placeholderTextColor={colors.gray}
-										autoFocus={true}
-									/>
-									<ScrollView
-										style={{ maxHeight: 150 }}
-										showsVerticalScrollIndicator={true}
-										contentContainerStyle={{ flexGrow: 1 }}
-									>
-										{filteredBanks.map((bank) => (
-											<TouchableOpacity
-												key={bank}
-												style={{
-													padding: 12,
-													borderBottomWidth: 1,
-													borderBottomColor: colors.lightGray,
-												}}
-												onPress={() => handleSelectBank(bank)}
-											>
-												<Text style={{ color: colors.dark }}>{bank}</Text>
-											</TouchableOpacity>
-										))}
-										{filteredBanks.length === 0 && (
-											<View style={{ padding: 12 }}>
-												<Text
-													style={{ color: colors.gray, textAlign: 'center' }}
-												>
-													No banks found
-												</Text>
-											</View>
-										)}
-									</ScrollView>
-								</View>
-							)}
-						</View>
-						<TextInput
-							style={styles.input}
-							placeholder='Account Number'
-							value={newAccount.accountNumber}
-							onChangeText={(text) => {
-								const cleanedText = text.replace(/\D/g, '');
-								setNewAccount({ ...newAccount, accountNumber: cleanedText });
-							}}
-							placeholderTextColor={colors.gray}
-							keyboardType='number-pad'
-							maxLength={18}
-						/>
-						<TextInput
-							style={styles.input}
-							placeholder='Balance (₹)'
-							value={balanceInput}
-							onChangeText={handleBalanceChange}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
-							<TouchableOpacity
-								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-								onPress={() => {
-									if (isEdit) {
-										setShowEditModal(false);
-										setEditingAccount(null);
-									} else {
-										setShowAddModal(false);
+
+							{inputFields.map((field) => (
+								<InputComponent
+									key={field.id}
+									label={field.label}
+									placeholder={field.placeholder}
+									value={field.value}
+									onChangeText={field.onChangeText}
+									keyboardType={field.keyboardType}
+									maxLength={field.maxLength}
+									isMandatory={field.isMandatory}
+									isSelectDropDown={field.isSelectDropDown}
+									showDropDown={field.dropdownProps?.showDropDown}
+									setShowDropDown={field.dropdownProps?.setShowDropDown}
+									dropDownName={field.dropdownProps?.dropDownName}
+									dropDownAlternativeName={
+										field.dropdownProps?.dropDownAlternativeName
 									}
-									setShowBankDropdown(false);
-									setBankSearch('');
-									setNewAccount({
-										accountName: '',
-										bankName: '',
-										accountNumber: '',
-										accountType: 'Savings',
-										balance: 0,
-										currency: 'INR',
-									});
-								}}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>Cancel</Text>
-							</TouchableOpacity>
-							<TouchableOpacity
-								style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-								onPress={isEdit ? handleUpdateAccount : handleAddAccount}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>
-									{isSubmitting ? 'Saving...' : isEdit ? 'Update' : 'Add'}
-								</Text>
-							</TouchableOpacity>
-						</View>
-					</ScrollView>
+									dropdownSearchValue={field.dropdownProps?.dropdownSearchValue}
+									setDropDownSearchValue={
+										field.dropdownProps?.setDropDownSearchValue
+									}
+									dropdownOptions={field.dropdownProps?.dropdownOptions}
+									handleDropDownSelectOption={
+										field.dropdownProps?.handleDropDownSelectOption
+									}
+									dropDownNotFoundText={
+										field.dropdownProps?.dropDownNotFoundText
+									}
+								/>
+							))}
+
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										if (isEdit) {
+											setShowEditModal(false);
+											setEditingAccount(null);
+										} else {
+											setShowAddModal(false);
+										}
+										resetForm();
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={isEdit ? handleUpdateAccount : handleAddAccount}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting ? 'Saving...' : isEdit ? 'Update' : 'Add'}
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</ScrollView>
+					</View>
 				</View>
-			</View>
-		</Modal>
-	);
+			</Modal>
+		);
+	};
 
 	return (
 		<View style={{ padding: 20 }}>

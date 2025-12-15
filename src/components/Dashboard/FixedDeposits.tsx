@@ -13,10 +13,10 @@ import {
 	Modal,
 	ScrollView,
 	Text,
-	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native';
+import { InputComponent } from '../UI';
 
 export const FixedDeposits = ({
 	deposits,
@@ -489,39 +489,38 @@ export const FixedDeposits = ({
 						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
 							{isEdit ? 'Edit Fixed Deposit' : 'Add Fixed Deposit'}
 						</Text>
-						<TextInput
-							style={styles.input}
+						<InputComponent
+							label='Bank'
 							placeholder='Bank Name'
 							value={newDeposit.bankName}
 							onChangeText={(text) =>
 								setNewDeposit({ ...newDeposit, bankName: text })
 							}
-							placeholderTextColor={colors.gray}
+							isMandatory={true}
 						/>
-						<TextInput
-							style={styles.input}
+						<InputComponent
+							label='FD Number'
 							placeholder='FD Number (Optional)'
 							value={newDeposit.depositNumber}
 							onChangeText={(text) =>
 								setNewDeposit({ ...newDeposit, depositNumber: text })
 							}
-							placeholderTextColor={colors.gray}
 						/>
-						<TextInput
-							style={styles.input}
+						<InputComponent
+							label='Amount'
 							placeholder='Amount (₹)'
 							value={amountInput}
 							onChangeText={(text) => handleDecimalInput(text, 'amount')}
-							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
+							isMandatory={true}
 						/>
-						<TextInput
-							style={styles.input}
+						<InputComponent
+							label='Interest Rate'
 							placeholder='Interest Rate (%)'
 							value={interestRateInput}
 							onChangeText={(text) => handleDecimalInput(text, 'interestRate')}
-							placeholderTextColor={colors.gray}
 							keyboardType='decimal-pad'
+							isMandatory={true}
 						/>
 						<TouchableOpacity
 							style={[styles.input, { justifyContent: 'center' }]}
@@ -531,27 +530,6 @@ export const FixedDeposits = ({
 								📅 Start Date: {formatDate(newDeposit.startDate)}
 							</Text>
 						</TouchableOpacity>
-						<TextInput
-							style={styles.input}
-							placeholder='Tenure (months)'
-							value={
-								newDeposit.tenure === 0 ? '' : newDeposit.tenure.toString()
-							}
-							onChangeText={handleTenureInput}
-							placeholderTextColor={colors.gray}
-							keyboardType='number-pad'
-						/>
-						<TextInput
-							style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
-							placeholder='Description (Optional)'
-							value={newDeposit.description}
-							onChangeText={(text) =>
-								setNewDeposit({ ...newDeposit, description: text })
-							}
-							placeholderTextColor={colors.gray}
-							multiline
-							numberOfLines={3}
-						/>
 						{showDatePicker && (
 							<DateTimePicker
 								value={selectedDate}
@@ -560,6 +538,26 @@ export const FixedDeposits = ({
 								onChange={handleDateChange}
 							/>
 						)}
+						<InputComponent
+							label='Tenure'
+							placeholder='Tenure (months)'
+							value={
+								newDeposit.tenure === 0 ? '' : newDeposit.tenure.toString()
+							}
+							onChangeText={handleTenureInput}
+							keyboardType='number-pad'
+							isMandatory={true}
+						/>
+						<InputComponent
+							label='Description'
+							placeholder='Description (Optional)'
+							value={newDeposit.description}
+							onChangeText={(text) =>
+								setNewDeposit({ ...newDeposit, description: text })
+							}
+							multiline={true}
+							numberOfLines={3}
+						/>
 						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
 							<TouchableOpacity
 								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}

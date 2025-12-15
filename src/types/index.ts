@@ -782,15 +782,32 @@ export interface AssetFormData {
 
 export type InputComponentProps = {
 	label: string;
-	value: string;
+	value?: string;
 	placeholder?: string;
-	onChangeText: (text: string) => void;
+	onChangeText?: (text: string) => void;
 	isEllipsis?: boolean;
 	keyboardType?: KeyboardType;
 	multiline?: boolean;
 	numberOfLines?: number;
 	isMandatory?: boolean;
+	maxLength?: number;
+	isSelectDropDown?: boolean;
+	showDropDown?: boolean;
+	setShowDropDown?: (show: boolean) => void;
+	dropDownName?: string;
+	dropDownAlternativeName?: string;
+	dropdownOptions?: string[];
+	dropdownSearchValue?: string;
+	setDropDownSearchValue?: (text: string) => void;
+	handleDropDownSelectOption?: (option: string) => void;
+	dropDownNotFoundText?: string;
 };
+
+export enum InputMode {
+	SELECT_DROPDOWN = 'SELECT_DROPDOWN',
+	ELLIPSIS = 'ELLIPSIS',
+	DEFAULT = 'DEFAULT',
+}
 
 export type FormField = {
 	id: string;
