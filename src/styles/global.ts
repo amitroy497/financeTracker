@@ -122,10 +122,7 @@ export const createStyles = (colors: ThemeColors) =>
 		},
 		inputContainer: {
 			paddingTop: 8,
-			borderTopWidth: 1,
-			borderBottomWidth: 1,
-			marginVertical: 12,
-			borderColor: colors.border,
+			marginVertical: 6,
 		},
 		label: {
 			fontSize: 16,

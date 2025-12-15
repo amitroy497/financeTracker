@@ -17,7 +17,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { InputComponent } from '../UI';
+import { EditDeleteButtons, InputComponent } from '../UI';
 
 export const BankAccounts = ({
 	accounts,
@@ -393,27 +393,12 @@ export const BankAccounts = ({
 							account.lastUpdated || account.createdAt || new Date()
 						).toLocaleDateString()}
 					</Text>
-					<View
-						style={[styles.row, { marginTop: 12, justifyContent: 'flex-end' }]}
-					>
-						<TouchableOpacity
-							style={{ marginRight: 16 }}
-							onPress={() => handleEditAccount(account)}
-						>
-							<Text style={{ color: colors.primary, fontSize: 12 }}>
-								✏️ Edit
-							</Text>
-						</TouchableOpacity>
-						<TouchableOpacity
-							onPress={() =>
-								handleDeleteAccount(account.id, account.accountName)
-							}
-						>
-							<Text style={{ color: colors.danger, fontSize: 12 }}>
-								🗑️ Delete
-							</Text>
-						</TouchableOpacity>
-					</View>
+					<EditDeleteButtons
+						onPressEdit={() => handleEditAccount(account)}
+						onPressDelete={() =>
+							handleDeleteAccount(account.id, account.accountName)
+						}
+					/>
 				</View>
 			</View>
 		</TouchableOpacity>

@@ -821,3 +821,8 @@ export type FormField = {
 	isEllipsis?: boolean;
 	isMandatory: boolean;
 };
+
+export type EditDeleteButtonsProps = {
+	onPressEdit: () => void;
+	onPressDelete: () => void;
+};
