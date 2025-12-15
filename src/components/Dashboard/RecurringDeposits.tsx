@@ -1,3 +1,6 @@
+import { getBankIcon } from '@/assets';
+import { AddEditFields } from '@/components/UI';
+import { BANK_LIST } from '@/constants';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
@@ -6,14 +9,15 @@ import {
 	RecurringDeposit,
 	RecurringDepositsProps,
 } from '@/types';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { formatCurrency } from '@/utils';
 import React, { useState } from 'react';
 import {
 	Alert,
+	Image,
+	KeyboardType,
 	Modal,
 	ScrollView,
 	Text,
-	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native';
@@ -44,78 +48,126 @@ export const RecurringDeposits = ({
 		tenure: 12,
 	});
 
-	const [monthlyAmountInput, setMonthlyAmountInput] = useState<string>('');
-	const [interestRateInput, setInterestRateInput] = useState<string>('');
+	// Add state for bank dropdown
+	const [showBankDropdown, setShowBankDropdown] = useState(false);
+	const [bankSearch, setBankSearch] = useState('');
 
-	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0,
-		}).format(amount);
+	const calculateProgress = (deposit: RecurringDeposit): number => {
+		try {
+			const startDate = new Date(deposit.startDate);
+			const today = new Date();
+
+			// Ensure start date is in the past
+			if (startDate > today) return 0;
+
+			// Calculate total months in tenure
+			const totalMonths = deposit.tenure;
+
+			// Calculate elapsed months
+			let elapsedMonths = (today.getFullYear() - startDate.getFullYear()) * 12;
+			elapsedMonths += today.getMonth() - startDate.getMonth();
+
+			// Adjust for days
+			if (today.getDate() < startDate.getDate()) {
+				elapsedMonths--;
+			}
+
+			// Ensure elapsed months is not negative
+			elapsedMonths = Math.max(0, elapsedMonths);
+
+			// Cap at total months (can't exceed tenure)
+			elapsedMonths = Math.min(elapsedMonths, totalMonths);
+
+			// Calculate percentage
+			const progress = (elapsedMonths / totalMonths) * 100;
+			return Math.min(Math.max(progress, 0), 100);
+		} catch (error) {
+			console.error('Error calculating progress:', error);
+			return 0;
+		}
 	};
 
-	const calculateProgress = (
-		completedMonths: number,
-		tenure: number
-	): number => {
-		return (completedMonths / tenure) * 100;
+	const getCompletedMonths = (deposit: RecurringDeposit): number => {
+		try {
+			const startDate = new Date(deposit.startDate);
+			const today = new Date();
+
+			if (startDate > today) return 0;
+
+			let completedMonths =
+				(today.getFullYear() - startDate.getFullYear()) * 12;
+			completedMonths += today.getMonth() - startDate.getMonth();
+
+			// Adjust for days
+			if (today.getDate() < startDate.getDate()) {
+				completedMonths--;
+			}
+
+			return Math.max(0, Math.min(completedMonths, deposit.tenure));
+		} catch (error) {
+			console.error('Error calculating completed months:', error);
+			return deposit.completedMonths || 0;
+		}
 	};
 
 	const calculateDaysToMaturity = (maturityDate: string): number => {
-		const today = new Date();
-		const maturity = new Date(maturityDate);
-		const diffTime = maturity.getTime() - today.getTime();
-		return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+		try {
+			const today = new Date();
+			const maturity = new Date(maturityDate);
+			const diffTime = maturity.getTime() - today.getTime();
+			return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+		} catch (error) {
+			console.error('Error calculating days to maturity:', error);
+			return 0;
+		}
 	};
 
+	const filteredBanks = BANK_LIST.sort().filter((bank) =>
+		bank.toLowerCase().includes(bankSearch.toLowerCase())
+	);
+
+	const handleSelectBank = (bank: string): void => {
+		setNewDeposit({ ...newDeposit, bankName: bank });
+		setShowBankDropdown(false);
+		setBankSearch('');
+	};
+
+	// FIXED: Simplified decimal input handling
 	const handleDecimalInput = (
 		text: string,
 		type: 'monthlyAmount' | 'interestRate'
 	) => {
+		// Remove all non-numeric characters except decimal point
 		let cleanedText = text.replace(/[^0-9.]/g, '');
-		const decimalCount = (cleanedText.match(/\./g) || []).length;
-		if (decimalCount > 1) {
-			const firstDecimalIndex = cleanedText.indexOf('.');
-			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
-			const afterDecimal = cleanedText
-				.substring(firstDecimalIndex + 1)
-				.replace(/\./g, '');
-			cleanedText = beforeDecimal + afterDecimal;
+
+		// Handle multiple decimal points
+		const parts = cleanedText.split('.');
+		if (parts.length > 2) {
+			cleanedText = parts[0] + '.' + parts.slice(1).join('');
 		}
 
-		const decimalIndex = cleanedText.indexOf('.');
-		if (decimalIndex !== -1) {
-			const decimalPart = cleanedText.substring(decimalIndex + 1);
-			if (decimalPart.length > 2) {
-				cleanedText = cleanedText.substring(0, decimalIndex + 3);
-			}
+		// Limit to 2 decimal places
+		if (parts.length === 2 && parts[1].length > 2) {
+			cleanedText = parts[0] + '.' + parts[1].substring(0, 2);
 		}
 
-		if (type === 'monthlyAmount') {
-			setMonthlyAmountInput(cleanedText);
-		} else {
-			setInterestRateInput(cleanedText);
-		}
-
-		let parsedValue: number;
-		if (cleanedText === '' || cleanedText === '.') {
-			parsedValue = 0;
-		} else {
+		// Parse the value
+		let parsedValue = 0;
+		if (cleanedText !== '' && cleanedText !== '.') {
 			parsedValue = parseFloat(cleanedText);
 			if (isNaN(parsedValue)) parsedValue = 0;
 		}
 
+		// Update the newDeposit state
 		setNewDeposit({
 			...newDeposit,
-			[type === 'monthlyAmount' ? 'monthlyAmount' : 'interestRate']:
-				parsedValue,
+			[type]: parsedValue,
 		});
 	};
+
 	const handleTenureInput = (text: string) => {
 		const cleanedText = text.replace(/[^0-9]/g, '');
-		const parsedValue = cleanedText === '' ? 12 : parseInt(cleanedText, 10);
+		const parsedValue = cleanedText === '' ? 0 : parseInt(cleanedText, 10);
 
 		if (!isNaN(parsedValue)) {
 			setNewDeposit({
@@ -124,14 +176,25 @@ export const RecurringDeposits = ({
 			});
 		}
 	};
-	const formatNumberForInput = (num: number): string => {
-		if (num === 0) return '';
-		return num.toString();
+
+	// FIXED: Get the input value from newDeposit
+	const getInputValue = (
+		field: 'monthlyAmount' | 'interestRate' | 'tenure'
+	): string => {
+		const value = newDeposit[field];
+		if (value === 0) return '';
+		if (field === 'interestRate' && value % 1 !== 0) {
+			return value.toFixed(2);
+		}
+		return value.toString();
 	};
 
 	const handleAddDeposit = async (): Promise<void> => {
+		// FIXED: Log for debugging
+		console.log('Adding deposit with data:', newDeposit);
+
 		if (!newDeposit.bankName.trim()) {
-			Alert.alert('Error', 'Please enter bank name');
+			Alert.alert('Error', 'Please select a bank');
 			return;
 		}
 
@@ -159,16 +222,7 @@ export const RecurringDeposits = ({
 		try {
 			await assetService.createRecurringDeposit(userId, newDeposit);
 			setShowAddModal(false);
-			setNewDeposit({
-				bankName: '',
-				accountNumber: '',
-				monthlyAmount: 0,
-				interestRate: 0,
-				startDate: new Date().toISOString().split('T')[0],
-				tenure: 12,
-			});
-			setMonthlyAmountInput('');
-			setInterestRateInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Recurring deposit added successfully!');
 		} catch (error) {
@@ -180,23 +234,22 @@ export const RecurringDeposits = ({
 	};
 
 	const handleEditDeposit = (deposit: RecurringDeposit) => {
+		console.log('Editing deposit:', deposit);
 		setEditingDeposit(deposit);
 		setNewDeposit({
 			bankName: deposit.bankName,
-			accountNumber: deposit.accountNumber,
+			accountNumber: deposit.accountNumber || '',
 			monthlyAmount: deposit.monthlyAmount,
 			interestRate: deposit.interestRate,
 			startDate: deposit.startDate,
 			tenure: deposit.tenure,
 		});
-		setMonthlyAmountInput(formatNumberForInput(deposit.monthlyAmount));
-		setInterestRateInput(formatNumberForInput(deposit.interestRate));
 		setShowEditModal(true);
 	};
 
 	const handleUpdateDeposit = async (): Promise<void> => {
-		if (!editingDeposit || !newDeposit?.bankName?.trim()) {
-			Alert.alert('Error', 'Please enter bank name');
+		if (!editingDeposit || !newDeposit.bankName.trim()) {
+			Alert.alert('Error', 'Please select a bank');
 			return;
 		}
 
@@ -229,16 +282,7 @@ export const RecurringDeposits = ({
 			);
 			setShowEditModal(false);
 			setEditingDeposit(null);
-			setNewDeposit({
-				bankName: '',
-				accountNumber: '',
-				monthlyAmount: 0,
-				interestRate: 0,
-				startDate: new Date().toISOString().split('T')[0],
-				tenure: 12,
-			});
-			setMonthlyAmountInput('');
-			setInterestRateInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Recurring deposit updated successfully!');
 		} catch (error) {
@@ -301,12 +345,30 @@ export const RecurringDeposits = ({
 		setShowDatePicker(true);
 	};
 
-	const formatDate = (dateString: string): string => {
-		return new Date(dateString).toLocaleDateString('en-IN', {
-			day: '2-digit',
-			month: 'short',
-			year: 'numeric',
+	const resetForm = () => {
+		setNewDeposit({
+			bankName: '',
+			accountNumber: '',
+			monthlyAmount: 0,
+			interestRate: 0,
+			startDate: new Date().toISOString().split('T')[0],
+			tenure: 12,
 		});
+		setShowBankDropdown(false);
+		setBankSearch('');
+	};
+
+	const formatDate = (dateString: string): string => {
+		try {
+			return new Date(dateString).toLocaleDateString('en-IN', {
+				day: '2-digit',
+				month: 'short',
+				year: 'numeric',
+			});
+		} catch (error) {
+			console.error('Error formatting date:', error);
+			return dateString;
+		}
 	};
 
 	const totalInvested = deposits.reduce(
@@ -319,7 +381,8 @@ export const RecurringDeposits = ({
 	);
 
 	const renderDepositCard = (deposit: RecurringDeposit) => {
-		const progress = calculateProgress(deposit.completedMonths, deposit.tenure);
+		const completedMonths = getCompletedMonths(deposit);
+		const progress = calculateProgress(deposit);
 		const daysToMaturity = calculateDaysToMaturity(deposit.maturityDate);
 		const isMatured = daysToMaturity <= 0;
 
@@ -337,14 +400,25 @@ export const RecurringDeposits = ({
 				]}
 				onPress={() => handleEditDeposit(deposit)}
 			>
-				<View
-					style={[
-						styles.row,
-						styles.spaceBetween,
-						{ alignItems: 'flex-start' },
-					]}
-				>
-					<View style={{ flex: 1 }}>
+				<View style={[styles.row]}>
+					<View
+						style={{
+							alignItems: 'flex-start',
+							justifyContent: 'flex-start',
+							marginRight: 12,
+						}}
+					>
+						<Image
+							source={getBankIcon(deposit.bankName)}
+							style={{
+								width: 30,
+								height: 30,
+								borderRadius: 8,
+							}}
+							resizeMode='contain'
+						/>
+					</View>
+					<View style={{ flex: 1, justifyContent: 'center' }}>
 						<View
 							style={[styles.row, styles.spaceBetween, { marginBottom: 8 }]}
 						>
@@ -391,7 +465,7 @@ export const RecurringDeposits = ({
 							</View>
 							<View style={[styles.row, styles.spaceBetween, { marginTop: 4 }]}>
 								<Text style={{ color: colors.gray, fontSize: 10 }}>
-									{deposit.completedMonths}/{deposit.tenure} months
+									{completedMonths}/{deposit.tenure} months
 								</Text>
 								<Text style={{ color: colors.gray, fontSize: 10 }}>
 									{progress.toFixed(1)}%
@@ -463,150 +537,194 @@ export const RecurringDeposits = ({
 		);
 	};
 
-	const renderAddEditModal = (isEdit: boolean) => (
-		<Modal
-			visible={isEdit ? showEditModal : showAddModal}
-			animationType='slide'
-			transparent={true}
-			onRequestClose={() => {
-				if (isEdit) {
-					setShowEditModal(false);
-					setEditingDeposit(null);
-				} else {
-					setShowAddModal(false);
-				}
-				setNewDeposit({
-					bankName: '',
-					accountNumber: '',
-					monthlyAmount: 0,
-					interestRate: 0,
-					startDate: new Date().toISOString().split('T')[0],
-					tenure: 12,
-				});
-				setMonthlyAmountInput('');
-				setInterestRateInput('');
-			}}
-		>
-			<View
-				style={{
-					flex: 1,
-					justifyContent: 'center',
-					backgroundColor: 'rgba(0,0,0,0.5)',
+	const renderAddEditModal = (isEdit: boolean) => {
+		// FIXED: Use getInputValue to get the correct display value
+		const fields = [
+			{
+				id: 'bankName',
+				label: 'Select Bank',
+				placeholder: 'Search banks...',
+				value: newDeposit.bankName || '',
+				onChangeText: undefined,
+				isSelectDropDown: true,
+				isMandatory: true,
+				dropdownProps: {
+					showDropDown: showBankDropdown,
+					setShowDropDown: setShowBankDropdown,
+					dropDownName: newDeposit.bankName || '',
+					dropDownAlternativeName: newDeposit.bankName || 'Select a bank',
+					dropdownSearchValue: bankSearch,
+					setDropDownSearchValue: setBankSearch,
+					dropdownOptions: filteredBanks,
+					handleDropDownSelectOption: handleSelectBank,
+					dropDownNotFoundText: 'No banks found',
+				},
+			},
+			{
+				id: 'accountNumber',
+				label: 'Account Number',
+				placeholder: 'Account Number',
+				value: newDeposit.accountNumber || '',
+				onChangeText: (text: string) =>
+					setNewDeposit({ ...newDeposit, accountNumber: text }),
+				keyboardType: 'default' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'monthlyAmount',
+				label: 'Monthly Amount',
+				placeholder: 'Monthly Amount (₹)',
+				value: getInputValue('monthlyAmount'),
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'monthlyAmount'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'interestRate',
+				label: 'Interest Rate',
+				placeholder: 'Interest Rate (%)',
+				value: getInputValue('interestRate'),
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'interestRate'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'startDate',
+				isDatePicker: true,
+				onPressOpen: openDatePicker,
+				value: formatDate(newDeposit.startDate),
+				showDatePicker: showDatePicker,
+				handleDateChange: handleDateChange,
+				selectedDate: selectedDate,
+				label: 'Start Date',
+			},
+			{
+				id: 'tenure',
+				label: 'Tenure',
+				placeholder: 'Tenure (months)',
+				value: getInputValue('tenure'),
+				onChangeText: handleTenureInput,
+				keyboardType: 'number-pad' as KeyboardType,
+				isMandatory: true,
+			},
+		];
+
+		return (
+			<Modal
+				visible={isEdit ? showEditModal : showAddModal}
+				animationType='slide'
+				transparent={true}
+				onRequestClose={() => {
+					if (isEdit) {
+						setShowEditModal(false);
+						setEditingDeposit(null);
+					} else {
+						setShowAddModal(false);
+					}
+					resetForm();
 				}}
 			>
-				<ScrollView style={{ maxHeight: '90%' }}>
-					<View style={[styles.card, { margin: 20 }]}>
-						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-							{isEdit ? 'Edit Recurring Deposit' : 'Add Recurring Deposit'}
-						</Text>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Bank Name'
-							value={newDeposit.bankName}
-							onChangeText={(text) =>
-								setNewDeposit({ ...newDeposit, bankName: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Account Number'
-							value={newDeposit.accountNumber}
-							onChangeText={(text) =>
-								setNewDeposit({ ...newDeposit, accountNumber: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Monthly Amount (₹)'
-							value={monthlyAmountInput}
-							onChangeText={(text) => handleDecimalInput(text, 'monthlyAmount')}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Interest Rate (%)'
-							value={interestRateInput}
-							onChangeText={(text) => handleDecimalInput(text, 'interestRate')}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TouchableOpacity
-							style={[styles.input, { justifyContent: 'center' }]}
-							onPress={openDatePicker}
+				<View
+					style={{
+						flex: 1,
+						justifyContent: 'center',
+						backgroundColor: 'rgba(0,0,0,0.5)',
+					}}
+				>
+					<View style={[styles.card, { margin: 20, maxHeight: '90%' }]}>
+						<ScrollView
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ flexGrow: 1 }}
 						>
-							<Text style={{ color: colors.dark }}>
-								📅 Start Date: {formatDate(newDeposit.startDate)}
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								{isEdit ? 'Edit Recurring Deposit' : 'Add Recurring Deposit'}
 							</Text>
-						</TouchableOpacity>
 
-						<TextInput
-							style={styles.input}
-							placeholder='Tenure (months)'
-							value={
-								newDeposit.tenure === 0 ? '' : newDeposit.tenure.toString()
-							}
-							onChangeText={handleTenureInput}
-							placeholderTextColor={colors.gray}
-							keyboardType='number-pad'
-						/>
-						{showDatePicker && (
-							<DateTimePicker
-								value={selectedDate}
-								mode='date'
-								display='default'
-								onChange={handleDateChange}
-							/>
-						)}
-
-						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
-							<TouchableOpacity
-								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-								onPress={() => {
-									if (isEdit) {
-										setShowEditModal(false);
-										setEditingDeposit(null);
-									} else {
-										setShowAddModal(false);
-									}
-									setNewDeposit({
-										bankName: '',
-										accountNumber: '',
-										monthlyAmount: 0,
-										interestRate: 0,
-										startDate: new Date().toISOString().split('T')[0],
-										tenure: 12,
-									});
-									setMonthlyAmountInput('');
-									setInterestRateInput('');
+							{/* FIXED: Show current deposit values for debugging */}
+							<View
+								style={{
+									marginBottom: 16,
+									padding: 12,
+									backgroundColor: colors.lightGray,
+									borderRadius: 8,
 								}}
-								disabled={isSubmitting}
 							>
-								<Text style={styles.buttonText}>Cancel</Text>
-							</TouchableOpacity>
-
-							<TouchableOpacity
-								style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-								onPress={isEdit ? handleUpdateDeposit : handleAddDeposit}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>
-									{isSubmitting ? 'Saving...' : isEdit ? 'Update RD' : 'Add RD'}
+								<Text
+									style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}
+								>
+									Current Values:
 								</Text>
-							</TouchableOpacity>
-						</View>
+								<Text style={{ color: colors.dark, fontSize: 12 }}>
+									Monthly Amount: ₹{newDeposit.monthlyAmount} | Interest Rate:{' '}
+									{newDeposit.interestRate}% | Tenure: {newDeposit.tenure}{' '}
+									months
+								</Text>
+							</View>
+
+							{newDeposit.bankName && (
+								<View
+									style={[
+										styles.row,
+										{ alignItems: 'center', marginBottom: 12 },
+									]}
+								>
+									<Image
+										source={getBankIcon(newDeposit.bankName)}
+										style={{
+											width: 24,
+											height: 24,
+											marginRight: 8,
+											borderRadius: 6,
+										}}
+										resizeMode='contain'
+									/>
+									<Text style={{ color: colors.dark, fontSize: 14 }}>
+										Selected: {newDeposit.bankName}
+									</Text>
+								</View>
+							)}
+
+							<AddEditFields fields={fields} />
+
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										if (isEdit) {
+											setShowEditModal(false);
+											setEditingDeposit(null);
+										} else {
+											setShowAddModal(false);
+										}
+										resetForm();
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={isEdit ? handleUpdateDeposit : handleAddDeposit}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting
+											? 'Saving...'
+											: isEdit
+											? 'Update RD'
+											: 'Add RD'}
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</ScrollView>
 					</View>
-				</ScrollView>
-			</View>
-		</Modal>
-	);
+				</View>
+			</Modal>
+		);
+	};
 
 	return (
 		<View style={{ padding: 20 }}>

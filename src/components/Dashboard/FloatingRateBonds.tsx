@@ -6,6 +6,7 @@ import {
 	FloatingRateBond,
 	FloatingRateBondsProps,
 } from '@/types';
+import { formatCurrency } from '@/utils';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import {
@@ -51,15 +52,6 @@ export const FloatingRateBonds = ({
 	const [investmentAmountInput, setInvestmentAmountInput] =
 		useState<string>('');
 	const [interestRateInput, setInterestRateInput] = useState<string>('7.15');
-
-	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(amount);
-	};
 
 	const calculateDaysToMaturity = (maturityDate: string): number => {
 		const today = new Date();

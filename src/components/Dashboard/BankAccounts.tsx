@@ -66,25 +66,6 @@ export const BankAccounts = ({
 			: maskAccountNumber(account.accountNumber || '');
 	};
 
-	// const getBankIcon = (bankName: string) => {
-	// 	const bankImages: { [key: string]: any } = {
-	// 		'Axis Bank': require('@/assets/icons/banks/axis-bank.png'),
-	// 		'AU Small Finance Bank': require('@/assets/icons/banks/au-small-finance-bank.png'),
-	// 		'Federal Bank': require('@/assets/icons/banks/federal-bank.png'),
-	// 		'HDFC Bank': require('@/assets/icons/banks/hdfc-bank.png'),
-	// 		'ICICI Bank': require('@/assets/icons/banks/icici-bank.png'),
-	// 		'IDFC First Bank': require('@/assets/icons/banks/idfc-first-bank.png'),
-	// 		'Kotak Mahindra Bank': require('@/assets/icons/banks/kotak-mahindra-bank.png'),
-	// 		'Punjab National Bank': require('@/assets/icons/banks/punjab-national-bank.png'),
-	// 		'State Bank of India (SBI)': require('@/assets/icons/banks/sbi-bank.png'),
-	// 		'UCO Bank': require('@/assets/icons/banks/uco-bank.png'),
-	// 		'INDIAN Bank': require('@/assets/icons/banks/indian-bank.png'),
-	// 		Default: '🏦',
-	// 	};
-
-	// 	return bankImages[bankName] || bankImages['Default'];
-	// };
-
 	const getAccountTypeColor = (type: string): string => {
 		const colorsMap: { [key: string]: string } = {
 			Savings: colors.success,

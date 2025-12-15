@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { Saving, SavingFormData, YearlyFinancialData } from '@/types';
-import { getCurrentMonth } from '@/utils';
+import { formatCurrency, getCurrentMonth } from '@/utils';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system/legacy';
 import React, { useEffect, useState } from 'react';
@@ -536,10 +536,6 @@ export const SavingsScreen = () => {
 				amount: dailySavings[date],
 			}))
 			.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-	};
-
-	const formatCurrency = (amount: number): string => {
-		return `₹${amount.toLocaleString('en-IN')}`;
 	};
 
 	const formatDate = (dateString: string): string => {

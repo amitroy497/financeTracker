@@ -18,7 +18,7 @@ import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { DashboardData } from '@/types';
-import { isDataEmpty } from '@/utils';
+import { formatCurrency, isDataEmpty } from '@/utils';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
 	Alert,
@@ -168,15 +168,6 @@ export const Dashboard = () => {
 		// Filter out assets with zero value
 		return data.filter((item) => item.y > 0);
 	}, [dashboardData]);
-
-	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0,
-		}).format(amount);
-	};
 
 	const renderOverview = () => (
 		<ScrollView showsVerticalScrollIndicator={false}>

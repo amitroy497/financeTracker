@@ -1300,7 +1300,6 @@ export const assetService = {
 				lastUpdated: new Date().toISOString(),
 			};
 
-			// Handle decimal parsing for numeric fields
 			if (updateData.investmentAmount !== undefined) {
 				updatedFRB.investmentAmount = safeParseFloat(
 					updateData.investmentAmount
@@ -1310,7 +1309,6 @@ export const assetService = {
 				updatedFRB.interestRate = safeParseFloat(updateData.interestRate);
 			}
 
-			// Recalculate current value if relevant fields change
 			if (
 				updateData.investmentAmount !== undefined ||
 				updateData.interestRate !== undefined ||
@@ -1363,7 +1361,6 @@ export const assetService = {
 		}
 	},
 
-	// National Pension Scheme CRUD Operations
 	createNPS: async (
 		userId: string,
 		npsData: CreateNPSData
@@ -1473,35 +1470,5 @@ export const assetService = {
 			console.error('Error deleting NPS account:', error);
 			throw error;
 		}
-	},
-
-	// Utility functions for decimal handling
-	formatAmount: (amount: string | number): number => {
-		return safeParseFloat(amount);
-	},
-
-	parseAmountInput: (value: string): string => {
-		// Allow decimal input with proper formatting
-		const decimalCount = (value.match(/\./g) || []).length;
-		if (decimalCount > 1) {
-			return value.slice(0, -1); // Remove the extra decimal point
-		}
-
-		// Allow only numbers and one decimal point
-		const regex = /^\d*\.?\d*$/;
-		if (!regex.test(value) && value !== '') {
-			return value.slice(0, -1);
-		}
-
-		return value;
-	},
-
-	formatCurrencyWithDecimal: (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(amount);
 	},
 };

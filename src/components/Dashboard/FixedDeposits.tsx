@@ -1,3 +1,5 @@
+import { getBankIcon } from '@/assets';
+import { AddEditFields } from '@/components/UI';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
@@ -6,17 +8,20 @@ import {
 	FixedDeposit,
 	FixedDepositsProps,
 } from '@/types';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import {
 	Alert,
+	Image,
 	Modal,
 	ScrollView,
 	Text,
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { InputComponent } from '../UI';
+
+import { BANK_LIST } from '@/constants';
+import { formatCurrency } from '@/utils';
+import { KeyboardType } from 'react-native';
 
 export const FixedDeposits = ({
 	deposits,
@@ -48,16 +53,72 @@ export const FixedDeposits = ({
 		description: '',
 	});
 
+	const [showBankDropdown, setShowBankDropdown] = useState(false);
+	const [bankSearch, setBankSearch] = useState('');
+
 	const [amountInput, setAmountInput] = useState<string>('');
 	const [interestRateInput, setInterestRateInput] = useState<string>('');
 
-	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(amount);
+	const calculateProgress = (deposit: FixedDeposit): number => {
+		try {
+			const startDate = new Date(deposit.startDate);
+			const maturityDate = new Date(deposit.maturityDate);
+			const today = new Date();
+
+			if (startDate > today) return 0;
+
+			const totalDays = Math.ceil(
+				(maturityDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+			);
+
+			const elapsedDays = Math.ceil(
+				(today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+			);
+
+			const safeElapsedDays = Math.max(0, elapsedDays);
+
+			const cappedElapsedDays = Math.min(safeElapsedDays, totalDays);
+
+			const progress = (cappedElapsedDays / totalDays) * 100;
+			return Math.min(Math.max(progress, 0), 100);
+		} catch (error) {
+			console.error('Error calculating progress:', error);
+			return 0;
+		}
+	};
+
+	const getElapsedDays = (deposit: FixedDeposit): number => {
+		try {
+			const startDate = new Date(deposit.startDate);
+			const today = new Date();
+
+			if (startDate > today) return 0;
+
+			const elapsedDays = Math.ceil(
+				(today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+			);
+
+			return Math.max(0, elapsedDays);
+		} catch (error) {
+			console.error('Error calculating elapsed days:', error);
+			return 0;
+		}
+	};
+
+	const getTotalDays = (deposit: FixedDeposit): number => {
+		try {
+			const startDate = new Date(deposit.startDate);
+			const maturityDate = new Date(deposit.maturityDate);
+
+			const totalDays = Math.ceil(
+				(maturityDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+			);
+
+			return Math.max(1, totalDays);
+		} catch (error) {
+			console.error('Error calculating total days:', error);
+			return deposit.tenure * 30;
+		}
 	};
 
 	const calculateDaysToMaturity = (maturityDate: string): number => {
@@ -69,6 +130,16 @@ export const FixedDeposits = ({
 
 	const getStatusColor = (status: string): string => {
 		return status === 'Active' ? colors.success : colors.gray;
+	};
+
+	const filteredBanks = BANK_LIST.sort().filter((bank) =>
+		bank.toLowerCase().includes(bankSearch.toLowerCase())
+	);
+
+	const handleSelectBank = (bank: string): void => {
+		setNewDeposit({ ...newDeposit, bankName: bank });
+		setShowBankDropdown(false);
+		setBankSearch('');
 	};
 
 	const handleDecimalInput = (
@@ -115,14 +186,6 @@ export const FixedDeposits = ({
 		});
 	};
 
-	const handleIntegerInput = (
-		field: keyof CreateFixedDepositData,
-		value: string
-	) => {
-		const intValue = parseInt(value) || 0;
-		setNewDeposit({ ...newDeposit, [field]: intValue });
-	};
-
 	const handleTenureInput = (text: string) => {
 		const cleanedText = text.replace(/[^0-9]/g, '');
 		const parsedValue = cleanedText === '' ? 12 : parseInt(cleanedText, 10);
@@ -142,7 +205,7 @@ export const FixedDeposits = ({
 
 	const handleAddDeposit = async (): Promise<void> => {
 		if (!newDeposit.bankName.trim()) {
-			Alert.alert('Error', 'Please enter bank name');
+			Alert.alert('Error', 'Please select a bank');
 			return;
 		}
 
@@ -165,17 +228,7 @@ export const FixedDeposits = ({
 		try {
 			await assetService.createFixedDeposit(userId, newDeposit);
 			setShowAddModal(false);
-			setNewDeposit({
-				bankName: '',
-				depositNumber: '',
-				amount: 0,
-				interestRate: 0,
-				startDate: new Date().toISOString().split('T')[0],
-				tenure: 12,
-				description: '',
-			});
-			setAmountInput('');
-			setInterestRateInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Fixed deposit added successfully!');
 		} catch (error) {
@@ -204,7 +257,7 @@ export const FixedDeposits = ({
 
 	const handleUpdateDeposit = async (): Promise<void> => {
 		if (!editingDeposit || !newDeposit.bankName.trim()) {
-			Alert.alert('Error', 'Please enter bank name');
+			Alert.alert('Error', 'Please select a bank');
 			return;
 		}
 
@@ -232,17 +285,7 @@ export const FixedDeposits = ({
 			);
 			setShowEditModal(false);
 			setEditingDeposit(null);
-			setNewDeposit({
-				bankName: '',
-				depositNumber: '',
-				amount: 0,
-				interestRate: 0,
-				startDate: new Date().toISOString().split('T')[0],
-				tenure: 12,
-				description: '',
-			});
-			setAmountInput('');
-			setInterestRateInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Fixed deposit updated successfully!');
 		} catch (error) {
@@ -307,6 +350,22 @@ export const FixedDeposits = ({
 		setShowDatePicker(true);
 	};
 
+	const resetForm = () => {
+		setNewDeposit({
+			bankName: '',
+			depositNumber: '',
+			amount: 0,
+			interestRate: 0,
+			startDate: new Date().toISOString().split('T')[0],
+			tenure: 12,
+			description: '',
+		});
+		setAmountInput('');
+		setInterestRateInput('');
+		setShowBankDropdown(false);
+		setBankSearch('');
+	};
+
 	const totalAmount = deposits.reduce(
 		(sum, deposit) => sum + (deposit.amount || 0),
 		0
@@ -327,6 +386,11 @@ export const FixedDeposits = ({
 		const daysToMaturity = calculateDaysToMaturity(deposit.maturityDate);
 		const isMatured = deposit.status === 'Matured' || daysToMaturity <= 0;
 
+		// NEW: Calculate progress metrics
+		const progress = calculateProgress(deposit);
+		const elapsedDays = getElapsedDays(deposit);
+		const totalDays = getTotalDays(deposit);
+
 		return (
 			<TouchableOpacity
 				key={deposit.id}
@@ -341,14 +405,26 @@ export const FixedDeposits = ({
 				]}
 				onPress={() => handleEditDeposit(deposit)}
 			>
-				<View
-					style={[
-						styles.row,
-						styles.spaceBetween,
-						{ alignItems: 'flex-start', marginBottom: 8 },
-					]}
-				>
-					<View style={{ flex: 1 }}>
+				<View style={[styles.row]}>
+					<View
+						style={{
+							alignItems: 'flex-start',
+							justifyContent: 'flex-start',
+							marginRight: 12,
+						}}
+					>
+						<Image
+							source={getBankIcon(deposit.bankName)}
+							style={{
+								width: 30,
+								height: 30,
+								borderRadius: 8,
+							}}
+							resizeMode='contain'
+						/>
+					</View>
+
+					<View style={{ flex: 1, justifyContent: 'center' }}>
 						<View
 							style={[styles.row, styles.spaceBetween, { marginBottom: 4 }]}
 						>
@@ -392,6 +468,39 @@ export const FixedDeposits = ({
 							Interest: {deposit.interestRate}% • Tenure: {deposit.tenure}{' '}
 							months
 						</Text>
+
+						{/* NEW: Progress Section - Similar to RecurringDeposits.tsx */}
+						{!isMatured && (
+							<View style={{ marginBottom: 12 }}>
+								<View
+									style={{
+										height: 6,
+										backgroundColor: colors.lightGray,
+										borderRadius: 3,
+										overflow: 'hidden',
+										marginBottom: 4,
+									}}
+								>
+									<View
+										style={{
+											height: '100%',
+											backgroundColor: colors.primary,
+											width: `${progress}%`,
+											borderRadius: 3,
+										}}
+									/>
+								</View>
+								<View style={[styles.row, styles.spaceBetween]}>
+									<Text style={{ color: colors.gray, fontSize: 10 }}>
+										{elapsedDays}/{totalDays} days
+									</Text>
+									<Text style={{ color: colors.gray, fontSize: 10 }}>
+										{progress.toFixed(1)}%
+									</Text>
+								</View>
+							</View>
+						)}
+
 						<View
 							style={[
 								styles.row,
@@ -452,154 +561,209 @@ export const FixedDeposits = ({
 		);
 	};
 
-	const renderAddEditModal = (isEdit: boolean) => (
-		<Modal
-			visible={isEdit ? showEditModal : showAddModal}
-			animationType='slide'
-			transparent={true}
-			onRequestClose={() => {
-				if (isEdit) {
-					setShowEditModal(false);
-					setEditingDeposit(null);
-				} else {
-					setShowAddModal(false);
-				}
-				setNewDeposit({
-					bankName: '',
-					depositNumber: '',
-					amount: 0,
-					interestRate: 0,
-					startDate: new Date().toISOString().split('T')[0],
-					tenure: 12,
-					description: '',
-				});
-				setAmountInput('');
-				setInterestRateInput('');
-			}}
-		>
-			<View
-				style={{
-					flex: 1,
-					justifyContent: 'center',
-					backgroundColor: 'rgba(0,0,0,0.5)',
+	const renderAddEditModal = (isEdit: boolean) => {
+		const inputFields = [
+			{
+				id: 'bankName',
+				label: 'Select Bank',
+				placeholder: 'Search banks...',
+				value: newDeposit.bankName || '',
+				onChangeText: undefined,
+				isSelectDropDown: true,
+				isMandatory: true,
+				dropdownProps: {
+					showDropDown: showBankDropdown,
+					setShowDropDown: setShowBankDropdown,
+					dropDownName: newDeposit.bankName || '',
+					dropDownAlternativeName: newDeposit.bankName || 'Select a bank',
+					dropdownSearchValue: bankSearch,
+					setDropDownSearchValue: setBankSearch,
+					dropdownOptions: filteredBanks,
+					handleDropDownSelectOption: handleSelectBank,
+					dropDownNotFoundText: 'No banks found',
+				},
+			},
+			{
+				id: 'depositNumber',
+				label: 'FD Number',
+				placeholder: 'FD Number (Optional)',
+				value: newDeposit.depositNumber || '',
+				onChangeText: (text: string) =>
+					setNewDeposit({ ...newDeposit, depositNumber: text }),
+				keyboardType: 'default' as KeyboardType,
+				isMandatory: false,
+			},
+			{
+				id: 'amount',
+				label: 'Amount',
+				placeholder: 'Amount (₹)',
+				value: amountInput,
+				onChangeText: (text: string) => handleDecimalInput(text, 'amount'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'interestRate',
+				label: 'Interest Rate',
+				placeholder: 'Interest Rate (%)',
+				value: interestRateInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'interestRate'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'startDate',
+				isDatePicker: true,
+				onPressOpen: () => openDatePicker('startDate'),
+				value: formatDate(newDeposit.startDate),
+				showDatePicker: showDatePicker,
+				handleDateChange: handleDateChange,
+				selectedDate: selectedDate,
+				label: 'Start Date',
+			},
+			{
+				id: 'tenure',
+				label: 'Tenure',
+				placeholder: 'Tenure (months)',
+				value: newDeposit.tenure === 0 ? '' : newDeposit.tenure.toString(),
+				onChangeText: handleTenureInput,
+				keyboardType: 'number-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'description',
+				label: 'Description',
+				placeholder: 'Description (Optional)',
+				value: newDeposit.description,
+				onChangeText: (text: string) =>
+					setNewDeposit({ ...newDeposit, description: text }),
+				multiline: true,
+				numberOfLines: 3,
+			},
+		];
+
+		return (
+			<Modal
+				visible={isEdit ? showEditModal : showAddModal}
+				animationType='slide'
+				transparent={true}
+				onRequestClose={() => {
+					if (isEdit) {
+						setShowEditModal(false);
+						setEditingDeposit(null);
+					} else {
+						setShowAddModal(false);
+					}
+					resetForm();
 				}}
 			>
-				<ScrollView style={{ maxHeight: '90%' }}>
-					<View style={[styles.card, { margin: 20 }]}>
-						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-							{isEdit ? 'Edit Fixed Deposit' : 'Add Fixed Deposit'}
-						</Text>
-						<InputComponent
-							label='Bank'
-							placeholder='Bank Name'
-							value={newDeposit.bankName}
-							onChangeText={(text) =>
-								setNewDeposit({ ...newDeposit, bankName: text })
-							}
-							isMandatory={true}
-						/>
-						<InputComponent
-							label='FD Number'
-							placeholder='FD Number (Optional)'
-							value={newDeposit.depositNumber}
-							onChangeText={(text) =>
-								setNewDeposit({ ...newDeposit, depositNumber: text })
-							}
-						/>
-						<InputComponent
-							label='Amount'
-							placeholder='Amount (₹)'
-							value={amountInput}
-							onChangeText={(text) => handleDecimalInput(text, 'amount')}
-							keyboardType='decimal-pad'
-							isMandatory={true}
-						/>
-						<InputComponent
-							label='Interest Rate'
-							placeholder='Interest Rate (%)'
-							value={interestRateInput}
-							onChangeText={(text) => handleDecimalInput(text, 'interestRate')}
-							keyboardType='decimal-pad'
-							isMandatory={true}
-						/>
-						<TouchableOpacity
-							style={[styles.input, { justifyContent: 'center' }]}
-							onPress={() => openDatePicker('startDate')}
+				<View
+					style={{
+						flex: 1,
+						justifyContent: 'center',
+						backgroundColor: 'rgba(0,0,0,0.5)',
+					}}
+				>
+					<View style={[styles.card, { margin: 20, maxHeight: '90%' }]}>
+						<ScrollView
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ flexGrow: 1 }}
 						>
-							<Text style={{ color: colors.dark }}>
-								📅 Start Date: {formatDate(newDeposit.startDate)}
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								{isEdit ? 'Edit Fixed Deposit' : 'Add Fixed Deposit'}
 							</Text>
-						</TouchableOpacity>
-						{showDatePicker && (
-							<DateTimePicker
-								value={selectedDate}
-								mode='date'
-								display='default'
-								onChange={handleDateChange}
-							/>
-						)}
-						<InputComponent
-							label='Tenure'
-							placeholder='Tenure (months)'
-							value={
-								newDeposit.tenure === 0 ? '' : newDeposit.tenure.toString()
-							}
-							onChangeText={handleTenureInput}
-							keyboardType='number-pad'
-							isMandatory={true}
-						/>
-						<InputComponent
-							label='Description'
-							placeholder='Description (Optional)'
-							value={newDeposit.description}
-							onChangeText={(text) =>
-								setNewDeposit({ ...newDeposit, description: text })
-							}
-							multiline={true}
-							numberOfLines={3}
-						/>
-						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
-							<TouchableOpacity
-								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-								onPress={() => {
-									if (isEdit) {
-										setShowEditModal(false);
-										setEditingDeposit(null);
-									} else {
-										setShowAddModal(false);
-									}
-									setNewDeposit({
-										bankName: '',
-										depositNumber: '',
-										amount: 0,
-										interestRate: 0,
-										startDate: new Date().toISOString().split('T')[0],
-										tenure: 12,
-										description: '',
-									});
-									setAmountInput('');
-									setInterestRateInput('');
-								}}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>Cancel</Text>
-							</TouchableOpacity>
 
-							<TouchableOpacity
-								style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-								onPress={isEdit ? handleUpdateDeposit : handleAddDeposit}
-								disabled={isSubmitting}
+							{/* NEW: Current Values Section - Similar to RecurringDeposits.tsx */}
+							<View
+								style={{
+									marginBottom: 16,
+									padding: 12,
+									backgroundColor: colors.lightGray,
+									borderRadius: 8,
+								}}
 							>
-								<Text style={styles.buttonText}>
-									{isSubmitting ? 'Saving...' : isEdit ? 'Update FD' : 'Add FD'}
+								<Text
+									style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}
+								>
+									Current Values:
 								</Text>
-							</TouchableOpacity>
-						</View>
+								<Text style={{ color: colors.dark, fontSize: 12 }}>
+									Amount: ₹{newDeposit.amount} | Interest Rate:{' '}
+									{newDeposit.interestRate}% | Tenure: {newDeposit.tenure}{' '}
+									months
+								</Text>
+								{newDeposit.startDate && (
+									<Text
+										style={{ color: colors.dark, fontSize: 12, marginTop: 2 }}
+									>
+										Start Date: {formatDate(newDeposit.startDate)}
+									</Text>
+								)}
+							</View>
+
+							{newDeposit.bankName && (
+								<View
+									style={[
+										styles.row,
+										{ alignItems: 'center', marginBottom: 12 },
+									]}
+								>
+									<Image
+										source={getBankIcon(newDeposit.bankName)}
+										style={{
+											width: 24,
+											height: 24,
+											marginRight: 8,
+											borderRadius: 6,
+										}}
+										resizeMode='contain'
+									/>
+									<Text style={{ color: colors.dark, fontSize: 14 }}>
+										Selected: {newDeposit.bankName}
+									</Text>
+								</View>
+							)}
+
+							<AddEditFields fields={inputFields} />
+
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										if (isEdit) {
+											setShowEditModal(false);
+											setEditingDeposit(null);
+										} else {
+											setShowAddModal(false);
+										}
+										resetForm();
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={isEdit ? handleUpdateDeposit : handleAddDeposit}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting
+											? 'Saving...'
+											: isEdit
+											? 'Update FD'
+											: 'Add FD'}
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</ScrollView>
 					</View>
-				</ScrollView>
-			</View>
-		</Modal>
-	);
+				</View>
+			</Modal>
+		);
+	};
 
 	return (
 		<View style={{ padding: 20 }}>

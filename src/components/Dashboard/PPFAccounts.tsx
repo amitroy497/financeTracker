@@ -2,6 +2,7 @@ import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { CreatePPFData, PPFAccountsProps } from '@/types';
+import { formatCurrency } from '@/utils';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -33,15 +34,6 @@ export const PPFAccounts = ({
 	// Add state for input strings to allow decimal typing
 	const [totalDepositsInput, setTotalDepositsInput] = useState<string>('');
 	const [interestRateInput, setInterestRateInput] = useState<string>('7.1');
-
-	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0,
-		}).format(amount);
-	};
 
 	const calculateYearsToMaturity = (maturityDate: string): number => {
 		const today = new Date();

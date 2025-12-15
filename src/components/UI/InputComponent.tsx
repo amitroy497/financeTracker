@@ -2,6 +2,7 @@ import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { InputComponentProps, InputMode } from '@/types';
 import { Text, TextInput, View } from 'react-native';
+import { DatePickerComponent } from './DatePickerComponent';
 import { SelectDropdown } from './SelectDropdown';
 import { TextInputWithEllipsis } from './TextInputWithEllipsis';
 
@@ -26,6 +27,13 @@ export const InputComponent = ({
 	setDropDownSearchValue,
 	handleDropDownSelectOption,
 	dropDownNotFoundText,
+	// Date picker props
+	isDatePicker = false,
+	onPressOpen,
+	showDatePicker,
+	handleDateChange,
+	selectedDate,
+	datePickerLabel = 'Start Date',
 }: InputComponentProps) => {
 	const { colors } = useTheme();
 	const styles = createStyles(colors);
@@ -33,6 +41,7 @@ export const InputComponent = ({
 	const getInputMode = (): InputMode => {
 		if (isSelectDropDown) return InputMode.SELECT_DROPDOWN;
 		if (isEllipsis) return InputMode.ELLIPSIS;
+		if (isDatePicker) return InputMode.DATE_PICKER;
 		return InputMode.DEFAULT;
 	};
 
@@ -60,6 +69,18 @@ export const InputComponent = ({
 						placeholderText={placeholder || ''}
 						value={value}
 						onChangeText={onChangeText}
+					/>
+				);
+
+			case InputMode.DATE_PICKER:
+				return (
+					<DatePickerComponent
+						onPressOpen={onPressOpen}
+						startDate={value}
+						show={showDatePicker}
+						handleChange={handleDateChange}
+						selected={selectedDate}
+						label={datePickerLabel}
 					/>
 				);
 

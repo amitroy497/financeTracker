@@ -6,7 +6,7 @@ import {
 	NationalPensionScheme,
 	NPSAccountsProps,
 } from '@/types';
-import { formatNumber } from '@/utils';
+import { formatCurrency, formatNumber } from '@/utils';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import {
@@ -47,15 +47,6 @@ export const NPSAccounts = ({
 	const [totalContributionInput, setTotalContributionInput] =
 		useState<string>('');
 	const [currentValueInput, setCurrentValueInput] = useState<string>('');
-
-	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(amount);
-	};
 
 	const getReturnColor = (returns: number): string => {
 		return returns >= 0 ? colors.success : colors.danger;

@@ -801,13 +801,29 @@ export type InputComponentProps = {
 	setDropDownSearchValue?: (text: string) => void;
 	handleDropDownSelectOption?: (option: string) => void;
 	dropDownNotFoundText?: string;
+	isDatePicker?: boolean;
+	onPressOpen?: () => void;
+	showDatePicker?: boolean;
+	handleDateChange?: (event: any, selectedDate?: Date) => void;
+	selectedDate?: Date;
+	datePickerLabel?: string;
 };
 
 export enum InputMode {
-	SELECT_DROPDOWN = 'SELECT_DROPDOWN',
-	ELLIPSIS = 'ELLIPSIS',
-	DEFAULT = 'DEFAULT',
+	DEFAULT = 'default',
+	SELECT_DROPDOWN = 'select_dropdown',
+	ELLIPSIS = 'ellipsis',
+	DATE_PICKER = 'date_picker',
 }
+
+export type DatePickerComponentProps = {
+	onPressOpen?: () => void;
+	startDate?: string;
+	show?: boolean;
+	handleChange?: (event: any, selectedDate?: Date) => void;
+	selected?: Date;
+	label?: string;
+};
 
 export type FormField = {
 	id: string;

@@ -2,7 +2,7 @@ import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { CreateGoldETFData, GoldETF, GoldETFsProps } from '@/types';
-import { formatNumber } from '@/utils';
+import { formatCurrency, formatNumber } from '@/utils';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -40,15 +40,6 @@ export const GoldETFs = ({
 	const [unitsInput, setUnitsInput] = useState<string>('');
 	const [currentPriceInput, setCurrentPriceInput] = useState<string>('');
 	const [investedAmountInput, setInvestedAmountInput] = useState<string>('');
-
-	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(amount);
-	};
 
 	const getReturnColor = (returns: number): string => {
 		return returns >= 0 ? colors.success : colors.danger;

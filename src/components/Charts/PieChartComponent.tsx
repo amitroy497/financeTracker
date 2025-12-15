@@ -1,6 +1,7 @@
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { PieChartComponentProps } from '@/types';
+import { formatCurrency } from '@/utils';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
@@ -13,15 +14,6 @@ export const PieChartComponent = ({
 	const { colors } = useTheme();
 	const styles = createStyles(colors);
 	const chartData = data.filter((item) => item.y > 0);
-
-	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0,
-		}).format(amount);
-	};
 
 	if (chartData.length === 0) {
 		return (

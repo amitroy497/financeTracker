@@ -2,6 +2,7 @@ import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { CreateStockData, Stock, StocksProps } from '@/types';
+import { formatCurrency } from '@/utils';
 import React, { useState } from 'react';
 import {
 	Alert,
@@ -40,15 +41,6 @@ export const Stocks = ({
 	const [quantityInput, setQuantityInput] = useState<string>('');
 	const [averagePriceInput, setAveragePriceInput] = useState<string>('');
 	const [currentPriceInput, setCurrentPriceInput] = useState<string>('');
-
-	const formatCurrency = (amount: number): string => {
-		return new Intl.NumberFormat('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0,
-		}).format(amount);
-	};
 
 	const getReturnColor = (returns: number): string => {
 		return returns >= 0 ? colors.success : colors.danger;
