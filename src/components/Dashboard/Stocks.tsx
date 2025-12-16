@@ -2,18 +2,18 @@ import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { CreateStockData, Stock, StocksProps } from '@/types';
-import { formatCurrency } from '@/utils';
+import { formatCurrency, formatNumber } from '@/utils';
 import React, { useState } from 'react';
 import {
 	Alert,
+	KeyboardType,
 	Modal,
 	ScrollView,
 	Text,
-	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { TextInputWithEllipsis } from '../UI';
+import { InputComponent } from '../UI';
 
 export const Stocks = ({
 	stocks,
@@ -28,19 +28,30 @@ export const Stocks = ({
 	const [showEditModal, setShowEditModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [editingStock, setEditingStock] = useState<Stock | null>(null);
-	const [newStock, setNewStock] = useState<CreateStockData>({
+
+	// Updated state to include currentValue and investedAmount
+	const [newStock, setNewStock] = useState<
+		CreateStockData & {
+			currentValue?: number;
+			investedAmount?: number;
+		}
+	>({
 		companyName: '',
 		symbol: '',
 		exchange: 'NSE',
 		quantity: 0,
 		averagePrice: 0,
 		currentPrice: 0,
+		currentValue: 0,
+		investedAmount: 0,
 	});
 
-	// Add state for input strings to allow decimal typing
+	// Input states for string values (for better UX)
 	const [quantityInput, setQuantityInput] = useState<string>('');
 	const [averagePriceInput, setAveragePriceInput] = useState<string>('');
 	const [currentPriceInput, setCurrentPriceInput] = useState<string>('');
+	const [currentValueInput, setCurrentValueInput] = useState<string>('');
+	const [investedAmountInput, setInvestedAmountInput] = useState<string>('');
 
 	const getReturnColor = (returns: number): string => {
 		return returns >= 0 ? colors.success : colors.danger;
@@ -61,17 +72,31 @@ export const Stocks = ({
 		const parsedValue = cleanedText === '' ? 0 : parseInt(cleanedText, 10);
 
 		if (!isNaN(parsedValue)) {
-			setNewStock({
+			const updatedStock = {
 				...newStock,
 				quantity: parsedValue,
-			});
+			};
+
+			// Calculate invested amount and current value
+			const investedAmount = parsedValue * newStock.averagePrice;
+			const currentValue = parsedValue * newStock.currentPrice;
+
+			updatedStock.investedAmount = investedAmount;
+			updatedStock.currentValue = currentValue;
+
+			setInvestedAmountInput(
+				investedAmount === 0 ? '' : investedAmount.toFixed(2)
+			);
+			setCurrentValueInput(currentValue === 0 ? '' : currentValue.toFixed(2));
+
+			setNewStock(updatedStock);
 		}
 	};
 
 	// Handle decimal input for prices
 	const handleDecimalInput = (
 		text: string,
-		type: 'averagePrice' | 'currentPrice'
+		type: 'averagePrice' | 'currentPrice' | 'currentValue' | 'investedAmount'
 	) => {
 		// Allow only numbers and one decimal point
 		let cleanedText = text.replace(/[^0-9.]/g, '');
@@ -98,10 +123,19 @@ export const Stocks = ({
 		}
 
 		// Update the appropriate input state
-		if (type === 'averagePrice') {
-			setAveragePriceInput(cleanedText);
-		} else {
-			setCurrentPriceInput(cleanedText);
+		switch (type) {
+			case 'averagePrice':
+				setAveragePriceInput(cleanedText);
+				break;
+			case 'currentPrice':
+				setCurrentPriceInput(cleanedText);
+				break;
+			case 'currentValue':
+				setCurrentValueInput(cleanedText);
+				break;
+			case 'investedAmount':
+				setInvestedAmountInput(cleanedText);
+				break;
 		}
 
 		// Parse the value and update the stock data
@@ -113,10 +147,39 @@ export const Stocks = ({
 			if (isNaN(parsedValue)) parsedValue = 0;
 		}
 
-		setNewStock({
+		const updatedStock = {
 			...newStock,
 			[type]: parsedValue,
-		});
+		};
+
+		// Calculate derived values when averagePrice or currentPrice changes
+		if (type === 'averagePrice' || type === 'currentPrice') {
+			if (type === 'averagePrice') {
+				const investedAmount = newStock.quantity * parsedValue;
+				updatedStock.investedAmount = investedAmount;
+				setInvestedAmountInput(
+					investedAmount === 0 ? '' : investedAmount.toFixed(2)
+				);
+			}
+
+			if (type === 'currentPrice') {
+				const currentValue = newStock.quantity * parsedValue;
+				updatedStock.currentValue = currentValue;
+				setCurrentValueInput(currentValue === 0 ? '' : currentValue.toFixed(2));
+			}
+		}
+
+		setNewStock(updatedStock);
+	};
+
+	// Calculate returns
+	const calculateReturns = () => {
+		if (!newStock.investedAmount || !newStock.currentValue) return 0;
+		return (
+			((newStock.currentValue - newStock.investedAmount) /
+				newStock.investedAmount) *
+			100
+		);
 	};
 
 	// Format number for display (show empty string for 0)
@@ -153,20 +216,11 @@ export const Stocks = ({
 
 		setIsSubmitting(true);
 		try {
-			await assetService.createStock(userId, newStock);
+			// Remove calculated fields from the data sent to API
+			const { currentValue, investedAmount, ...stockData } = newStock;
+			await assetService.createStock(userId, stockData);
 			setShowAddModal(false);
-			// Reset all states
-			setNewStock({
-				companyName: '',
-				symbol: '',
-				exchange: 'NSE',
-				quantity: 0,
-				averagePrice: 0,
-				currentPrice: 0,
-			});
-			setQuantityInput('');
-			setAveragePriceInput('');
-			setCurrentPriceInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Stock added successfully!');
 		} catch (error) {
@@ -179,18 +233,23 @@ export const Stocks = ({
 
 	const handleEditStock = (stock: Stock) => {
 		setEditingStock(stock);
-		setNewStock({
+		const stockData = {
 			companyName: stock.companyName,
 			symbol: stock.symbol || '',
 			exchange: stock.exchange || 'NSE',
 			quantity: stock.quantity,
 			averagePrice: stock.averagePrice,
 			currentPrice: stock.currentPrice,
-		});
+			currentValue: stock.currentValue,
+			investedAmount: stock.investedAmount,
+		};
+		setNewStock(stockData);
 		// Set input strings for display
 		setQuantityInput(formatNumberForInput(stock.quantity));
 		setAveragePriceInput(formatNumberForInput(stock.averagePrice));
 		setCurrentPriceInput(formatNumberForInput(stock.currentPrice));
+		setCurrentValueInput(formatNumberForInput(stock.currentValue));
+		setInvestedAmountInput(formatNumberForInput(stock.investedAmount));
 		setShowEditModal(true);
 	};
 
@@ -222,21 +281,12 @@ export const Stocks = ({
 
 		setIsSubmitting(true);
 		try {
-			await assetService.updateStock(userId, editingStock.id, newStock);
+			// Remove calculated fields from the data sent to API
+			const { currentValue, investedAmount, ...stockData } = newStock;
+			await assetService.updateStock(userId, editingStock.id, stockData);
 			setShowEditModal(false);
 			setEditingStock(null);
-			// Reset all states
-			setNewStock({
-				companyName: '',
-				symbol: '',
-				exchange: 'NSE',
-				quantity: 0,
-				averagePrice: 0,
-				currentPrice: 0,
-			});
-			setQuantityInput('');
-			setAveragePriceInput('');
-			setCurrentPriceInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Stock updated successfully!');
 		} catch (error) {
@@ -279,6 +329,25 @@ export const Stocks = ({
 		}
 	};
 
+	// Reset form function
+	const resetForm = () => {
+		setNewStock({
+			companyName: '',
+			symbol: '',
+			exchange: 'NSE',
+			quantity: 0,
+			averagePrice: 0,
+			currentPrice: 0,
+			currentValue: 0,
+			investedAmount: 0,
+		});
+		setQuantityInput('');
+		setAveragePriceInput('');
+		setCurrentPriceInput('');
+		setCurrentValueInput('');
+		setInvestedAmountInput('');
+	};
+
 	const totalCurrentValue = stocks.reduce(
 		(sum, stock) => sum + stock.currentValue,
 		0
@@ -290,10 +359,6 @@ export const Stocks = ({
 	const totalReturns = totalCurrentValue - totalInvested;
 	const totalReturnPercentage =
 		totalInvested > 0 ? (totalReturns / totalInvested) * 100 : 0;
-
-	const formatNumber = (num: number, decimals: number = 2): string => {
-		return num.toFixed(decimals);
-	};
 
 	const renderStockCard = (stock: Stock) => {
 		const returnPercentage =
@@ -464,190 +529,294 @@ export const Stocks = ({
 		);
 	};
 
-	const renderAddEditModal = (isEdit: boolean) => (
-		<Modal
-			visible={isEdit ? showEditModal : showAddModal}
-			animationType='slide'
-			transparent={true}
-			onRequestClose={() => {
-				if (isEdit) {
-					setShowEditModal(false);
-					setEditingStock(null);
-				} else {
-					setShowAddModal(false);
-				}
-				// Reset all states
-				setNewStock({
-					companyName: '',
-					symbol: '',
-					exchange: 'NSE',
-					quantity: 0,
-					averagePrice: 0,
-					currentPrice: 0,
-				});
-				setQuantityInput('');
-				setAveragePriceInput('');
-				setCurrentPriceInput('');
-			}}
-		>
-			<View
-				style={{
-					flex: 1,
-					justifyContent: 'center',
-					backgroundColor: 'rgba(0,0,0,0.5)',
+	// Get input fields for modal
+	const getModalInputFields = (isEdit: boolean) => {
+		const returns = calculateReturns();
+		const currentValue = newStock.currentValue || 0;
+		const investedAmount = newStock.investedAmount || 0;
+		const absoluteReturns = currentValue - investedAmount;
+
+		const fields = [
+			{
+				id: 'companyName',
+				label: 'Company Name',
+				placeholder: 'Company Name (e.g., Reliance Industries)',
+				value: newStock.companyName,
+				onChangeText: (text: string) =>
+					setNewStock({ ...newStock, companyName: text }),
+				isEllipsis: true,
+				isMandatory: true,
+			},
+			{
+				id: 'symbol',
+				label: 'Symbol',
+				placeholder: 'Symbol (e.g., RELIANCE, TCS)',
+				value: newStock.symbol,
+				onChangeText: (text: string) =>
+					setNewStock({ ...newStock, symbol: text.toUpperCase() }),
+				isMandatory: true,
+			},
+			{
+				id: 'quantity',
+				label: 'Quantity',
+				placeholder: 'Number of Shares',
+				value: quantityInput,
+				onChangeText: handleQuantityInput,
+				keyboardType: 'number-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'averagePrice',
+				label: 'Average Price (₹)',
+				placeholder: 'Average Buy Price per Share',
+				value: averagePriceInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'averagePrice'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'currentPrice',
+				label: 'Current Price (₹)',
+				placeholder: 'Current Market Price per Share',
+				value: currentPriceInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'currentPrice'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'investedAmount',
+				label: 'Invested Amount (₹)',
+				placeholder: 'Total Invested Amount (Auto-calculated)',
+				value: investedAmountInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'investedAmount'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: false,
+			},
+			{
+				id: 'currentValue',
+				label: 'Current Value (₹)',
+				placeholder: 'Current Value (Auto-calculated)',
+				value: currentValueInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'currentValue'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: false,
+			},
+		];
+
+		return { fields, returns, currentValue, investedAmount, absoluteReturns };
+	};
+
+	const renderAddEditModal = (isEdit: boolean) => {
+		const { fields, returns, currentValue, investedAmount, absoluteReturns } =
+			getModalInputFields(isEdit);
+
+		return (
+			<Modal
+				visible={isEdit ? showEditModal : showAddModal}
+				animationType='slide'
+				transparent={true}
+				onRequestClose={() => {
+					if (isEdit) {
+						setShowEditModal(false);
+						setEditingStock(null);
+					} else {
+						setShowAddModal(false);
+					}
+					resetForm();
 				}}
 			>
-				<ScrollView style={{ maxHeight: '90%' }}>
-					<View style={[styles.card, { margin: 20 }]}>
-						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-							{isEdit ? 'Edit Stock' : 'Add Stock'}
-						</Text>
-						<TextInputWithEllipsis
-							placeholderText='Company Name (e.g., Reliance Industries)'
-							value={newStock.companyName}
-							onChangeText={(text: string) =>
-								setNewStock({ ...newStock, companyName: text })
-							}
-						/>
-						<TextInput
-							style={styles.input}
-							placeholder='Symbol (e.g., RELIANCE, TCS)'
-							value={newStock.symbol}
-							onChangeText={(text) =>
-								setNewStock({ ...newStock, symbol: text.toUpperCase() })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-						<View style={[styles.row, { gap: 12, marginBottom: 12 }]}>
-							<TouchableOpacity
-								style={[
-									styles.button,
-									{
-										flex: 1,
-										backgroundColor:
-											newStock.exchange === 'NSE'
-												? colors.primary
-												: colors.lightGray,
-									},
-								]}
-								onPress={() => setNewStock({ ...newStock, exchange: 'NSE' })}
-							>
-								<Text
-									style={[
-										styles.buttonText,
-										{
-											color:
-												newStock.exchange === 'NSE'
-													? colors.white
-													: colors.dark,
-										},
-									]}
-								>
-									NSE
-								</Text>
-							</TouchableOpacity>
-							<TouchableOpacity
-								style={[
-									styles.button,
-									{
-										flex: 1,
-										backgroundColor:
-											newStock.exchange === 'BSE'
-												? colors.info
-												: colors.lightGray,
-									},
-								]}
-								onPress={() => setNewStock({ ...newStock, exchange: 'BSE' })}
-							>
-								<Text
-									style={[
-										styles.buttonText,
-										{
-											color:
-												newStock.exchange === 'BSE'
-													? colors.white
-													: colors.dark,
-										},
-									]}
-								>
-									BSE
-								</Text>
-							</TouchableOpacity>
-						</View>
-						<TextInput
-							style={styles.input}
-							placeholder='Quantity'
-							value={quantityInput}
-							onChangeText={handleQuantityInput}
-							placeholderTextColor={colors.gray}
-							keyboardType='number-pad'
-						/>
+				<View
+					style={{
+						flex: 1,
+						justifyContent: 'center',
+						backgroundColor: 'rgba(0,0,0,0.5)',
+					}}
+				>
+					<View style={[styles.card, { margin: 20, maxHeight: '90%' }]}>
+						<ScrollView
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ flexGrow: 1 }}
+						>
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								{isEdit ? 'Edit Stock' : 'Add Stock'}
+							</Text>
 
-						<TextInput
-							style={styles.input}
-							placeholder='Average Buy Price (₹)'
-							value={averagePriceInput}
-							onChangeText={(text) => handleDecimalInput(text, 'averagePrice')}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Current Market Price (₹)'
-							value={currentPriceInput}
-							onChangeText={(text) => handleDecimalInput(text, 'currentPrice')}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
-							<TouchableOpacity
-								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-								onPress={() => {
-									if (isEdit) {
-										setShowEditModal(false);
-										setEditingStock(null);
-									} else {
-										setShowAddModal(false);
-									}
-									// Reset all states
-									setNewStock({
-										companyName: '',
-										symbol: '',
-										exchange: 'NSE',
-										quantity: 0,
-										averagePrice: 0,
-										currentPrice: 0,
-									});
-									setQuantityInput('');
-									setAveragePriceInput('');
-									setCurrentPriceInput('');
+							{/* Current Values Summary */}
+							<View
+								style={{
+									marginBottom: 16,
+									padding: 12,
+									backgroundColor: colors.lightGray,
+									borderRadius: 8,
 								}}
-								disabled={isSubmitting}
 							>
-								<Text style={styles.buttonText}>Cancel</Text>
-							</TouchableOpacity>
-
-							<TouchableOpacity
-								style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-								onPress={isEdit ? handleUpdateStock : handleAddStock}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>
-									{isSubmitting
-										? 'Saving...'
-										: isEdit
-										? 'Update Stock'
-										: 'Add Stock'}
+								<Text
+									style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}
+								>
+									Current Values:
 								</Text>
-							</TouchableOpacity>
-						</View>
+								<View
+									style={[styles.row, styles.spaceBetween, { marginBottom: 2 }]}
+								>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Invested: {formatCurrency(investedAmount)}
+									</Text>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Current: {formatCurrency(currentValue)}
+									</Text>
+								</View>
+								<View style={[styles.row, styles.spaceBetween]}>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Quantity: {newStock.quantity} shares
+									</Text>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Exchange: {newStock.exchange}
+									</Text>
+								</View>
+								<View
+									style={[styles.row, styles.spaceBetween, { marginTop: 2 }]}
+								>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Avg Price: ₹{formatNumber(newStock.averagePrice)}
+									</Text>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Curr Price: ₹{formatNumber(newStock.currentPrice)}
+									</Text>
+								</View>
+								{absoluteReturns !== 0 && (
+									<Text
+										style={{
+											color: getReturnColor(absoluteReturns),
+											fontSize: 12,
+											fontWeight: 'bold',
+											marginTop: 4,
+										}}
+									>
+										Returns: {formatCurrency(absoluteReturns)} (
+										{formatNumber(returns)}%)
+									</Text>
+								)}
+							</View>
+
+							{fields.map((field) => (
+								<InputComponent
+									key={field.id}
+									label={field.label}
+									placeholder={field.placeholder}
+									value={field.value}
+									onChangeText={field.onChangeText}
+									keyboardType={field.keyboardType}
+									isEllipsis={field.isEllipsis}
+									isMandatory={field.isMandatory}
+								/>
+							))}
+
+							{/* Exchange Selection Buttons */}
+							<View style={{ marginBottom: 12 }}>
+								<Text style={styles.label}>Exchange:</Text>
+								<View style={[styles.row, { gap: 12, marginTop: 4 }]}>
+									<TouchableOpacity
+										style={[
+											styles.button,
+											{
+												flex: 1,
+												backgroundColor:
+													newStock.exchange === 'NSE'
+														? colors.primary
+														: colors.lightGray,
+											},
+										]}
+										onPress={() =>
+											setNewStock({ ...newStock, exchange: 'NSE' })
+										}
+									>
+										<Text
+											style={[
+												styles.buttonText,
+												{
+													color:
+														newStock.exchange === 'NSE'
+															? colors.white
+															: colors.dark,
+												},
+											]}
+										>
+											NSE
+										</Text>
+									</TouchableOpacity>
+									<TouchableOpacity
+										style={[
+											styles.button,
+											{
+												flex: 1,
+												backgroundColor:
+													newStock.exchange === 'BSE'
+														? colors.info
+														: colors.lightGray,
+											},
+										]}
+										onPress={() =>
+											setNewStock({ ...newStock, exchange: 'BSE' })
+										}
+									>
+										<Text
+											style={[
+												styles.buttonText,
+												{
+													color:
+														newStock.exchange === 'BSE'
+															? colors.white
+															: colors.dark,
+												},
+											]}
+										>
+											BSE
+										</Text>
+									</TouchableOpacity>
+								</View>
+							</View>
+
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										if (isEdit) {
+											setShowEditModal(false);
+											setEditingStock(null);
+										} else {
+											setShowAddModal(false);
+										}
+										resetForm();
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={isEdit ? handleUpdateStock : handleAddStock}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting
+											? 'Saving...'
+											: isEdit
+											? 'Update Stock'
+											: 'Add Stock'}
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</ScrollView>
 					</View>
-				</ScrollView>
-			</View>
-		</Modal>
-	);
+				</View>
+			</Modal>
+		);
+	};
 
 	return (
 		<View style={{ padding: 20 }}>
@@ -691,8 +860,8 @@ export const Stocks = ({
 								color: getReturnColor(totalReturns),
 							}}
 						>
-							{formatCurrency(totalReturns)} ({totalReturnPercentage.toFixed(2)}
-							%)
+							{formatCurrency(totalReturns)} (
+							{formatNumber(totalReturnPercentage)}%)
 						</Text>
 					</View>
 				</View>
