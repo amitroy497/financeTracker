@@ -65,9 +65,46 @@ import kebHanaBank from './kebHanaBank-icon.png';
 import kookminBank from './kookminBank-icon.png';
 import kotakMahindraBank from './kotak-icon.png';
 import krishnaBhimSamruddhiLab from './krishnaBhimaSamruddhiLab-icon.png';
+import manipurRuralBank from './manipurRuralBank-icon.png';
+import mashreqBank from './mashreqBank-icon.png';
+import meghalayaRuralBank from './meghalayaRuralBank-icon.png';
+import mizoramRuralBank from './mizoramRuralBank-icon.png';
+import mizuhoBank from './mizuhoBank-icon.png';
+import mufgBank from './mufgBank-icon.png';
+import nabard from './nabard-icon.png';
+import nagalandRuralBank from './nagalandRuralBank-icon.png';
+import nanitalBank from './nanitalBank-icon.png';
+import nationalHousingBank from './nationalHousingBank-icon.png';
+import natWestMarkets from './natWestMarkets-icon.png';
+import nongHyupBank from './nongHyupBank-icon.png';
+import nsdlPaymentsBank from './nsdlPaymentsBank-icon.png';
+import paytmPaymentBank from './paytmPaymentsBank-icon.png';
 import punjabNationalBank from './pnb-icon.png';
+import ptBankMaybankIndonesia from './ptBankMaybankIndonesia-icon.png';
+import punjabAndSindBank from './punjabAndSindBank-icon.png';
+import qatarNationalBank from './qatarNationalBank-icon.png';
+import rblBank from './rblBank-icon.png';
+import sberBank from './sberbank-icon.png';
 import sbiBank from './sbi-icon.png';
+import sbmBank from './sbmBank-icon.png';
+import shinhanBank from './shinhanBank-icon.png';
+import shivaliSmallFinanceBank from './shivalikSmallFinanceBank-icon.png';
+import sidbi from './sidbi-icon.png';
+import sliceSmallFinanceBank from './sliceSmallFinanceBank-icon.png';
+import societeGenerale from './societeGenarale-icon.png';
+import sonaliBank from './sonaliBank-icon.png';
+import southIndianBank from './southIndiaBank-icon.png';
+import standardChateredBank from './standardChateredBank-icon.png';
+import sumitomoMitsuiBank from './sumitomoMitsuiBank-icon.png';
+import suryodaySmallFinanceBank from './suryodaySmallFinanceBank-icon.png';
+import tamilNadMercantileBank from './tamilNadMercantileBank-icon.png';
+import ubsBank from './ubsAG-icon.png';
 import ucoBank from './uco-icon.png';
+import unitedOverseasBank from './unitedOverseasBank-icon.png';
+import unitySmallFinanceBank from './unitySmallFinanceBank-icon.png';
+import utkarshSmallFinanceBank from './utkarshSmallFinanceBank-icon.png';
+import wooriBank from './wooriBank-icon.png';
+import yesBank from './yesBank-icon.png';
 
 export const bankIcons = {
 	'Axis Bank Ltd.': axisBank,
@@ -152,53 +189,53 @@ export const bankIcons = {
 	'Kookmin Bank': kookminBank,
 	'Madhya Pradesh Gramin Bank': graminBank,
 	'Maharashtra Gramin Bank': graminBank,
-	'Manipur Rural Bank': defaultBank,
-	'Mashreq Bank P.S.C': defaultBank,
-	'Meghalaya Rural Bank': defaultBank,
-	'Mizoram Rural Bank': defaultBank,
-	'Mizuho Bank Ltd.': defaultBank,
-	'MUFG Bank, Ltd.': defaultBank,
-	'Nagaland Rural Bank': defaultBank,
-	'Nainital bank Ltd.': defaultBank,
-	'NatWest Markets Plc': defaultBank,
-	'National Bank for Agriculture and Rural Development': defaultBank,
-	'National Housing Bank': defaultBank,
-	'Nong Hyup Bank': defaultBank,
-	'NSDL Payments Bank Limited': defaultBank,
+	'Manipur Rural Bank': manipurRuralBank,
+	'Mashreq Bank P.S.C': mashreqBank,
+	'Meghalaya Rural Bank': meghalayaRuralBank,
+	'Mizoram Rural Bank': mizoramRuralBank,
+	'Mizuho Bank Ltd.': mizuhoBank,
+	'MUFG Bank, Ltd.': mufgBank,
+	'Nagaland Rural Bank': nagalandRuralBank,
+	'Nainital bank Ltd.': nanitalBank,
+	'NatWest Markets Plc': natWestMarkets,
+	'National Bank for Agriculture and Rural Development': nabard,
+	'National Housing Bank': nationalHousingBank,
+	'Nong Hyup Bank': nongHyupBank,
+	'NSDL Payments Bank Limited': nsdlPaymentsBank,
 	'Odisha Grameen Bank': graminBank,
-	'Paytm Payments Bank Ltd': defaultBank,
-	'PT Bank Maybank Indonesia TBK': defaultBank,
+	'Paytm Payments Bank Ltd': paytmPaymentBank,
+	'PT Bank Maybank Indonesia TBK': ptBankMaybankIndonesia,
 	'Puducherry Grama Bank': graminBank,
-	'Punjab & Sind Bank': defaultBank,
+	'Punjab & Sind Bank': punjabAndSindBank,
 	'Punjab Gramin Bank': graminBank,
-	'Qatar National Bank (Q.P.S.C.)': defaultBank,
+	'Qatar National Bank (Q.P.S.C.)': qatarNationalBank,
 	'Rajasthan Gramin Bank': graminBank,
-	'RBL Bank Ltd.': defaultBank,
-	'SBM Bank (India) Limited': defaultBank,
-	Sberbank: defaultBank,
-	'Shivalik Small Finance Bank Ltd': defaultBank,
-	'Shinhan Bank': defaultBank,
-	'Slice Small Finance Bank Ltd.': defaultBank,
-	'Small Industries Development Bank of India': defaultBank,
-	'Societe Generale': defaultBank,
-	'Sonali Bank Ltd.': defaultBank,
-	'South Indian Bank Ltd.': defaultBank,
-	'Standard Chartered Bank': defaultBank,
-	'Sumitomo Mitsui Banking Corporation': defaultBank,
-	'Suryoday Small Finance Bank Ltd.': defaultBank,
+	'RBL Bank Ltd.': rblBank,
+	'SBM Bank (India) Limited': sbmBank,
+	Sberbank: sberBank,
+	'Shivalik Small Finance Bank Ltd': shivaliSmallFinanceBank,
+	'Shinhan Bank': shinhanBank,
+	'Slice Small Finance Bank Ltd.': sliceSmallFinanceBank,
+	'Small Industries Development Bank of India': sidbi,
+	'Societe Generale': societeGenerale,
+	'Sonali Bank Ltd.': sonaliBank,
+	'South Indian Bank Ltd.': southIndianBank,
+	'Standard Chartered Bank': standardChateredBank,
+	'Sumitomo Mitsui Banking Corporation': sumitomoMitsuiBank,
+	'Suryoday Small Finance Bank Ltd.': suryodaySmallFinanceBank,
 	'Tamil Nadu Grama Bank': graminBank,
-	'Tamilnad Mercantile Bank Ltd.': defaultBank,
+	'Tamilnad Mercantile Bank Ltd.': tamilNadMercantileBank,
 	'Telangana Grameena Bank': graminBank,
 	'Tripura Gramin Bank': graminBank,
-	'United Overseas Bank Ltd.': defaultBank,
-	'Unity Small Finance Bank Ltd': defaultBank,
+	'United Overseas Bank Ltd.': unitedOverseasBank,
+	'Unity Small Finance Bank Ltd': unitySmallFinanceBank,
 	'Uttar Pradesh Gramin Bank': graminBank,
 	'Uttarakhand Gramin Bank': graminBank,
-	'UBS AG': defaultBank,
-	'Utkarsh Small Finance Bank Ltd.': defaultBank,
+	'UBS AG': ubsBank,
+	'Utkarsh Small Finance Bank Ltd.': utkarshSmallFinanceBank,
 	'West Bengal Gramin Bank': graminBank,
-	'Woori Bank': defaultBank,
-	'YES Bank Ltd.': defaultBank,
+	'Woori Bank': wooriBank,
+	'YES Bank Ltd.': yesBank,
 	Default: defaultBank,
 };
 
