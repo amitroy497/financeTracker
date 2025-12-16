@@ -39,6 +39,9 @@ import equitasSmallFinanceBank from './equitasSmallFinanceBank-icon.png';
 import esafSmallFinanceBank from './esafSmallFinanceBank-icon.png';
 import eximBank from './eximBank-icon.png';
 import federalBank from './federal-icon.png';
+import finoPaymentBank from './finoPaymentBank-icon.png';
+import firstAbuDhabiBank from './firstAbuDhabiBank-icon.png';
+import firstRandBank from './firstRandBank-icon.png';
 import graminBank from './graminBank-icon.png';
 import hdfcBank from './hdfc-icon.png';
 import iciciBank from './icici-icon.png';
@@ -103,12 +106,12 @@ export const bankIcons = {
 	'Equitas Small Finance Bank Ltd': equitasSmallFinanceBank,
 	'ESAF Small Finance Bank Ltd.': esafSmallFinanceBank,
 	'Export-Import Bank of India': eximBank,
-	'FINO Payments Bank Ltd': defaultBank,
-	'First Abu Dhabi Bank PJSC': defaultBank,
-	'FirstRand Bank Limited': defaultBank,
-	'Gujarat Gramin Bank': defaultBank,
-	'Haryana Gramin Bank': defaultBank,
-	'Himachal Pradesh Gramin Bank': defaultBank,
+	'FINO Payments Bank Ltd': finoPaymentBank,
+	'First Abu Dhabi Bank PJSC': firstAbuDhabiBank,
+	'FirstRand Bank Limited': firstRandBank,
+	'Gujarat Gramin Bank': graminBank,
+	'Haryana Gramin Bank': graminBank,
+	'Himachal Pradesh Gramin Bank': graminBank,
 	'Hong Kong and Shanghai Banking Corporation Limited': defaultBank,
 	'IDBI Bank Limited': defaultBank,
 	'India Post Payments Bank Ltd': defaultBank,
