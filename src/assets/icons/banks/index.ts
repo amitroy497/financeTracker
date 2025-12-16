@@ -46,8 +46,14 @@ import graminBank from './graminBank-icon.png';
 import hdfcBank from './hdfc-icon.png';
 import hsbcBank from './hsbcBank-icon.png';
 import iciciBank from './icici-icon.png';
+import idbiBank from './idbiBank-icon.png';
 import idfcFirstBank from './idfc-icon.png';
 import indianBank from './indian-icon.png';
+import indianOverseasBank from './indianOverseasBank-icon.png';
+import indiaPostPaymentBank from './indiaPostPaymentsBank-icon.png';
+import indusIndBank from './indusIndBank-icon.png';
+import industrialBankOfKorea from './industrialBankOfKorea-icon.png';
+import industrialCommercialBankOfChina from './industrialCommercialBankOfChina-icon.png';
 import kotakMahindraBank from './kotak-icon.png';
 import punjabNationalBank from './pnb-icon.png';
 import sbiBank from './sbi-icon.png';
@@ -114,16 +120,16 @@ export const bankIcons = {
 	'Haryana Gramin Bank': graminBank,
 	'Himachal Pradesh Gramin Bank': graminBank,
 	'Hong Kong and Shanghai Banking Corporation Limited': hsbcBank,
-	'IDBI Bank Limited': defaultBank,
-	'India Post Payments Bank Ltd': defaultBank,
-	'Indian Overseas Bank': defaultBank,
-	'Industrial and Commercial Bank of China': defaultBank,
-	'Industrial Bank of Korea': defaultBank,
-	'IndusInd Bank Ltd': defaultBank,
+	'IDBI Bank Limited': idbiBank,
+	'India Post Payments Bank Ltd': indiaPostPaymentBank,
+	'Indian Overseas Bank': indianOverseasBank,
+	'Industrial and Commercial Bank of China': industrialCommercialBankOfChina,
+	'Industrial Bank of Korea': industrialBankOfKorea,
+	'IndusInd Bank Ltd': indusIndBank,
 	'Jammu & Kashmir Bank Ltd.': defaultBank,
-	'Jammu and Kashmir Grameen Bank': defaultBank,
+	'Jammu and Kashmir Grameen Bank': graminBank,
 	'Jana Small Finance Bank Ltd': defaultBank,
-	'Jharkhand Gramin Bank': defaultBank,
+	'Jharkhand Gramin Bank': graminBank,
 	'Jio Payments Bank Ltd': defaultBank,
 	'J.P. Morgan Chase Bank N.A.': defaultBank,
 	'JSC VTB Bank': defaultBank,
