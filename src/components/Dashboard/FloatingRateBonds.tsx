@@ -7,17 +7,16 @@ import {
 	FloatingRateBondsProps,
 } from '@/types';
 import { formatCurrency } from '@/utils';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import {
 	Alert,
 	Modal,
 	ScrollView,
 	Text,
-	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native';
+import { AddEditFields } from '../UI';
 
 export const FloatingRateBonds = ({
 	bonds,
@@ -115,6 +114,35 @@ export const FloatingRateBonds = ({
 		return num.toString();
 	};
 
+	// Handle date picker
+	const handleDateChange = (event: any, date?: Date) => {
+		setShowDatePicker(false);
+		if (date) {
+			setSelectedDate(date);
+			const formattedDate = date.toISOString().split('T')[0];
+
+			if (datePickerField === 'purchaseDate') {
+				setNewBond({ ...newBond, purchaseDate: formattedDate });
+			} else if (datePickerField === 'maturityDate') {
+				setNewBond({ ...newBond, maturityDate: formattedDate });
+			}
+		}
+	};
+
+	// Open date picker
+	const openDatePicker = (field: 'purchaseDate' | 'maturityDate') => {
+		setDatePickerField(field);
+
+		// Set initial date from form data or current date
+		if (newBond[field]) {
+			setSelectedDate(new Date(newBond[field] as string));
+		} else {
+			setSelectedDate(new Date());
+		}
+
+		setShowDatePicker(true);
+	};
+
 	const handleAddBond = async (): Promise<void> => {
 		if (!newBond.bondName.trim()) {
 			Alert.alert('Error', 'Please enter bond name');
@@ -135,21 +163,7 @@ export const FloatingRateBonds = ({
 		try {
 			await assetService.createFRB(userId, newBond);
 			setShowAddModal(false);
-			setNewBond({
-				bondName: '',
-				certificateNumber: '',
-				investmentAmount: 0,
-				interestRate: 7.15,
-				purchaseDate: new Date().toISOString().split('T')[0],
-				maturityDate: new Date(
-					new Date().setFullYear(new Date().getFullYear() + 5)
-				)
-					.toISOString()
-					.split('T')[0],
-				notes: '',
-			});
-			setInvestmentAmountInput('');
-			setInterestRateInput('7.15');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Floating Rate Bond added successfully!');
 		} catch (error) {
@@ -198,21 +212,7 @@ export const FloatingRateBonds = ({
 			await assetService.updateFRB(userId, editingBond.id, newBond);
 			setShowEditModal(false);
 			setEditingBond(null);
-			setNewBond({
-				bondName: '',
-				certificateNumber: '',
-				investmentAmount: 0,
-				interestRate: 7.15,
-				purchaseDate: new Date().toISOString().split('T')[0],
-				maturityDate: new Date(
-					new Date().setFullYear(new Date().getFullYear() + 5)
-				)
-					.toISOString()
-					.split('T')[0],
-				notes: '',
-			});
-			setInvestmentAmountInput('');
-			setInterestRateInput('7.15');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Floating Rate Bond updated successfully!');
 		} catch (error) {
@@ -258,33 +258,23 @@ export const FloatingRateBonds = ({
 		}
 	};
 
-	// Handle date picker
-	const handleDateChange = (event: any, date?: Date) => {
-		setShowDatePicker(false);
-		if (date) {
-			setSelectedDate(date);
-			const formattedDate = date.toISOString().split('T')[0];
-
-			if (datePickerField === 'purchaseDate') {
-				setNewBond({ ...newBond, purchaseDate: formattedDate });
-			} else if (datePickerField === 'maturityDate') {
-				setNewBond({ ...newBond, maturityDate: formattedDate });
-			}
-		}
-	};
-
-	// Open date picker
-	const openDatePicker = (field: 'purchaseDate' | 'maturityDate') => {
-		setDatePickerField(field);
-
-		// Set initial date from form data or current date
-		if (newBond[field]) {
-			setSelectedDate(new Date(newBond[field] as string));
-		} else {
-			setSelectedDate(new Date());
-		}
-
-		setShowDatePicker(true);
+	// Reset form function
+	const resetForm = () => {
+		setNewBond({
+			bondName: '',
+			certificateNumber: '',
+			investmentAmount: 0,
+			interestRate: 7.15,
+			purchaseDate: new Date().toISOString().split('T')[0],
+			maturityDate: new Date(
+				new Date().setFullYear(new Date().getFullYear() + 5)
+			)
+				.toISOString()
+				.split('T')[0],
+			notes: '',
+		});
+		setInvestmentAmountInput('');
+		setInterestRateInput('7.15');
 	};
 
 	const totalCurrentValue = bonds.reduce(
@@ -452,178 +442,190 @@ export const FloatingRateBonds = ({
 		);
 	};
 
-	const renderAddEditModal = (isEdit: boolean) => (
-		<Modal
-			visible={isEdit ? showEditModal : showAddModal}
-			animationType='slide'
-			transparent={true}
-			onRequestClose={() => {
-				if (isEdit) {
-					setShowEditModal(false);
-					setEditingBond(null);
-				} else {
-					setShowAddModal(false);
-				}
-				// Reset all states
-				setNewBond({
-					bondName: '',
-					certificateNumber: '',
-					investmentAmount: 0,
-					interestRate: 7.15,
-					purchaseDate: new Date().toISOString().split('T')[0],
-					maturityDate: new Date(
-						new Date().setFullYear(new Date().getFullYear() + 5)
-					)
-						.toISOString()
-						.split('T')[0],
-					notes: '',
-				});
-				setInvestmentAmountInput('');
-				setInterestRateInput('7.15');
-			}}
-		>
-			<View
-				style={{
-					flex: 1,
-					justifyContent: 'center',
-					backgroundColor: 'rgba(0,0,0,0.5)',
+	// Get input fields for modal
+	const getModalInputFields = (isEdit: boolean) => {
+		const inputFields = [
+			{
+				id: 'bondName',
+				label: 'Bond Name',
+				placeholder: 'Bond Name (e.g., RBI Floating Rate Bond 2023)',
+				value: newBond.bondName,
+				onChangeText: (text: string) =>
+					setNewBond({ ...newBond, bondName: text }),
+				isMandatory: true,
+				isEllipsis: true,
+			},
+			{
+				id: 'certificateNumber',
+				label: 'Certificate Number',
+				placeholder: 'Certificate Number (Optional)',
+				value: newBond.certificateNumber,
+				onChangeText: (text: string) =>
+					setNewBond({ ...newBond, certificateNumber: text }),
+				isMandatory: false,
+			},
+			{
+				id: 'investmentAmount',
+				label: 'Investment Amount',
+				placeholder: 'Investment Amount (₹)',
+				value: investmentAmountInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'investmentAmount'),
+				keyboardType: 'decimal-pad',
+				isMandatory: true,
+			},
+			{
+				id: 'interestRate',
+				label: 'Interest Rate',
+				placeholder: 'Interest Rate (%)',
+				value: interestRateInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'interestRate'),
+				keyboardType: 'decimal-pad',
+				isMandatory: true,
+			},
+			{
+				id: 'purchaseDate',
+				isDatePicker: true,
+				onPressOpen: () => openDatePicker('purchaseDate'),
+				value: formatDate(newBond.purchaseDate as string),
+				showDatePicker: showDatePicker && datePickerField === 'purchaseDate',
+				handleDateChange: handleDateChange,
+				selectedDate: selectedDate,
+				label: 'Purchase Date',
+			},
+			{
+				id: 'maturityDate',
+				isDatePicker: true,
+				onPressOpen: () => openDatePicker('maturityDate'),
+				value: formatDate(newBond.maturityDate),
+				showDatePicker: showDatePicker && datePickerField === 'maturityDate',
+				handleDateChange: handleDateChange,
+				selectedDate: selectedDate,
+				label: 'Maturity Date',
+			},
+			{
+				id: 'notes',
+				label: 'Notes',
+				placeholder: 'Notes (Optional)',
+				value: newBond.notes,
+				onChangeText: (text: string) => setNewBond({ ...newBond, notes: text }),
+				multiline: true,
+				numberOfLines: 3,
+				isMandatory: false,
+			},
+		];
+
+		return inputFields;
+	};
+
+	const renderAddEditModal = (isEdit: boolean) => {
+		const inputFields = getModalInputFields(isEdit);
+
+		return (
+			<Modal
+				visible={isEdit ? showEditModal : showAddModal}
+				animationType='slide'
+				transparent={true}
+				onRequestClose={() => {
+					if (isEdit) {
+						setShowEditModal(false);
+						setEditingBond(null);
+					} else {
+						setShowAddModal(false);
+					}
+					resetForm();
 				}}
 			>
-				<ScrollView style={{ maxHeight: '90%' }}>
-					<View style={[styles.card, { margin: 20 }]}>
-						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-							{isEdit ? 'Edit Floating Rate Bond' : 'Add Floating Rate Bond'}
-						</Text>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Bond Name (e.g., RBI Floating Rate Bond 2023)'
-							value={newBond.bondName}
-							onChangeText={(text) =>
-								setNewBond({ ...newBond, bondName: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Certificate Number (Optional)'
-							value={newBond.certificateNumber}
-							onChangeText={(text) =>
-								setNewBond({ ...newBond, certificateNumber: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Investment Amount (₹)'
-							value={investmentAmountInput}
-							onChangeText={(text) =>
-								handleDecimalInput(text, 'investmentAmount')
-							}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Interest Rate (%)'
-							value={interestRateInput}
-							onChangeText={(text) => handleDecimalInput(text, 'interestRate')}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TouchableOpacity
-							style={[styles.input, { justifyContent: 'center' }]}
-							onPress={() => openDatePicker('purchaseDate')}
+				<View
+					style={{
+						flex: 1,
+						justifyContent: 'center',
+						backgroundColor: 'rgba(0,0,0,0.5)',
+					}}
+				>
+					<View style={[styles.card, { margin: 20, maxHeight: '90%' }]}>
+						<ScrollView
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ flexGrow: 1 }}
 						>
-							<Text style={{ color: colors.dark }}>
-								📅 Purchase Date: {formatDate(newBond?.purchaseDate as string)}
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								{isEdit ? 'Edit Floating Rate Bond' : 'Add Floating Rate Bond'}
 							</Text>
-						</TouchableOpacity>
 
-						<TouchableOpacity
-							style={[styles.input, { justifyContent: 'center' }]}
-							onPress={() => openDatePicker('maturityDate')}
-						>
-							<Text style={{ color: colors.dark }}>
-								📅 Maturity Date: {formatDate(newBond.maturityDate)}
-							</Text>
-						</TouchableOpacity>
-
-						<TextInput
-							style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
-							placeholder='Notes (Optional)'
-							value={newBond.notes}
-							onChangeText={(text) => setNewBond({ ...newBond, notes: text })}
-							placeholderTextColor={colors.gray}
-							multiline
-							numberOfLines={3}
-						/>
-
-						{/* Date Picker */}
-						{showDatePicker && (
-							<DateTimePicker
-								value={selectedDate}
-								mode='date'
-								display='default'
-								onChange={handleDateChange}
-							/>
-						)}
-
-						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
-							<TouchableOpacity
-								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-								onPress={() => {
-									if (isEdit) {
-										setShowEditModal(false);
-										setEditingBond(null);
-									} else {
-										setShowAddModal(false);
-									}
-									// Reset all states
-									setNewBond({
-										bondName: '',
-										certificateNumber: '',
-										investmentAmount: 0,
-										interestRate: 7.15,
-										purchaseDate: new Date().toISOString().split('T')[0],
-										maturityDate: new Date(
-											new Date().setFullYear(new Date().getFullYear() + 5)
-										)
-											.toISOString()
-											.split('T')[0],
-										notes: '',
-									});
-									setInvestmentAmountInput('');
-									setInterestRateInput('7.15');
+							{/* Current Values Summary */}
+							<View
+								style={{
+									marginBottom: 16,
+									padding: 12,
+									backgroundColor: colors.lightGray,
+									borderRadius: 8,
 								}}
-								disabled={isSubmitting}
 							>
-								<Text style={styles.buttonText}>Cancel</Text>
-							</TouchableOpacity>
-
-							<TouchableOpacity
-								style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-								onPress={isEdit ? handleUpdateBond : handleAddBond}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>
-									{isSubmitting
-										? 'Saving...'
-										: isEdit
-										? 'Update Bond'
-										: 'Add Bond'}
+								<Text
+									style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}
+								>
+									Current Values:
 								</Text>
-							</TouchableOpacity>
-						</View>
+								<Text style={{ color: colors.dark, fontSize: 12 }}>
+									Investment: {formatCurrency(newBond.investmentAmount)} |
+									Interest Rate: {newBond.interestRate}%
+								</Text>
+								{newBond.purchaseDate && (
+									<Text
+										style={{ color: colors.dark, fontSize: 12, marginTop: 2 }}
+									>
+										Purchase Date: {formatDate(newBond.purchaseDate as string)}
+									</Text>
+								)}
+								{newBond.maturityDate && (
+									<Text
+										style={{ color: colors.dark, fontSize: 12, marginTop: 2 }}
+									>
+										Maturity Date: {formatDate(newBond.maturityDate)}
+									</Text>
+								)}
+							</View>
+
+							<AddEditFields fields={inputFields} />
+
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										if (isEdit) {
+											setShowEditModal(false);
+											setEditingBond(null);
+										} else {
+											setShowAddModal(false);
+										}
+										resetForm();
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={isEdit ? handleUpdateBond : handleAddBond}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting
+											? 'Saving...'
+											: isEdit
+											? 'Update Bond'
+											: 'Add Bond'}
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</ScrollView>
 					</View>
-				</ScrollView>
-			</View>
-		</Modal>
-	);
+				</View>
+			</Modal>
+		);
+	};
 
 	return (
 		<View style={{ padding: 20 }}>

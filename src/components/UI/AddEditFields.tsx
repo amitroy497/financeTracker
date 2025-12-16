@@ -58,6 +58,7 @@ export const AddEditFields = ({ fields }: any) => {
 						onChangeText={field?.onChangeText}
 						keyboardType={field?.keyboardType}
 						isMandatory={field?.isMandatory}
+						isEllipsis={field?.isEllipsis}
 					/>
 				);
 			})}

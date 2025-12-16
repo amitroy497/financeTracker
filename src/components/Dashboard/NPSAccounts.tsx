@@ -7,17 +7,16 @@ import {
 	NPSAccountsProps,
 } from '@/types';
 import { formatCurrency, formatNumber } from '@/utils';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import {
 	Alert,
 	Modal,
 	ScrollView,
 	Text,
-	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native';
+import { AddEditFields } from '../UI';
 
 export const NPSAccounts = ({
 	accounts,
@@ -103,6 +102,28 @@ export const NPSAccounts = ({
 		});
 	};
 
+	// Handle date picker
+	const handleDateChange = (event: any, date?: Date) => {
+		setShowDatePicker(false);
+		if (date) {
+			setSelectedDate(date);
+			const formattedDate = date.toISOString().split('T')[0];
+			setNewAccount({ ...newAccount, lastContributionDate: formattedDate });
+		}
+	};
+
+	// Open date picker
+	const openDatePicker = () => {
+		// Set initial date from form data or current date
+		if (newAccount.lastContributionDate) {
+			setSelectedDate(new Date(newAccount.lastContributionDate));
+		} else {
+			setSelectedDate(new Date());
+		}
+
+		setShowDatePicker(true);
+	};
+
 	// Format number for display (show empty string for 0)
 	const formatNumberForInput = (num: number): string => {
 		if (num === 0) return '';
@@ -124,16 +145,7 @@ export const NPSAccounts = ({
 		try {
 			await assetService.createNPS(userId, newAccount);
 			setShowAddModal(false);
-			// Reset all states
-			setNewAccount({
-				pranNumber: '',
-				totalContribution: 0,
-				currentValue: 0,
-				lastContributionDate: new Date().toISOString().split('T')[0],
-				notes: '',
-			});
-			setTotalContributionInput('');
-			setCurrentValueInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'NPS account added successfully!');
 		} catch (error) {
@@ -183,16 +195,7 @@ export const NPSAccounts = ({
 			await assetService.updateNPS(userId, editingAccount.id, newAccount);
 			setShowEditModal(false);
 			setEditingAccount(null);
-			// Reset all states
-			setNewAccount({
-				pranNumber: '',
-				totalContribution: 0,
-				currentValue: 0,
-				lastContributionDate: new Date().toISOString().split('T')[0],
-				notes: '',
-			});
-			setTotalContributionInput('');
-			setCurrentValueInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'NPS account updated successfully!');
 		} catch (error) {
@@ -237,26 +240,17 @@ export const NPSAccounts = ({
 		}
 	};
 
-	// Handle date picker
-	const handleDateChange = (event: any, date?: Date) => {
-		setShowDatePicker(false);
-		if (date) {
-			setSelectedDate(date);
-			const formattedDate = date.toISOString().split('T')[0];
-			setNewAccount({ ...newAccount, lastContributionDate: formattedDate });
-		}
-	};
-
-	// Open date picker
-	const openDatePicker = () => {
-		// Set initial date from form data or current date
-		if (newAccount.lastContributionDate) {
-			setSelectedDate(new Date(newAccount.lastContributionDate));
-		} else {
-			setSelectedDate(new Date());
-		}
-
-		setShowDatePicker(true);
+	// Reset form function
+	const resetForm = () => {
+		setNewAccount({
+			pranNumber: '',
+			totalContribution: 0,
+			currentValue: 0,
+			lastContributionDate: new Date().toISOString().split('T')[0],
+			notes: '',
+		});
+		setTotalContributionInput('');
+		setCurrentValueInput('');
 	};
 
 	const formatDate = (dateString: string): string => {
@@ -279,268 +273,312 @@ export const NPSAccounts = ({
 	const totalReturnPercentage =
 		totalContribution > 0 ? (totalReturns / totalContribution) * 100 : 0;
 
-	const renderAccountCard = (account: NationalPensionScheme) => (
-		<TouchableOpacity
-			key={account.id}
-			style={[
-				styles.card,
-				{
-					marginBottom: 12,
-					borderLeftWidth: 4,
-					borderLeftColor: colors.dark,
-					padding: 16,
-				},
-			]}
-			onPress={() => handleEditAccount(account)}
-		>
-			<View
+	const renderAccountCard = (account: NationalPensionScheme) => {
+		const returns = account.returns || 0;
+		const absoluteReturns = account.currentValue - account.totalContribution;
+
+		return (
+			<TouchableOpacity
+				key={account.id}
 				style={[
-					styles.row,
-					styles.spaceBetween,
-					{ alignItems: 'flex-start', marginBottom: 8 },
+					styles.card,
+					{
+						marginBottom: 12,
+						borderLeftWidth: 4,
+						borderLeftColor: colors.dark,
+						padding: 16,
+					},
 				]}
+				onPress={() => handleEditAccount(account)}
 			>
-				<View style={{ flex: 1 }}>
-					<Text
-						style={{
-							fontWeight: 'bold',
-							color: colors.dark,
-							fontSize: 16,
-						}}
-					>
-						NPS Account {account.pranNumber ? `(${account.pranNumber})` : ''}
-					</Text>
-					{account.pranNumber && (
-						<Text style={{ color: colors.gray, fontSize: 12 }}>
-							PRAN: {account.pranNumber}
+				<View
+					style={[
+						styles.row,
+						styles.spaceBetween,
+						{ alignItems: 'flex-start', marginBottom: 8 },
+					]}
+				>
+					<View style={{ flex: 1 }}>
+						<Text
+							style={{
+								fontWeight: 'bold',
+								color: colors.dark,
+								fontSize: 16,
+							}}
+						>
+							NPS Account {account.pranNumber ? `(${account.pranNumber})` : ''}
 						</Text>
-					)}
+						{account.pranNumber && (
+							<Text style={{ color: colors.gray, fontSize: 12 }}>
+								PRAN: {account.pranNumber}
+							</Text>
+						)}
+					</View>
+
+					<View style={{ alignItems: 'flex-end' }}>
+						<Text
+							style={{
+								fontWeight: 'bold',
+								color: colors.dark,
+								fontSize: 16,
+							}}
+						>
+							{formatCurrency(account.currentValue || 0)}
+						</Text>
+						<Text
+							style={{
+								color: getReturnColor(returns),
+								fontSize: 12,
+								fontWeight: 'bold',
+							}}
+						>
+							{returns >= 0 ? '+' : ''}
+							{formatNumber(returns)}%
+						</Text>
+					</View>
 				</View>
 
-				<View style={{ alignItems: 'flex-end' }}>
-					<Text
-						style={{
-							fontWeight: 'bold',
-							color: colors.dark,
-							fontSize: 16,
-						}}
-					>
-						{formatCurrency(account.currentValue || 0)}
+				<View style={[styles.row, styles.spaceBetween, { marginBottom: 4 }]}>
+					<Text style={{ color: colors.gray, fontSize: 12 }}>
+						Contribution: {formatCurrency(account.totalContribution || 0)}
 					</Text>
-					<Text
-						style={{
-							color: getReturnColor(account.returns || 0),
-							fontSize: 12,
-							fontWeight: 'bold',
-						}}
-					>
-						{(account.returns || 0) >= 0 ? '+' : ''}
-						{formatNumber(account.returns || 0)}%
+					<Text style={{ color: colors.gray, fontSize: 12 }}>
+						Returns: {formatCurrency(absoluteReturns)}
 					</Text>
 				</View>
-			</View>
 
-			<View style={[styles.row, styles.spaceBetween, { marginBottom: 4 }]}>
-				<Text style={{ color: colors.gray, fontSize: 12 }}>
-					Contribution: {formatCurrency(account.totalContribution || 0)}
-				</Text>
-				<Text style={{ color: colors.gray, fontSize: 12 }}>
-					Current: {formatCurrency(account.currentValue || 0)}
-				</Text>
-			</View>
+				<View style={[styles.row, styles.spaceBetween]}>
+					<Text style={{ color: colors.gray, fontSize: 12 }}>
+						📅 Last Contribution:{' '}
+						{formatDate(
+							account.lastContributionDate ||
+								new Date().toISOString().split('T')[0]
+						)}
+					</Text>
+					<Text style={{ color: colors.gray, fontSize: 10 }}>
+						Updated:{' '}
+						{new Date(account.lastUpdated || new Date()).toLocaleDateString()}
+					</Text>
+				</View>
 
-			<View style={[styles.row, styles.spaceBetween]}>
-				<Text style={{ color: colors.gray, fontSize: 12 }}>
-					📅 Last Contribution:{' '}
-					{formatDate(
-						account.lastContributionDate ||
-							new Date().toISOString().split('T')[0]
-					)}
-				</Text>
-				<Text style={{ color: colors.gray, fontSize: 10 }}>
-					Updated:{' '}
-					{new Date(account.lastUpdated || new Date()).toLocaleDateString()}
-				</Text>
-			</View>
+				{account.notes && (
+					<Text
+						style={{
+							color: colors.gray,
+							fontSize: 11,
+							marginTop: 8,
+							fontStyle: 'italic',
+						}}
+					>
+						{account.notes}
+					</Text>
+				)}
 
-			{account.notes && (
-				<Text
-					style={{
-						color: colors.gray,
-						fontSize: 11,
-						marginTop: 8,
-						fontStyle: 'italic',
-					}}
+				{/* Edit/Delete Buttons */}
+				<View
+					style={[styles.row, { marginTop: 12, justifyContent: 'flex-end' }]}
 				>
-					{account.notes}
-				</Text>
-			)}
+					<TouchableOpacity
+						style={{ marginRight: 16 }}
+						onPress={() => handleEditAccount(account)}
+					>
+						<Text style={{ color: colors.primary, fontSize: 12 }}>✏️ Edit</Text>
+					</TouchableOpacity>
+					<TouchableOpacity
+						onPress={() =>
+							handleDeleteAccount(account.id, account.pranNumber || '')
+						}
+					>
+						<Text style={{ color: colors.danger, fontSize: 12 }}>
+							🗑️ Delete
+						</Text>
+					</TouchableOpacity>
+				</View>
+			</TouchableOpacity>
+		);
+	};
 
-			{/* Edit/Delete Buttons */}
-			<View style={[styles.row, { marginTop: 12, justifyContent: 'flex-end' }]}>
-				<TouchableOpacity
-					style={{ marginRight: 16 }}
-					onPress={() => handleEditAccount(account)}
-				>
-					<Text style={{ color: colors.primary, fontSize: 12 }}>✏️ Edit</Text>
-				</TouchableOpacity>
-				<TouchableOpacity
-					onPress={() =>
-						handleDeleteAccount(account.id, account.pranNumber || '')
+	// Get input fields for modal
+	const getModalInputFields = (isEdit: boolean) => {
+		const inputFields = [
+			{
+				id: 'pranNumber',
+				label: 'PRAN Number',
+				placeholder: 'PRAN Number (Optional)',
+				value: newAccount.pranNumber,
+				onChangeText: (text: string) =>
+					setNewAccount({ ...newAccount, pranNumber: text.toUpperCase() }),
+				isMandatory: false,
+			},
+			{
+				id: 'totalContribution',
+				label: 'Total Contribution',
+				placeholder: 'Total Contribution (₹)',
+				value: totalContributionInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'totalContribution'),
+				keyboardType: 'decimal-pad',
+				isMandatory: true,
+			},
+			{
+				id: 'currentValue',
+				label: 'Current Value',
+				placeholder: 'Current Portfolio Value (₹)',
+				value: currentValueInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'currentValue'),
+				keyboardType: 'decimal-pad',
+				isMandatory: true,
+			},
+			{
+				id: 'lastContributionDate',
+				isDatePicker: true,
+				onPressOpen: () => openDatePicker(),
+				value: formatDate(newAccount.lastContributionDate as string),
+				showDatePicker: showDatePicker,
+				handleDateChange: handleDateChange,
+				selectedDate: selectedDate,
+				label: 'Last Contribution Date',
+			},
+			{
+				id: 'notes',
+				label: 'Notes',
+				placeholder: 'Notes (Optional)',
+				value: newAccount.notes,
+				onChangeText: (text: string) =>
+					setNewAccount({ ...newAccount, notes: text }),
+				multiline: true,
+				numberOfLines: 3,
+				isMandatory: false,
+			},
+		];
+
+		return inputFields;
+	};
+
+	const renderAddEditModal = (isEdit: boolean) => {
+		const inputFields = getModalInputFields(isEdit);
+		const totalContribution = newAccount.totalContribution || 0;
+		const currentValue = newAccount.currentValue || 0;
+		const absoluteReturns = currentValue - totalContribution;
+		const returnPercentage =
+			totalContribution > 0 ? (absoluteReturns / totalContribution) * 100 : 0;
+
+		return (
+			<Modal
+				visible={isEdit ? showEditModal : showAddModal}
+				animationType='slide'
+				transparent={true}
+				onRequestClose={() => {
+					if (isEdit) {
+						setShowEditModal(false);
+						setEditingAccount(null);
+					} else {
+						setShowAddModal(false);
 					}
-				>
-					<Text style={{ color: colors.danger, fontSize: 12 }}>🗑️ Delete</Text>
-				</TouchableOpacity>
-			</View>
-		</TouchableOpacity>
-	);
-
-	const renderAddEditModal = (isEdit: boolean) => (
-		<Modal
-			visible={isEdit ? showEditModal : showAddModal}
-			animationType='slide'
-			transparent={true}
-			onRequestClose={() => {
-				if (isEdit) {
-					setShowEditModal(false);
-					setEditingAccount(null);
-				} else {
-					setShowAddModal(false);
-				}
-				// Reset all states
-				setNewAccount({
-					pranNumber: '',
-					totalContribution: 0,
-					currentValue: 0,
-					lastContributionDate: new Date().toISOString().split('T')[0],
-					notes: '',
-				});
-				setTotalContributionInput('');
-				setCurrentValueInput('');
-			}}
-		>
-			<View
-				style={{
-					flex: 1,
-					justifyContent: 'center',
-					backgroundColor: 'rgba(0,0,0,0.5)',
+					resetForm();
 				}}
 			>
-				<ScrollView style={{ maxHeight: '90%' }}>
-					<View style={[styles.card, { margin: 20 }]}>
-						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-							{isEdit ? 'Edit NPS Account' : 'Add NPS Account'}
-						</Text>
-
-						<TextInput
-							style={styles.input}
-							placeholder='PRAN Number (Optional)'
-							value={newAccount.pranNumber}
-							onChangeText={(text) =>
-								setNewAccount({ ...newAccount, pranNumber: text.toUpperCase() })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Total Contribution (₹)'
-							value={totalContributionInput}
-							onChangeText={(text) =>
-								handleDecimalInput(text, 'totalContribution')
-							}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Current Portfolio Value (₹)'
-							value={currentValueInput}
-							onChangeText={(text) => handleDecimalInput(text, 'currentValue')}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TouchableOpacity
-							style={[styles.input, { justifyContent: 'center' }]}
-							onPress={openDatePicker}
+				<View
+					style={{
+						flex: 1,
+						justifyContent: 'center',
+						backgroundColor: 'rgba(0,0,0,0.5)',
+					}}
+				>
+					<View style={[styles.card, { margin: 20, maxHeight: '90%' }]}>
+						<ScrollView
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ flexGrow: 1 }}
 						>
-							<Text style={{ color: colors.dark }}>
-								📅 Last Contribution Date:{' '}
-								{formatDate(newAccount?.lastContributionDate as string)}
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								{isEdit ? 'Edit NPS Account' : 'Add NPS Account'}
 							</Text>
-						</TouchableOpacity>
 
-						<TextInput
-							style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
-							placeholder='Notes (Optional)'
-							value={newAccount.notes}
-							onChangeText={(text) =>
-								setNewAccount({ ...newAccount, notes: text })
-							}
-							placeholderTextColor={colors.gray}
-							multiline
-							numberOfLines={3}
-						/>
-
-						{/* Date Picker */}
-						{showDatePicker && (
-							<DateTimePicker
-								value={selectedDate}
-								mode='date'
-								display='default'
-								onChange={handleDateChange}
-							/>
-						)}
-
-						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
-							<TouchableOpacity
-								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-								onPress={() => {
-									if (isEdit) {
-										setShowEditModal(false);
-										setEditingAccount(null);
-									} else {
-										setShowAddModal(false);
-									}
-									// Reset all states
-									setNewAccount({
-										pranNumber: '',
-										totalContribution: 0,
-										currentValue: 0,
-										lastContributionDate: new Date()
-											.toISOString()
-											.split('T')[0],
-										notes: '',
-									});
-									setTotalContributionInput('');
-									setCurrentValueInput('');
+							{/* Current Values Summary */}
+							<View
+								style={{
+									marginBottom: 16,
+									padding: 12,
+									backgroundColor: colors.lightGray,
+									borderRadius: 8,
 								}}
-								disabled={isSubmitting}
 							>
-								<Text style={styles.buttonText}>Cancel</Text>
-							</TouchableOpacity>
-
-							<TouchableOpacity
-								style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-								onPress={isEdit ? handleUpdateAccount : handleAddAccount}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>
-									{isSubmitting
-										? 'Saving...'
-										: isEdit
-										? 'Update Account'
-										: 'Add Account'}
+								<Text
+									style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}
+								>
+									Current Values:
 								</Text>
-							</TouchableOpacity>
-						</View>
+								<View
+									style={[styles.row, styles.spaceBetween, { marginBottom: 2 }]}
+								>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Contribution: {formatCurrency(totalContribution)}
+									</Text>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Current: {formatCurrency(currentValue)}
+									</Text>
+								</View>
+								{newAccount.lastContributionDate && (
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Last Contribution:{' '}
+										{formatDate(newAccount.lastContributionDate as string)}
+									</Text>
+								)}
+								{absoluteReturns !== 0 && (
+									<Text
+										style={{
+											color: getReturnColor(absoluteReturns),
+											fontSize: 12,
+											fontWeight: 'bold',
+											marginTop: 4,
+										}}
+									>
+										Returns: {formatCurrency(absoluteReturns)} (
+										{formatNumber(returnPercentage)}%)
+									</Text>
+								)}
+							</View>
+
+							<AddEditFields fields={inputFields} />
+
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										if (isEdit) {
+											setShowEditModal(false);
+											setEditingAccount(null);
+										} else {
+											setShowAddModal(false);
+										}
+										resetForm();
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={isEdit ? handleUpdateAccount : handleAddAccount}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting
+											? 'Saving...'
+											: isEdit
+											? 'Update Account'
+											: 'Add Account'}
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</ScrollView>
 					</View>
-				</ScrollView>
-			</View>
-		</Modal>
-	);
+				</View>
+			</Modal>
+		);
+	};
 
 	return (
 		<View style={{ padding: 20 }}>
