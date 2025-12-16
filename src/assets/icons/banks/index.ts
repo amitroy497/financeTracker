@@ -34,6 +34,10 @@ import defaultBank from './default-bank-icon.png';
 import deutscheBank from './deutscheBank-icon.png';
 import dhanLaxmiBank from './dhanLaxmiBank-icon.png';
 import dohaBank from './dohaBank-icon.png';
+import emiratesNBDBank from './emiratesNBDBank-icon.png';
+import equitasSmallFinanceBank from './equitasSmallFinanceBank-icon.png';
+import esafSmallFinanceBank from './esafSmallFinanceBank-icon.png';
+import eximBank from './eximBank-icon.png';
 import federalBank from './federal-icon.png';
 import graminBank from './graminBank-icon.png';
 import hdfcBank from './hdfc-icon.png';
@@ -95,10 +99,10 @@ export const bankIcons = {
 	'Deutsche Bank A.G.': deutscheBank,
 	'Dhanlaxmi Bank Ltd.': dhanLaxmiBank,
 	'Doha Bank Q.P.S.C': dohaBank,
-	'Emirates NBD Bank P.J.S.C': defaultBank,
-	'Equitas Small Finance Bank Ltd': defaultBank,
-	'ESAF Small Finance Bank Ltd.': defaultBank,
-	'Export-Import Bank of India': defaultBank,
+	'Emirates NBD Bank P.J.S.C': emiratesNBDBank,
+	'Equitas Small Finance Bank Ltd': equitasSmallFinanceBank,
+	'ESAF Small Finance Bank Ltd.': esafSmallFinanceBank,
+	'Export-Import Bank of India': eximBank,
 	'FINO Payments Bank Ltd': defaultBank,
 	'First Abu Dhabi Bank PJSC': defaultBank,
 	'FirstRand Bank Limited': defaultBank,
