@@ -158,6 +158,8 @@ export interface BankAccount {
 	createdAt?: string;
 }
 
+export type AccountTypes = 'Savings' | 'Current' | 'Salary';
+
 export interface FixedDeposit {
 	id: string;
 	bankName: string;
@@ -237,7 +239,7 @@ export interface CreateBankAccountData {
 	accountName?: string;
 	bankName: string;
 	accountNumber?: string;
-	accountType: 'Savings' | 'Current' | 'Salary';
+	accountType: string;
 	balance: number;
 	currency?: string;
 	interestRate?: number;

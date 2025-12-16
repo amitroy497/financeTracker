@@ -38,6 +38,8 @@ export const InputComponent = ({
 	const { colors } = useTheme();
 	const styles = createStyles(colors);
 
+	console.log('Mahadev', dropDownAlternativeName);
+
 	const getInputMode = (): InputMode => {
 		if (isSelectDropDown) return InputMode.SELECT_DROPDOWN;
 		if (isEllipsis) return InputMode.ELLIPSIS;

@@ -31,8 +31,16 @@ export const BankAccounts = ({
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showEditModal, setShowEditModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// Bank dropdown states
 	const [showBankDropdown, setShowBankDropdown] = useState(false);
 	const [bankSearch, setBankSearch] = useState('');
+
+	// Account type dropdown states
+	const [showAccountTypeDropdown, setShowAccountTypeDropdown] = useState(false);
+	// Add search state for account type if needed
+	const [accountTypeSearch, setAccountTypeSearch] = useState('');
+
 	const [unmaskedAccounts, setUnmaskedAccounts] = useState<Set<string>>(
 		new Set()
 	);
@@ -43,7 +51,7 @@ export const BankAccounts = ({
 		accountName: '',
 		bankName: '',
 		accountNumber: '',
-		accountType: 'Savings',
+		accountType: '',
 		balance: 0,
 		currency: 'INR',
 	});
@@ -84,6 +92,16 @@ export const BankAccounts = ({
 		setNewAccount({ ...newAccount, bankName: bank });
 		setShowBankDropdown(false);
 		setBankSearch('');
+	};
+
+	const handleSelectAccountType = (type: string): void => {
+		console.log('Account type selected:', type);
+		setNewAccount({
+			...newAccount,
+			accountType: type,
+		});
+		setShowAccountTypeDropdown(false);
+		setAccountTypeSearch(''); // Clear search when selected
 	};
 
 	const handleAddAccount = async (): Promise<void> => {
@@ -267,7 +285,9 @@ export const BankAccounts = ({
 		});
 		setBalanceInput('0');
 		setShowBankDropdown(false);
+		setShowAccountTypeDropdown(false);
 		setBankSearch('');
+		setAccountTypeSearch('');
 	};
 
 	const totalBalance = accounts.reduce(
@@ -275,8 +295,10 @@ export const BankAccounts = ({
 		0
 	);
 
+	const accountTypeOptions = ['Savings', 'Current', 'Salary'];
+
 	const renderAccountCard = (account: BankAccount) => (
-		<TouchableOpacity
+		<View
 			key={account.id}
 			style={[
 				styles.card,
@@ -288,7 +310,6 @@ export const BankAccounts = ({
 					paddingHorizontal: 8,
 				},
 			]}
-			onPress={() => handleEditAccount(account)}
 		>
 			<View style={[styles.row]}>
 				<View
@@ -346,20 +367,25 @@ export const BankAccounts = ({
 						</View>
 					</View>
 
-					<View style={[styles.row, { alignItems: 'center', marginTop: 6 }]}>
+					<View style={{ marginTop: 6 }}>
+						<View style={[styles.row, { justifyContent: 'space-between' }]}>
+							<Text style={{ color: colors.gray, fontSize: 12 }}>
+								{getDisplayAccountNumber(account)}
+							</Text>
+							<TouchableOpacity
+								onPress={() => toggleAccountNumberVisibility(account.id)}
+								style={{ marginLeft: 8, padding: 4 }}
+							>
+								<Ionicons
+									name={unmaskedAccounts.has(account.id) ? 'eye-off' : 'eye'}
+									size={16}
+									color={colors.gray}
+								/>
+							</TouchableOpacity>
+						</View>
 						<Text style={{ color: colors.gray, fontSize: 12 }}>
-							{getDisplayAccountNumber(account)} • {account.accountType} Account
+							{account.accountType} Account
 						</Text>
-						<TouchableOpacity
-							onPress={() => toggleAccountNumberVisibility(account.id)}
-							style={{ marginLeft: 8, padding: 4 }}
-						>
-							<Ionicons
-								name={unmaskedAccounts.has(account.id) ? 'eye-off' : 'eye'}
-								size={16}
-								color={colors.gray}
-							/>
-						</TouchableOpacity>
 					</View>
 
 					{account.interestRate && (
@@ -382,7 +408,7 @@ export const BankAccounts = ({
 					/>
 				</View>
 			</View>
-		</TouchableOpacity>
+		</View>
 	);
 
 	const getModalInputFields = (isEdit: boolean) => {
@@ -431,6 +457,27 @@ export const BankAccounts = ({
 				isMandatory: true,
 			},
 			{
+				id: 'accountType',
+				label: 'Account Type',
+				placeholder: 'Select Account Type',
+				value: newAccount.accountType,
+				onChangeText: undefined,
+				isSelectDropDown: true,
+				isMandatory: true,
+				dropdownProps: {
+					showDropDown: showAccountTypeDropdown,
+					setShowDropDown: setShowAccountTypeDropdown,
+					dropDownName: newAccount.accountType || '',
+					dropDownAlternativeName:
+						newAccount.accountType || 'Select Account Type',
+					dropdownSearchValue: accountTypeSearch,
+					setDropDownSearchValue: setAccountTypeSearch,
+					dropdownOptions: accountTypeOptions,
+					handleDropDownSelectOption: handleSelectAccountType,
+					dropDownNotFoundText: 'No account types found',
+				},
+			},
+			{
 				id: 'balance',
 				label: 'Balance',
 				placeholder: 'Balance (₹)',
@@ -460,7 +507,9 @@ export const BankAccounts = ({
 						setShowAddModal(false);
 					}
 					setShowBankDropdown(false);
+					setShowAccountTypeDropdown(false);
 					setBankSearch('');
+					setAccountTypeSearch('');
 				}}
 			>
 				<View
@@ -478,6 +527,55 @@ export const BankAccounts = ({
 							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
 								{isEdit ? 'Edit Bank Account' : 'Add Bank Account'}
 							</Text>
+							<View
+								style={{
+									marginBottom: 16,
+									padding: 12,
+									backgroundColor: colors.lightGray,
+									borderRadius: 8,
+								}}
+							>
+								<Text
+									style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}
+								>
+									Current Values:
+								</Text>
+								<Text style={{ color: colors.dark, fontSize: 12 }}>
+									Balance: {formatCurrency(newAccount.balance)} | Account Type:{' '}
+									{newAccount.accountType}
+								</Text>
+								{newAccount.accountNumber && (
+									<Text
+										style={{ color: colors.dark, fontSize: 12, marginTop: 2 }}
+									>
+										Account Number:{' '}
+										{maskAccountNumber(newAccount.accountNumber)}
+									</Text>
+								)}
+							</View>
+
+							{newAccount.bankName && (
+								<View
+									style={[
+										styles.row,
+										{ alignItems: 'center', marginBottom: 12 },
+									]}
+								>
+									<Image
+										source={getBankIcon(newAccount.bankName)}
+										style={{
+											width: 24,
+											height: 24,
+											marginRight: 8,
+											borderRadius: 6,
+										}}
+										resizeMode='contain'
+									/>
+									<Text style={{ color: colors.dark, fontSize: 14 }}>
+										Selected: {newAccount.bankName}
+									</Text>
+								</View>
+							)}
 
 							{inputFields.map((field) => (
 								<InputComponent
@@ -494,7 +592,8 @@ export const BankAccounts = ({
 									setShowDropDown={field.dropdownProps?.setShowDropDown}
 									dropDownName={field.dropdownProps?.dropDownName}
 									dropDownAlternativeName={
-										field.dropdownProps?.dropDownAlternativeName
+										field.dropdownProps?.dropDownAlternativeName ||
+										'Select Account Type'
 									}
 									dropdownSearchValue={field.dropdownProps?.dropdownSearchValue}
 									setDropDownSearchValue={
