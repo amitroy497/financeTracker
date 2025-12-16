@@ -59,7 +59,12 @@ import janaSmallFinanceBank from './janaSmallFinanceBank-icon.png';
 import jioPaymentsBank from './jioPaymentsBank-icon.png';
 import jpMorganChaseBank from './jpMorganChaseBank-icon.png';
 import jscVTBBank from './jscVTBBank-icon.png';
+import karnatakaBank from './karnatakaBank-icon.png';
+import karurVysyaBank from './karurVysyaBank-icon.png';
+import kebHanaBank from './kebHanaBank-icon.png';
+import kookminBank from './kookminBank-icon.png';
 import kotakMahindraBank from './kotak-icon.png';
+import krishnaBhimSamruddhiLab from './krishnaBhimaSamruddhiLab-icon.png';
 import punjabNationalBank from './pnb-icon.png';
 import sbiBank from './sbi-icon.png';
 import ucoBank from './uco-icon.png';
@@ -138,13 +143,13 @@ export const bankIcons = {
 	'Jio Payments Bank Ltd': jioPaymentsBank,
 	'J.P. Morgan Chase Bank N.A.': jpMorganChaseBank,
 	'JSC VTB Bank': jscVTBBank,
-	'Karnataka Bank Ltd.': defaultBank,
-	'Karnataka Grameena Bank': defaultBank,
-	'Karur Vysya Bank Ltd.': defaultBank,
-	'KEB Hana Bank': defaultBank,
-	'Kerala Grameena Bank': defaultBank,
-	'Krishna Bhima Samruddhi LAB Ltd': defaultBank,
-	'Kookmin Bank': defaultBank,
+	'Karnataka Bank Ltd.': karnatakaBank,
+	'Karnataka Grameena Bank': graminBank,
+	'Karur Vysya Bank Ltd.': karurVysyaBank,
+	'KEB Hana Bank': kebHanaBank,
+	'Kerala Grameena Bank': graminBank,
+	'Krishna Bhima Samruddhi LAB Ltd': krishnaBhimSamruddhiLab,
+	'Kookmin Bank': kookminBank,
 	'Madhya Pradesh Gramin Bank': defaultBank,
 	'Maharashtra Gramin Bank': defaultBank,
 	'Manipur Rural Bank': defaultBank,
