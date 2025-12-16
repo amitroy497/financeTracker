@@ -14,13 +14,28 @@ import bankOfIndia from './bankOfIndia-icon.png';
 import bankOfMaharashtra from './bankOfMaharashtra-icon.png';
 import bankOfNovaScotia from './bankOfNovaScotia-icon.png';
 import barclays from './barclays-icon.png';
-import biharGraminBank from './biharGraminBank-icon.png';
 import bnpParibas from './bnpParibas-icon.png';
 import boa from './boa-icon.png';
 import bankOfBaroda from './bob-icon.png';
 import bankOfBahrainKuwait from './bobkbsc-icon.png';
+import canaraBank from './canaraBank-icon.png';
+import capitalSmallFinanceBank from './capitalSmallFinanceBank-icon.png';
+import centralBankOfIndia from './centralBankOfIndia-icon.png';
+import citiBank from './citiBank-icon.png';
+import cityunionBank from './cityUnionBank-icon.png';
+import cooperativeRabobank from './cooperativeRabobank-icon.png';
+import costalLocalAreaBank from './costalLocalAreaBank-icon.png';
+import creditAgricoleCooperativeInvestmentBank from './creditAgricoleCooperativeInvestmentBank-icon.png';
+import csbBank from './csbBank-icon.png';
+import ctbcBank from './ctbcBank-icon.png';
+import dbsBank from './dbsBank-icon.png';
+import dcbBank from './dcbBank-icon.png';
 import defaultBank from './default-bank-icon.png';
+import deutscheBank from './deutscheBank-icon.png';
+import dhanLaxmiBank from './dhanLaxmiBank-icon.png';
+import dohaBank from './dohaBank-icon.png';
 import federalBank from './federal-icon.png';
+import graminBank from './graminBank-icon.png';
 import hdfcBank from './hdfc-icon.png';
 import iciciBank from './icici-icon.png';
 import idfcFirstBank from './idfc-icon.png';
@@ -60,25 +75,26 @@ export const bankIcons = {
 	'Bank of Nova Scotia': bankOfNovaScotia,
 	'Bandhan Bank Ltd.': bandhanBank,
 	'Barclays Bank Plc.': barclays,
-	'Bihar Gramin Bank': biharGraminBank,
+	'Bihar Gramin Bank': graminBank,
 	'BNP Paribas': bnpParibas,
-	'Canara Bank': defaultBank,
-	'Capital Small Finance Bank Ltd': defaultBank,
-	'Central Bank of India': defaultBank,
-	'Chhattisgarh Gramin Bank': defaultBank,
-	'Citibank N.A.': defaultBank,
-	'City Union Bank Ltd.': defaultBank,
-	'Coastal Local Area Bank Ltd': defaultBank,
+	'Canara Bank': canaraBank,
+	'Capital Small Finance Bank Ltd': capitalSmallFinanceBank,
+	'Central Bank of India': centralBankOfIndia,
+	'Chhattisgarh Gramin Bank': graminBank,
+	'Citibank N.A.': citiBank,
+	'City Union Bank Ltd.': cityunionBank,
+	'Coastal Local Area Bank Ltd.': costalLocalAreaBank,
 	'Cooperatieve Rabobank U.A./ Coöperatieve Centrale Raiffeisen-Boerenleenbank B.A.':
-		defaultBank,
-	'Credit Agricole Corporate and Investment Bank': defaultBank,
-	'CSB Bank Limited': defaultBank,
-	'CTBC Bank Co., Ltd.': defaultBank,
-	'DBS Bank India Limited': defaultBank,
-	'DCB Bank Ltd.': defaultBank,
-	'Deutsche Bank A.G.': defaultBank,
-	'Dhanlaxmi Bank Ltd.': defaultBank,
-	'Doha Bank Q.P.S.C': defaultBank,
+		cooperativeRabobank,
+	'Credit Agricole Corporate and Investment Bank':
+		creditAgricoleCooperativeInvestmentBank,
+	'CSB Bank Ltd.': csbBank,
+	'CTBC Bank Co., Ltd.': ctbcBank,
+	'DBS Bank India Ltd.': dbsBank,
+	'DCB Bank Ltd.': dcbBank,
+	'Deutsche Bank A.G.': deutscheBank,
+	'Dhanlaxmi Bank Ltd.': dhanLaxmiBank,
+	'Doha Bank Q.P.S.C': dohaBank,
 	'Emirates NBD Bank P.J.S.C': defaultBank,
 	'Equitas Small Finance Bank Ltd': defaultBank,
 	'ESAF Small Finance Bank Ltd.': defaultBank,
