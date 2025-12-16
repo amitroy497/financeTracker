@@ -6,13 +6,14 @@ import { formatCurrency, formatNumber } from '@/utils';
 import React, { useState } from 'react';
 import {
 	Alert,
+	KeyboardType,
 	Modal,
 	ScrollView,
 	Text,
-	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native';
+import { InputComponent } from '../UI';
 
 export const GoldETFs = ({
 	etfs,
@@ -27,19 +28,25 @@ export const GoldETFs = ({
 	const [showEditModal, setShowEditModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [editingETF, setEditingETF] = useState<GoldETF | null>(null);
-	const [newETF, setNewETF] = useState<CreateGoldETFData>({
+
+	// Updated state to include currentValue
+	const [newETF, setNewETF] = useState<
+		CreateGoldETFData & { currentValue?: number }
+	>({
 		etfName: '',
 		symbol: '',
 		units: 0,
 		currentPrice: 0,
 		investedAmount: 0,
 		notes: '',
+		currentValue: 0,
 	});
 
-	// Add state for input strings to allow decimal typing
+	// Input states for string values (for better UX)
 	const [unitsInput, setUnitsInput] = useState<string>('');
 	const [currentPriceInput, setCurrentPriceInput] = useState<string>('');
 	const [investedAmountInput, setInvestedAmountInput] = useState<string>('');
+	const [currentValueInput, setCurrentValueInput] = useState<string>('');
 
 	const getReturnColor = (returns: number): string => {
 		return returns >= 0 ? colors.success : colors.danger;
@@ -48,7 +55,7 @@ export const GoldETFs = ({
 	// Handle decimal input with proper validation
 	const handleDecimalInput = (
 		text: string,
-		type: 'units' | 'currentPrice' | 'investedAmount'
+		type: 'units' | 'currentPrice' | 'investedAmount' | 'currentValue'
 	) => {
 		// Allow only numbers and one decimal point
 		let cleanedText = text.replace(/[^0-9.]/g, '');
@@ -69,6 +76,8 @@ export const GoldETFs = ({
 		let maxDecimals = 2;
 		if (type === 'units') {
 			maxDecimals = 4; // Allow up to 4 decimal places for units
+		} else if (type === 'currentPrice') {
+			maxDecimals = 4; // Gold prices can have up to 4 decimal places
 		}
 
 		const decimalIndex = cleanedText.indexOf('.');
@@ -90,6 +99,9 @@ export const GoldETFs = ({
 			case 'investedAmount':
 				setInvestedAmountInput(cleanedText);
 				break;
+			case 'currentValue':
+				setCurrentValueInput(cleanedText);
+				break;
 		}
 
 		// Parse the value and update the ETF data
@@ -101,10 +113,28 @@ export const GoldETFs = ({
 			if (isNaN(parsedValue)) parsedValue = 0;
 		}
 
-		setNewETF({
+		const updatedETF = {
 			...newETF,
 			[type]: parsedValue,
-		});
+		};
+
+		// Calculate current value if not manually entered
+		if (type !== 'currentValue') {
+			const currentValue = updatedETF.units * updatedETF.currentPrice;
+			updatedETF.currentValue = currentValue;
+			setCurrentValueInput(currentValue === 0 ? '' : currentValue.toFixed(2));
+		}
+
+		setNewETF(updatedETF);
+	};
+
+	// Calculate returns
+	const calculateReturns = () => {
+		if (!newETF.investedAmount || !newETF.currentValue) return 0;
+		return (
+			((newETF.currentValue - newETF.investedAmount) / newETF.investedAmount) *
+			100
+		);
 	};
 
 	// Format number for display (show empty string for 0)
@@ -136,20 +166,11 @@ export const GoldETFs = ({
 
 		setIsSubmitting(true);
 		try {
-			await assetService.createGoldETF(userId, newETF);
+			// Remove currentValue from the data sent to API (it's calculated on server)
+			const { currentValue, ...etfData } = newETF;
+			await assetService.createGoldETF(userId, etfData);
 			setShowAddModal(false);
-			// Reset all states
-			setNewETF({
-				etfName: '',
-				symbol: '',
-				units: 0,
-				currentPrice: 0,
-				investedAmount: 0,
-				notes: '',
-			});
-			setUnitsInput('');
-			setCurrentPriceInput('');
-			setInvestedAmountInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Gold ETF added successfully!');
 		} catch (error) {
@@ -162,18 +183,21 @@ export const GoldETFs = ({
 
 	const handleEditETF = (etf: GoldETF) => {
 		setEditingETF(etf);
-		setNewETF({
+		const etfData = {
 			etfName: etf.etfName,
 			symbol: etf.symbol || '',
 			units: etf.units,
 			currentPrice: etf.currentPrice || 0,
 			investedAmount: etf.investedAmount || 0,
 			notes: etf.notes || '',
-		});
+			currentValue: etf.currentValue || 0,
+		};
+		setNewETF(etfData);
 		// Set input strings for display
 		setUnitsInput(formatNumberForInput(etf.units));
 		setCurrentPriceInput(formatNumberForInput(etf.currentPrice || 0));
 		setInvestedAmountInput(formatNumberForInput(etf.investedAmount || 0));
+		setCurrentValueInput(formatNumberForInput(etf.currentValue || 0));
 		setShowEditModal(true);
 	};
 
@@ -200,21 +224,12 @@ export const GoldETFs = ({
 
 		setIsSubmitting(true);
 		try {
-			await assetService.updateGoldETF(userId, editingETF.id, newETF);
+			// Remove currentValue from the data sent to API
+			const { currentValue, ...etfData } = newETF;
+			await assetService.updateGoldETF(userId, editingETF.id, etfData);
 			setShowEditModal(false);
 			setEditingETF(null);
-			// Reset all states
-			setNewETF({
-				etfName: '',
-				symbol: '',
-				units: 0,
-				currentPrice: 0,
-				investedAmount: 0,
-				notes: '',
-			});
-			setUnitsInput('');
-			setCurrentPriceInput('');
-			setInvestedAmountInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Gold ETF updated successfully!');
 		} catch (error) {
@@ -255,6 +270,23 @@ export const GoldETFs = ({
 				]
 			);
 		}
+	};
+
+	// Reset form function
+	const resetForm = () => {
+		setNewETF({
+			etfName: '',
+			symbol: '',
+			units: 0,
+			currentPrice: 0,
+			investedAmount: 0,
+			notes: '',
+			currentValue: 0,
+		});
+		setUnitsInput('');
+		setCurrentPriceInput('');
+		setInvestedAmountInput('');
+		setCurrentValueInput('');
 	};
 
 	const totalCurrentValue = etfs.reduce(
@@ -380,149 +412,221 @@ export const GoldETFs = ({
 		</TouchableOpacity>
 	);
 
-	const renderAddEditModal = (isEdit: boolean) => (
-		<Modal
-			visible={isEdit ? showEditModal : showAddModal}
-			animationType='slide'
-			transparent={true}
-			onRequestClose={() => {
-				if (isEdit) {
-					setShowEditModal(false);
-					setEditingETF(null);
-				} else {
-					setShowAddModal(false);
-				}
-				// Reset all states
-				setNewETF({
-					etfName: '',
-					symbol: '',
-					units: 0,
-					currentPrice: 0,
-					investedAmount: 0,
-					notes: '',
-				});
-				setUnitsInput('');
-				setCurrentPriceInput('');
-				setInvestedAmountInput('');
-			}}
-		>
-			<View
-				style={{
-					flex: 1,
-					justifyContent: 'center',
-					backgroundColor: 'rgba(0,0,0,0.5)',
+	// Get input fields for modal
+	const getModalInputFields = (isEdit: boolean) => {
+		const returns = calculateReturns();
+		const currentValue = newETF.currentValue || 0;
+		const investedAmount = newETF.investedAmount || 0;
+		const absoluteReturns = currentValue - investedAmount;
+
+		const fields = [
+			{
+				id: 'etfName',
+				label: 'ETF Name',
+				placeholder: 'ETF Name (e.g., Nippon India Gold ETF)',
+				value: newETF.etfName,
+				onChangeText: (text: string) => setNewETF({ ...newETF, etfName: text }),
+				isMandatory: true,
+				isEllipsis: true,
+			},
+			{
+				id: 'symbol',
+				label: 'Symbol',
+				placeholder: 'Symbol (e.g., GOLDBEES) (Optional)',
+				value: newETF.symbol,
+				onChangeText: (text: string) =>
+					setNewETF({ ...newETF, symbol: text.toUpperCase() }),
+				isMandatory: false,
+				isEllipsis: true,
+			},
+			{
+				id: 'units',
+				label: 'Units',
+				placeholder: 'Number of Units',
+				value: unitsInput,
+				onChangeText: (text: string) => handleDecimalInput(text, 'units'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'currentPrice',
+				label: 'Current Price (₹)',
+				placeholder: 'Current Price per Unit',
+				value: currentPriceInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'currentPrice'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'investedAmount',
+				label: 'Invested Amount (₹)',
+				placeholder: 'Total Invested Amount',
+				value: investedAmountInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'investedAmount'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'currentValue',
+				label: 'Current Value (₹)',
+				placeholder: 'Current Value (Auto-calculated)',
+				value: currentValueInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'currentValue'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: false,
+			},
+			{
+				id: 'notes',
+				label: 'Notes',
+				placeholder: 'Notes (Optional)',
+				value: newETF.notes,
+				onChangeText: (text: string) => setNewETF({ ...newETF, notes: text }),
+				multiline: true,
+				numberOfLines: 3,
+				isMandatory: false,
+			},
+		];
+
+		return { fields, returns, currentValue, absoluteReturns };
+	};
+
+	const renderAddEditModal = (isEdit: boolean) => {
+		const { fields, returns, currentValue, absoluteReturns } =
+			getModalInputFields(isEdit);
+
+		return (
+			<Modal
+				visible={isEdit ? showEditModal : showAddModal}
+				animationType='slide'
+				transparent={true}
+				onRequestClose={() => {
+					if (isEdit) {
+						setShowEditModal(false);
+						setEditingETF(null);
+					} else {
+						setShowAddModal(false);
+					}
+					resetForm();
 				}}
 			>
-				<ScrollView style={{ maxHeight: '90%' }}>
-					<View style={[styles.card, { margin: 20 }]}>
-						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-							{isEdit ? 'Edit Gold ETF' : 'Add Gold ETF'}
-						</Text>
+				<View
+					style={{
+						flex: 1,
+						justifyContent: 'center',
+						backgroundColor: 'rgba(0,0,0,0.5)',
+					}}
+				>
+					<View style={[styles.card, { margin: 20, maxHeight: '90%' }]}>
+						<ScrollView
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ flexGrow: 1 }}
+						>
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								{isEdit ? 'Edit Gold ETF' : 'Add Gold ETF'}
+							</Text>
 
-						<TextInput
-							style={styles.input}
-							placeholder='ETF Name (e.g., Nippon India Gold ETF)'
-							value={newETF.etfName}
-							onChangeText={(text) => setNewETF({ ...newETF, etfName: text })}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Symbol (e.g., GOLDBEES) (Optional)'
-							value={newETF.symbol}
-							onChangeText={(text) =>
-								setNewETF({ ...newETF, symbol: text.toUpperCase() })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Number of Units'
-							value={unitsInput}
-							onChangeText={(text) => handleDecimalInput(text, 'units')}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Current Price per Unit (₹)'
-							value={currentPriceInput}
-							onChangeText={(text) => handleDecimalInput(text, 'currentPrice')}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Total Invested Amount (₹)'
-							value={investedAmountInput}
-							onChangeText={(text) =>
-								handleDecimalInput(text, 'investedAmount')
-							}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TextInput
-							style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
-							placeholder='Notes (Optional)'
-							value={newETF.notes}
-							onChangeText={(text) => setNewETF({ ...newETF, notes: text })}
-							placeholderTextColor={colors.gray}
-							multiline
-							numberOfLines={3}
-						/>
-
-						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
-							<TouchableOpacity
-								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-								onPress={() => {
-									if (isEdit) {
-										setShowEditModal(false);
-										setEditingETF(null);
-									} else {
-										setShowAddModal(false);
-									}
-									// Reset all states
-									setNewETF({
-										etfName: '',
-										symbol: '',
-										units: 0,
-										currentPrice: 0,
-										investedAmount: 0,
-										notes: '',
-									});
-									setUnitsInput('');
-									setCurrentPriceInput('');
-									setInvestedAmountInput('');
+							{/* Current Values Summary */}
+							<View
+								style={{
+									marginBottom: 16,
+									padding: 12,
+									backgroundColor: colors.lightGray,
+									borderRadius: 8,
 								}}
-								disabled={isSubmitting}
 							>
-								<Text style={styles.buttonText}>Cancel</Text>
-							</TouchableOpacity>
-
-							<TouchableOpacity
-								style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-								onPress={isEdit ? handleUpdateETF : handleAddETF}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>
-									{isSubmitting
-										? 'Saving...'
-										: isEdit
-										? 'Update ETF'
-										: 'Add ETF'}
+								<Text
+									style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}
+								>
+									Current Values:
 								</Text>
-							</TouchableOpacity>
-						</View>
+								<View
+									style={[styles.row, styles.spaceBetween, { marginBottom: 2 }]}
+								>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Invested: {formatCurrency(newETF.investedAmount)}
+									</Text>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Current: {formatCurrency(currentValue)}
+									</Text>
+								</View>
+								<View style={[styles.row, styles.spaceBetween]}>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Units: {formatNumber(newETF.units, 4)}
+									</Text>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Price: {formatNumber(newETF.currentPrice, 4)}
+									</Text>
+								</View>
+								{absoluteReturns !== 0 && (
+									<Text
+										style={{
+											color: getReturnColor(absoluteReturns),
+											fontSize: 12,
+											fontWeight: 'bold',
+											marginTop: 4,
+										}}
+									>
+										Returns: {formatCurrency(absoluteReturns)} (
+										{formatNumber(returns)}%)
+									</Text>
+								)}
+							</View>
+
+							{fields.map((field) => (
+								<InputComponent
+									key={field.id}
+									label={field.label}
+									placeholder={field.placeholder}
+									value={field.value}
+									onChangeText={field.onChangeText}
+									keyboardType={field.keyboardType}
+									multiline={field.multiline}
+									numberOfLines={field.numberOfLines}
+									isMandatory={field.isMandatory}
+									isEllipsis={field.isEllipsis}
+								/>
+							))}
+
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										if (isEdit) {
+											setShowEditModal(false);
+											setEditingETF(null);
+										} else {
+											setShowAddModal(false);
+										}
+										resetForm();
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={isEdit ? handleUpdateETF : handleAddETF}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting
+											? 'Saving...'
+											: isEdit
+											? 'Update ETF'
+											: 'Add ETF'}
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</ScrollView>
 					</View>
-				</ScrollView>
-			</View>
-		</Modal>
-	);
+				</View>
+			</Modal>
+		);
+	};
 
 	return (
 		<View style={{ padding: 20 }}>

@@ -6,13 +6,14 @@ import { formatCurrency, formatNumber } from '@/utils';
 import React, { useState } from 'react';
 import {
 	Alert,
+	KeyboardType,
 	Modal,
 	ScrollView,
 	Text,
-	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native';
+import { InputComponent } from '../UI';
 
 export const MutualFunds = ({
 	funds,
@@ -27,7 +28,11 @@ export const MutualFunds = ({
 	const [showEditModal, setShowEditModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [editingFund, setEditingFund] = useState<MutualFund | null>(null);
-	const [newFund, setNewFund] = useState<CreateMutualFundData>({
+
+	// Updated state to include currentValue
+	const [newFund, setNewFund] = useState<
+		CreateMutualFundData & { currentValue?: number }
+	>({
 		schemeName: '',
 		fundHouse: '',
 		folioNumber: '',
@@ -36,12 +41,18 @@ export const MutualFunds = ({
 		units: 0,
 		nav: 0,
 		notes: '',
+		currentValue: 0,
 	});
 
-	// Add state for input strings to allow decimal typing
+	// Input states for string values (for better UX)
 	const [investedAmountInput, setInvestedAmountInput] = useState<string>('');
 	const [unitsInput, setUnitsInput] = useState<string>('');
 	const [navInput, setNavInput] = useState<string>('');
+	const [currentValueInput, setCurrentValueInput] = useState<string>('');
+
+	// Fund type dropdown states
+	const [showFundTypeDropdown, setShowFundTypeDropdown] = useState(false);
+	const [fundTypeSearch, setFundTypeSearch] = useState('');
 
 	const getReturnColor = (returns: number): string => {
 		return returns >= 0 ? colors.success : colors.danger;
@@ -61,7 +72,7 @@ export const MutualFunds = ({
 	// Handle decimal input with proper validation
 	const handleDecimalInput = (
 		text: string,
-		type: 'investedAmount' | 'units' | 'nav'
+		type: 'investedAmount' | 'units' | 'nav' | 'currentValue'
 	) => {
 		// Allow only numbers and one decimal point
 		let cleanedText = text.replace(/[^0-9.]/g, '');
@@ -81,7 +92,9 @@ export const MutualFunds = ({
 		// For NAV and units, allow more decimal places (up to 4 for units, 2 for others)
 		let maxDecimals = 2;
 		if (type === 'units') {
-			maxDecimals = 4; // Allow up to 4 decimal places for units
+			maxDecimals = 4;
+		} else if (type === 'nav') {
+			maxDecimals = 4; // NAV can have up to 4 decimal places
 		}
 
 		const decimalIndex = cleanedText.indexOf('.');
@@ -103,6 +116,9 @@ export const MutualFunds = ({
 			case 'nav':
 				setNavInput(cleanedText);
 				break;
+			case 'currentValue':
+				setCurrentValueInput(cleanedText);
+				break;
 		}
 
 		// Parse the value and update the fund data
@@ -114,10 +130,36 @@ export const MutualFunds = ({
 			if (isNaN(parsedValue)) parsedValue = 0;
 		}
 
-		setNewFund({
+		const updatedFund = {
 			...newFund,
 			[type]: parsedValue,
-		});
+		};
+
+		// Calculate current value if not manually entered
+		if (type !== 'currentValue') {
+			const currentValue = updatedFund.units * updatedFund.nav;
+			updatedFund.currentValue = currentValue;
+			setCurrentValueInput(currentValue === 0 ? '' : currentValue.toFixed(2));
+		}
+
+		setNewFund(updatedFund);
+	};
+
+	// Calculate returns
+	const calculateReturns = () => {
+		if (!newFund.investedAmount || !newFund.currentValue) return 0;
+		return (
+			((newFund.currentValue - newFund.investedAmount) /
+				newFund.investedAmount) *
+			100
+		);
+	};
+
+	// Handle fund type selection
+	const handleSelectFundType = (type: string): void => {
+		setNewFund({ ...newFund, fundType: type });
+		setShowFundTypeDropdown(false);
+		setFundTypeSearch('');
 	};
 
 	// Format number for display (show empty string for 0)
@@ -149,22 +191,11 @@ export const MutualFunds = ({
 
 		setIsSubmitting(true);
 		try {
-			await assetService.createMutualFund(userId, newFund);
+			// Remove currentValue from the data sent to API (it's calculated on server)
+			const { currentValue, ...fundData } = newFund;
+			await assetService.createMutualFund(userId, fundData);
 			setShowAddModal(false);
-			// Reset all states
-			setNewFund({
-				schemeName: '',
-				fundHouse: '',
-				folioNumber: '',
-				fundType: 'Equity',
-				investedAmount: 0,
-				units: 0,
-				nav: 0,
-				notes: '',
-			});
-			setInvestedAmountInput('');
-			setUnitsInput('');
-			setNavInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Mutual fund added successfully!');
 		} catch (error) {
@@ -177,7 +208,7 @@ export const MutualFunds = ({
 
 	const handleEditFund = (fund: MutualFund) => {
 		setEditingFund(fund);
-		setNewFund({
+		const fundData = {
 			schemeName: fund.schemeName,
 			fundHouse: fund.fundHouse || '',
 			folioNumber: fund.folioNumber || '',
@@ -186,11 +217,14 @@ export const MutualFunds = ({
 			units: fund.units || 0,
 			nav: fund.nav || 0,
 			notes: fund.notes || '',
-		});
+			currentValue: fund.currentValue || 0,
+		};
+		setNewFund(fundData);
 		// Set input strings for display
 		setInvestedAmountInput(formatNumberForInput(fund.investedAmount || 0));
 		setUnitsInput(formatNumberForInput(fund.units || 0));
 		setNavInput(formatNumberForInput(fund.nav || 0));
+		setCurrentValueInput(formatNumberForInput(fund.currentValue || 0));
 		setShowEditModal(true);
 	};
 
@@ -221,23 +255,12 @@ export const MutualFunds = ({
 
 		setIsSubmitting(true);
 		try {
-			await assetService.updateMutualFund(userId, editingFund.id, newFund);
+			// Remove currentValue from the data sent to API
+			const { currentValue, ...fundData } = newFund;
+			await assetService.updateMutualFund(userId, editingFund.id, fundData);
 			setShowEditModal(false);
 			setEditingFund(null);
-			// Reset all states
-			setNewFund({
-				schemeName: '',
-				fundHouse: '',
-				folioNumber: '',
-				fundType: 'Equity',
-				investedAmount: 0,
-				units: 0,
-				nav: 0,
-				notes: '',
-			});
-			setInvestedAmountInput('');
-			setUnitsInput('');
-			setNavInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Mutual fund updated successfully!');
 		} catch (error) {
@@ -278,6 +301,27 @@ export const MutualFunds = ({
 				]
 			);
 		}
+	};
+
+	// Reset form function
+	const resetForm = () => {
+		setNewFund({
+			schemeName: '',
+			fundHouse: '',
+			folioNumber: '',
+			fundType: 'Equity',
+			investedAmount: 0,
+			units: 0,
+			nav: 0,
+			notes: '',
+			currentValue: 0,
+		});
+		setInvestedAmountInput('');
+		setUnitsInput('');
+		setNavInput('');
+		setCurrentValueInput('');
+		setShowFundTypeDropdown(false);
+		setFundTypeSearch('');
 	};
 
 	const totalCurrentValue = funds.reduce(
@@ -406,175 +450,267 @@ export const MutualFunds = ({
 		</TouchableOpacity>
 	);
 
-	const renderAddEditModal = (isEdit: boolean) => (
-		<Modal
-			visible={isEdit ? showEditModal : showAddModal}
-			animationType='slide'
-			transparent={true}
-			onRequestClose={() => {
-				if (isEdit) {
-					setShowEditModal(false);
-					setEditingFund(null);
-				} else {
-					setShowAddModal(false);
-				}
-				// Reset all states
-				setNewFund({
-					schemeName: '',
-					fundHouse: '',
-					folioNumber: '',
-					fundType: 'Equity',
-					investedAmount: 0,
-					units: 0,
-					nav: 0,
-					notes: '',
-				});
-				setInvestedAmountInput('');
-				setUnitsInput('');
-				setNavInput('');
-			}}
-		>
-			<View
-				style={{
-					flex: 1,
-					justifyContent: 'center',
-					backgroundColor: 'rgba(0,0,0,0.5)',
+	// Get input fields for modal
+	const getModalInputFields = (isEdit: boolean) => {
+		const returns = calculateReturns();
+		const currentValue = newFund.currentValue || 0;
+		const investedAmount = newFund.investedAmount || 0;
+		const absoluteReturns = currentValue - investedAmount;
+
+		const fields = [
+			{
+				id: 'schemeName',
+				label: 'Scheme Name',
+				placeholder: 'Scheme Name (e.g., Mirae Asset Large Cap Fund)',
+				value: newFund.schemeName,
+				onChangeText: (text: string) =>
+					setNewFund({ ...newFund, schemeName: text }),
+				isMandatory: true,
+				isEllipsis: true,
+			},
+			{
+				id: 'fundHouse',
+				label: 'Fund House',
+				placeholder: 'Fund House (e.g., Mirae Asset)',
+				value: newFund.fundHouse,
+				onChangeText: (text: string) =>
+					setNewFund({ ...newFund, fundHouse: text }),
+				isMandatory: true,
+			},
+			{
+				id: 'folioNumber',
+				label: 'Folio Number',
+				placeholder: 'Folio Number (Optional)',
+				value: newFund.folioNumber,
+				onChangeText: (text: string) =>
+					setNewFund({ ...newFund, folioNumber: text }),
+				isMandatory: false,
+			},
+			{
+				id: 'fundType',
+				label: 'Fund Type',
+				placeholder: 'Select Fund Type',
+				value: newFund.fundType,
+				onChangeText: undefined,
+				isSelectDropDown: true,
+				isMandatory: true,
+				dropdownProps: {
+					showDropDown: showFundTypeDropdown,
+					setShowDropDown: setShowFundTypeDropdown,
+					dropDownName: newFund.fundType,
+					dropDownAlternativeName: newFund.fundType || 'Select Fund Type',
+					dropdownSearchValue: fundTypeSearch,
+					setDropDownSearchValue: setFundTypeSearch,
+					dropdownOptions: ['Equity', 'Debt', 'Hybrid', 'ELSS'],
+					handleDropDownSelectOption: handleSelectFundType,
+					dropDownNotFoundText: 'No fund types found',
+				},
+			},
+			{
+				id: 'investedAmount',
+				label: 'Invested Amount (₹)',
+				placeholder: 'Total Invested Amount',
+				value: investedAmountInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'investedAmount'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'units',
+				label: 'Units',
+				placeholder: 'Units',
+				value: unitsInput,
+				onChangeText: (text: string) => handleDecimalInput(text, 'units'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'nav',
+				label: 'NAV',
+				placeholder: 'Net Asset Value',
+				value: navInput,
+				onChangeText: (text: string) => handleDecimalInput(text, 'nav'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'currentValue',
+				label: 'Current Value (₹)',
+				placeholder: 'Current Value (Auto-calculated)',
+				value: currentValueInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'currentValue'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: false,
+			},
+			{
+				id: 'notes',
+				label: 'Notes',
+				placeholder: 'Notes (Optional)',
+				value: newFund.notes,
+				onChangeText: (text: string) => setNewFund({ ...newFund, notes: text }),
+				multiline: true,
+				numberOfLines: 3,
+				isMandatory: false,
+			},
+		];
+
+		return { fields, returns, currentValue, absoluteReturns };
+	};
+
+	const renderAddEditModal = (isEdit: boolean) => {
+		const { fields, returns, currentValue, absoluteReturns } =
+			getModalInputFields(isEdit);
+
+		return (
+			<Modal
+				visible={isEdit ? showEditModal : showAddModal}
+				animationType='slide'
+				transparent={true}
+				onRequestClose={() => {
+					if (isEdit) {
+						setShowEditModal(false);
+						setEditingFund(null);
+					} else {
+						setShowAddModal(false);
+					}
+					resetForm();
 				}}
 			>
-				<ScrollView style={{ maxHeight: '90%' }}>
-					<View style={[styles.card, { margin: 20 }]}>
-						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-							{isEdit ? 'Edit Mutual Fund' : 'Add Mutual Fund'}
-						</Text>
+				<View
+					style={{
+						flex: 1,
+						justifyContent: 'center',
+						backgroundColor: 'rgba(0,0,0,0.5)',
+					}}
+				>
+					<View style={[styles.card, { margin: 20, maxHeight: '90%' }]}>
+						<ScrollView
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ flexGrow: 1 }}
+						>
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								{isEdit ? 'Edit Mutual Fund' : 'Add Mutual Fund'}
+							</Text>
 
-						<TextInput
-							style={styles.input}
-							placeholder='Scheme Name (e.g., Mirae Asset Large Cap Fund)'
-							value={newFund.schemeName}
-							onChangeText={(text) =>
-								setNewFund({ ...newFund, schemeName: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Fund House (e.g., Mirae Asset)'
-							value={newFund.fundHouse}
-							onChangeText={(text) =>
-								setNewFund({ ...newFund, fundHouse: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Folio Number (Optional)'
-							value={newFund.folioNumber}
-							onChangeText={(text) =>
-								setNewFund({ ...newFund, folioNumber: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Fund Type (e.g., Equity, Debt, Hybrid, ELSS)'
-							value={newFund.fundType}
-							onChangeText={(text) =>
-								setNewFund({ ...newFund, fundType: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Total Invested Amount (₹)'
-							value={investedAmountInput}
-							onChangeText={(text) =>
-								handleDecimalInput(text, 'investedAmount')
-							}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Units'
-							value={unitsInput}
-							onChangeText={(text) => handleDecimalInput(text, 'units')}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='NAV (Net Asset Value)'
-							value={navInput}
-							onChangeText={(text) => handleDecimalInput(text, 'nav')}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TextInput
-							style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
-							placeholder='Notes (Optional)'
-							value={newFund.notes}
-							onChangeText={(text) => setNewFund({ ...newFund, notes: text })}
-							placeholderTextColor={colors.gray}
-							multiline
-							numberOfLines={3}
-						/>
-
-						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
-							<TouchableOpacity
-								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-								onPress={() => {
-									if (isEdit) {
-										setShowEditModal(false);
-										setEditingFund(null);
-									} else {
-										setShowAddModal(false);
-									}
-									// Reset all states
-									setNewFund({
-										schemeName: '',
-										fundHouse: '',
-										folioNumber: '',
-										fundType: 'Equity',
-										investedAmount: 0,
-										units: 0,
-										nav: 0,
-										notes: '',
-									});
-									setInvestedAmountInput('');
-									setUnitsInput('');
-									setNavInput('');
+							{/* Current Values Summary */}
+							<View
+								style={{
+									marginBottom: 16,
+									padding: 12,
+									backgroundColor: colors.lightGray,
+									borderRadius: 8,
 								}}
-								disabled={isSubmitting}
 							>
-								<Text style={styles.buttonText}>Cancel</Text>
-							</TouchableOpacity>
-
-							<TouchableOpacity
-								style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-								onPress={isEdit ? handleUpdateFund : handleAddFund}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>
-									{isSubmitting
-										? 'Saving...'
-										: isEdit
-										? 'Update Fund'
-										: 'Add Fund'}
+								<Text
+									style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}
+								>
+									Current Values:
 								</Text>
-							</TouchableOpacity>
-						</View>
+								<View
+									style={[styles.row, styles.spaceBetween, { marginBottom: 2 }]}
+								>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Invested: {formatCurrency(newFund.investedAmount)}
+									</Text>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Current: {formatCurrency(currentValue)}
+									</Text>
+								</View>
+								<View style={[styles.row, styles.spaceBetween]}>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										Units: {formatNumber(newFund.units, 4)}
+									</Text>
+									<Text style={{ color: colors.dark, fontSize: 12 }}>
+										NAV: {formatNumber(newFund.nav, 4)}
+									</Text>
+								</View>
+								{absoluteReturns !== 0 && (
+									<Text
+										style={{
+											color: getReturnColor(absoluteReturns),
+											fontSize: 12,
+											fontWeight: 'bold',
+											marginTop: 4,
+										}}
+									>
+										Returns: {formatCurrency(absoluteReturns)} (
+										{formatNumber(returns)}%)
+									</Text>
+								)}
+							</View>
+
+							{fields.map((field) => (
+								<InputComponent
+									key={field.id}
+									label={field.label}
+									placeholder={field.placeholder}
+									value={field.value}
+									onChangeText={field.onChangeText}
+									keyboardType={field.keyboardType}
+									multiline={field.multiline}
+									numberOfLines={field.numberOfLines}
+									isMandatory={field.isMandatory}
+									isEllipsis={field.isEllipsis}
+									isSelectDropDown={field.isSelectDropDown}
+									showDropDown={field.dropdownProps?.showDropDown}
+									setShowDropDown={field.dropdownProps?.setShowDropDown}
+									dropDownName={field.dropdownProps?.dropDownName}
+									dropDownAlternativeName={
+										field.dropdownProps?.dropDownAlternativeName
+									}
+									dropdownSearchValue={field.dropdownProps?.dropdownSearchValue}
+									setDropDownSearchValue={
+										field.dropdownProps?.setDropDownSearchValue
+									}
+									dropdownOptions={field.dropdownProps?.dropdownOptions}
+									handleDropDownSelectOption={
+										field.dropdownProps?.handleDropDownSelectOption
+									}
+									dropDownNotFoundText={
+										field.dropdownProps?.dropDownNotFoundText
+									}
+								/>
+							))}
+
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										if (isEdit) {
+											setShowEditModal(false);
+											setEditingFund(null);
+										} else {
+											setShowAddModal(false);
+										}
+										resetForm();
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={isEdit ? handleUpdateFund : handleAddFund}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting
+											? 'Saving...'
+											: isEdit
+											? 'Update Fund'
+											: 'Add Fund'}
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</ScrollView>
 					</View>
-				</ScrollView>
-			</View>
-		</Modal>
-	);
+				</View>
+			</Modal>
+		);
+	};
 
 	return (
 		<View style={{ padding: 20 }}>
