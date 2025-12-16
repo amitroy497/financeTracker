@@ -44,6 +44,7 @@ import firstAbuDhabiBank from './firstAbuDhabiBank-icon.png';
 import firstRandBank from './firstRandBank-icon.png';
 import graminBank from './graminBank-icon.png';
 import hdfcBank from './hdfc-icon.png';
+import hsbcBank from './hsbcBank-icon.png';
 import iciciBank from './icici-icon.png';
 import idfcFirstBank from './idfc-icon.png';
 import indianBank from './indian-icon.png';
@@ -112,7 +113,7 @@ export const bankIcons = {
 	'Gujarat Gramin Bank': graminBank,
 	'Haryana Gramin Bank': graminBank,
 	'Himachal Pradesh Gramin Bank': graminBank,
-	'Hong Kong and Shanghai Banking Corporation Limited': defaultBank,
+	'Hong Kong and Shanghai Banking Corporation Limited': hsbcBank,
 	'IDBI Bank Limited': defaultBank,
 	'India Post Payments Bank Ltd': defaultBank,
 	'Indian Overseas Bank': defaultBank,
