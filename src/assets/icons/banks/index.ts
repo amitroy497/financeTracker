@@ -54,6 +54,11 @@ import indiaPostPaymentBank from './indiaPostPaymentsBank-icon.png';
 import indusIndBank from './indusIndBank-icon.png';
 import industrialBankOfKorea from './industrialBankOfKorea-icon.png';
 import industrialCommercialBankOfChina from './industrialCommercialBankOfChina-icon.png';
+import jammuKashmirBank from './jammuKashmirBank-icon.png';
+import janaSmallFinanceBank from './janaSmallFinanceBank-icon.png';
+import jioPaymentsBank from './jioPaymentsBank-icon.png';
+import jpMorganChaseBank from './jpMorganChaseBank-icon.png';
+import jscVTBBank from './jscVTBBank-icon.png';
 import kotakMahindraBank from './kotak-icon.png';
 import punjabNationalBank from './pnb-icon.png';
 import sbiBank from './sbi-icon.png';
@@ -126,13 +131,13 @@ export const bankIcons = {
 	'Industrial and Commercial Bank of China': industrialCommercialBankOfChina,
 	'Industrial Bank of Korea': industrialBankOfKorea,
 	'IndusInd Bank Ltd': indusIndBank,
-	'Jammu & Kashmir Bank Ltd.': defaultBank,
+	'Jammu & Kashmir Bank Ltd.': jammuKashmirBank,
 	'Jammu and Kashmir Grameen Bank': graminBank,
-	'Jana Small Finance Bank Ltd': defaultBank,
+	'Jana Small Finance Bank Ltd': janaSmallFinanceBank,
 	'Jharkhand Gramin Bank': graminBank,
-	'Jio Payments Bank Ltd': defaultBank,
-	'J.P. Morgan Chase Bank N.A.': defaultBank,
-	'JSC VTB Bank': defaultBank,
+	'Jio Payments Bank Ltd': jioPaymentsBank,
+	'J.P. Morgan Chase Bank N.A.': jpMorganChaseBank,
+	'JSC VTB Bank': jscVTBBank,
 	'Karnataka Bank Ltd.': defaultBank,
 	'Karnataka Grameena Bank': defaultBank,
 	'Karur Vysya Bank Ltd.': defaultBank,
