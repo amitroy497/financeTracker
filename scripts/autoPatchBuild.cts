@@ -2,11 +2,16 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-/** TYPES */
 interface ExpoConfig {
 	version?: string;
-	android?: { versionCode?: number };
-	ios?: { buildNumber?: string };
+	android?: {
+		versionCode?: number;
+		[key: string]: any;
+	};
+	ios?: {
+		buildNumber?: string;
+		[key: string]: any;
+	};
 	[key: string]: any;
 }
 
@@ -14,92 +19,46 @@ interface AppJson {
 	expo: ExpoConfig;
 }
 
-/** STEP 1 — Load app.json */
+// ---- Read app.json ----
 const appJsonPath = path.resolve('./app.json');
-const appJson: AppJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
+const appJsonContent = fs.readFileSync(appJsonPath, 'utf8');
+const appJson: AppJson = JSON.parse(appJsonContent);
 
-/** STEP 2 — Get current version */
-const currentVersion = appJson.expo.version || '1.0.0';
-console.log(`Current version: ${currentVersion}`);
+// ---- STEP 1: Increment expo.version (patch) ----
+let version = appJson.expo.version || '1.0.0';
+let [major, minor, patch] = version.split('.').map(Number);
 
-let [major, minor, patch] = currentVersion.split('.').map(Number);
-
+// Increment patch
 patch += 1;
 
-// Check if patch needs to roll over (when it becomes 10 or more)
-if (patch >= 60) {
-	patch = 0;
-	minor += 1;
-
-	// Check if minor needs to roll over (when it becomes 10 or more)
-	if (minor >= 10) {
-		minor = 0;
-		major += 1;
-	}
-}
-
 const newVersion = `${major}.${minor}.${patch}`;
-console.log(`New calculated version: ${newVersion}`);
-
-/** STEP 4 — Update BOTH app.json AND package.json BEFORE running npm version patch */
 appJson.expo.version = newVersion;
 
-// Update package.json first!
-const packageJsonPath = path.resolve('./package.json');
-const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-packageJson.version = newVersion;
-fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-console.log('Updated package.json to:', newVersion);
-
-/** STEP 5 — Calculate versionCode */
+// ---- STEP 2: Convert version to versionCode ----
+// major.minor.patch → major*10000 + minor*100 + patch
 const versionCode = major * 10000 + minor * 100 + patch;
 
+// ---- Apply to android ----
 if (!appJson.expo.android) appJson.expo.android = {};
 appJson.expo.android.versionCode = versionCode;
 
+// ---- Apply to ios ----
 if (!appJson.expo.ios) appJson.expo.ios = {};
-appJson.expo.ios.buildNumber = String(versionCode);
+appJson.expo.ios.buildNumber = versionCode.toString();
 
-/** STEP 6 — Save app.json */
+// ---- Save updated app.json ----
 fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, 2));
-console.log('Updated app.json to:', newVersion);
 
-/** STEP 7 — Now run your npm run version:patch */
-console.log('Running npm run version:patch...');
-try {
-	execSync('npm run version:patch', { stdio: 'inherit' });
-} catch (error: any) {
-	console.error('Error running version:patch:', error?.message || error);
-}
+console.log('✔ Updated expo.version →', newVersion);
+console.log('✔ android.versionCode →', versionCode);
+console.log('✔ ios.buildNumber →', versionCode.toString());
 
-/** STEP 8 — Verify the versions */
-console.log('\n=== VERIFICATION ===');
-const finalPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-const finalAppJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
-console.log('Final package.json version:', finalPackageJson.version);
-console.log('Final app.json version:', finalAppJson.expo.version);
-console.log('Expected version:', newVersion);
+// ---- STEP 3: Run git version bump (your existing script) ----
+console.log('✔ Running npm run version:patch...');
+execSync('npm run version:patch', { stdio: 'inherit' });
 
-/** STEP 9 — Run prebuild */
-console.log('\nRunning expo prebuild...');
-execSync('npx expo prebuild', { stdio: 'inherit' });
+// ---- STEP 4: Run EAS preview build ----
+console.log('✔ Running EAS preview build...');
+execSync('eas build -p android --profile preview', { stdio: 'inherit' });
 
-/** STEP 10 — Build APK */
-console.log('\nBuilding APK...');
-const isWindows = process.platform === 'win32';
-
-if (isWindows) {
-	execSync('cd android && gradlew.bat assembleRelease', { stdio: 'inherit' });
-} else {
-	execSync('cd android && ./gradlew assembleRelease', { stdio: 'inherit' });
-}
-
-console.log(`
-🎉 BUILD COMPLETE!
-
-Version: ${newVersion}
-Version Code: ${versionCode}
-
-APK Location:
-android/app/build/outputs/apk/release/app-release.apk
-`);
+console.log('🎉 Finished! Version synced with git tag + EAS build started!');
