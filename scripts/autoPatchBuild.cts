@@ -26,8 +26,8 @@ let [major, minor, patch] = (appJson.expo.version || '1.0.0')
 console.log(`Current version: ${major}.${minor}.${patch}`);
 
 // Apply version increment logic
-if (patch === 9) {
-	// If patch is 9, reset to 0 and increment minor
+if (patch >= 9) {
+	// If patch is 9 or greater, reset to 0 and increment minor
 	patch = 0;
 	minor += 1;
 
@@ -39,6 +39,7 @@ if (patch === 9) {
 	// Otherwise just increment patch normally
 	patch += 1;
 }
+// This would make 1.1.54 -> 1.2.0
 
 const newVersion = `${major}.${minor}.${patch}`;
 appJson.expo.version = newVersion;
