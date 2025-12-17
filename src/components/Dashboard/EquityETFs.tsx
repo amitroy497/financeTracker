@@ -18,7 +18,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { InputComponent } from '../UI';
+import { AddEditFields } from '../UI';
 
 export const EquityETFs = ({
 	etfs,
@@ -48,6 +48,20 @@ export const EquityETFs = ({
 
 	const getReturnColor = (returns: number): string => {
 		return returns >= 0 ? colors.success : colors.danger;
+	};
+
+	const resetForm = () => {
+		setNewETF({
+			etfName: '',
+			symbol: '',
+			units: 0,
+			currentNav: 0,
+			investedAmount: 0,
+			notes: '',
+		});
+		setUnitsInput('');
+		setCurrentNavInput('');
+		setInvestedAmountInput('');
 	};
 
 	const handleDecimalInput = (
@@ -134,17 +148,7 @@ export const EquityETFs = ({
 		try {
 			await assetService.createEquityETF(userId, newETF);
 			setShowAddModal(false);
-			setNewETF({
-				etfName: '',
-				symbol: '',
-				units: 0,
-				currentNav: 0,
-				investedAmount: 0,
-				notes: '',
-			});
-			setUnitsInput('');
-			setCurrentNavInput('');
-			setInvestedAmountInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Equity ETF added successfully!');
 		} catch (error) {
@@ -197,17 +201,7 @@ export const EquityETFs = ({
 			await assetService.updateEquityETF(userId, editingETF.id, newETF);
 			setShowEditModal(false);
 			setEditingETF(null);
-			setNewETF({
-				etfName: '',
-				symbol: '',
-				units: 0,
-				currentNav: 0,
-				investedAmount: 0,
-				notes: '',
-			});
-			setUnitsInput('');
-			setCurrentNavInput('');
-			setInvestedAmountInput('');
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'Equity ETF updated successfully!');
 		} catch (error) {
@@ -369,165 +363,139 @@ export const EquityETFs = ({
 		</TouchableOpacity>
 	);
 
-	const formFields: FormField[] = [
-		{
-			id: 'etfName',
-			label: 'ETF Name',
-			placeholder: 'ETF Name (e.g., Nippon India ETF Nifty 50)',
-			value: newETF.etfName,
-			onChangeText: (text: string) => setNewETF({ ...newETF, etfName: text }),
-			isEllipsis: true,
-			keyboardType: 'default' as KeyboardType,
-			isMandatory: true,
-		},
-		{
-			id: 'symbol',
-			label: 'Symbol',
-			placeholder: 'Symbol (e.g., NIFTYBEES)',
-			value: newETF.symbol || '',
-			onChangeText: (text: string) =>
-				setNewETF({ ...newETF, symbol: text.toUpperCase() }),
-			isEllipsis: true,
-			keyboardType: 'default' as KeyboardType,
-			isMandatory: false,
-		},
-		{
-			id: 'units',
-			label: 'Number of Units',
-			placeholder: 'Number of Units',
-			value: unitsInput,
-			onChangeText: (text: string) => handleDecimalInput(text, 'units'),
-			keyboardType: 'decimal-pad' as KeyboardType,
-			isMandatory: true,
-		},
-		{
-			id: 'currentNav',
-			label: 'Current NAV (per unit)',
-			placeholder: 'Current NAV (per unit)',
-			value: currentNavInput,
-			onChangeText: (text: string) => handleDecimalInput(text, 'currentNav'),
-			keyboardType: 'decimal-pad' as KeyboardType,
-			isMandatory: true,
-		},
-		{
-			id: 'investedAmount',
-			label: 'Total Invested Amount (₹)',
-			placeholder: 'Total Invested Amount (₹)',
-			value: investedAmountInput,
-			onChangeText: (text: string) =>
-				handleDecimalInput(text, 'investedAmount'),
-			keyboardType: 'decimal-pad' as KeyboardType,
-			isMandatory: true,
-		},
-		{
-			id: 'notes',
-			label: 'Notes (Optional)',
-			placeholder: 'Notes (Optional)',
-			value: newETF.notes || '',
-			onChangeText: (text: string) => setNewETF({ ...newETF, notes: text }),
-			multiline: true,
-			numberOfLines: 3,
-			keyboardType: 'default' as KeyboardType,
-			isMandatory: false,
-		},
-	];
+	const getModalFormFields = (isEdit: boolean) => {
+		const formFields: FormField[] = [
+			{
+				id: 'etfName',
+				label: 'ETF Name',
+				placeholder: 'ETF Name (e.g., Nippon India ETF Nifty 50)',
+				value: newETF.etfName,
+				onChangeText: (text: string) => setNewETF({ ...newETF, etfName: text }),
+				isEllipsis: true,
+				keyboardType: 'default' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'symbol',
+				label: 'Symbol',
+				placeholder: 'Symbol (e.g., NIFTYBEES)',
+				value: newETF.symbol || '',
+				onChangeText: (text: string) =>
+					setNewETF({ ...newETF, symbol: text.toUpperCase() }),
+				isEllipsis: true,
+				keyboardType: 'default' as KeyboardType,
+				isMandatory: false,
+			},
+			{
+				id: 'units',
+				label: 'Number of Units',
+				placeholder: 'Number of Units',
+				value: unitsInput,
+				onChangeText: (text: string) => handleDecimalInput(text, 'units'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'currentNav',
+				label: 'Current NAV (per unit)',
+				placeholder: 'Current NAV (per unit)',
+				value: currentNavInput,
+				onChangeText: (text: string) => handleDecimalInput(text, 'currentNav'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'investedAmount',
+				label: 'Total Invested Amount (₹)',
+				placeholder: 'Total Invested Amount (₹)',
+				value: investedAmountInput,
+				onChangeText: (text: string) =>
+					handleDecimalInput(text, 'investedAmount'),
+				keyboardType: 'decimal-pad' as KeyboardType,
+				isMandatory: true,
+			},
+			{
+				id: 'notes',
+				label: 'Notes (Optional)',
+				placeholder: 'Notes (Optional)',
+				value: newETF.notes || '',
+				onChangeText: (text: string) => setNewETF({ ...newETF, notes: text }),
+				multiline: true,
+				numberOfLines: 3,
+				keyboardType: 'default' as KeyboardType,
+				isMandatory: false,
+			},
+		];
 
-	const renderAddEditModal = (isEdit: boolean) => (
-		<Modal
-			visible={isEdit ? showEditModal : showAddModal}
-			animationType='slide'
-			transparent={true}
-			onRequestClose={() => {
-				if (isEdit) {
-					setShowEditModal(false);
-					setEditingETF(null);
-				} else {
-					setShowAddModal(false);
-				}
-				setNewETF({
-					etfName: '',
-					symbol: '',
-					units: 0,
-					currentNav: 0,
-					investedAmount: 0,
-					notes: '',
-				});
-				setUnitsInput('');
-				setCurrentNavInput('');
-				setInvestedAmountInput('');
-			}}
-		>
-			<View
-				style={{
-					flex: 1,
-					justifyContent: 'center',
-					backgroundColor: 'rgba(0,0,0,0.5)',
+		return formFields;
+	};
+
+	const renderAddEditModal = (isEdit: boolean) => {
+		const formFields = getModalFormFields(isEdit);
+		return (
+			<Modal
+				visible={isEdit ? showEditModal : showAddModal}
+				animationType='slide'
+				transparent={true}
+				onRequestClose={() => {
+					if (isEdit) {
+						setShowEditModal(false);
+						setEditingETF(null);
+					} else {
+						setShowAddModal(false);
+					}
+					resetForm();
 				}}
 			>
-				<ScrollView style={{ maxHeight: '90%' }}>
-					<View style={[styles.card, { margin: 20 }]}>
-						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-							{isEdit ? 'Edit Equity ETF' : 'Add Equity ETF'}
-						</Text>
-						{formFields.map((field) => (
-							<InputComponent
-								key={field.id}
-								label={field.label}
-								placeholder={field.placeholder}
-								value={field.value}
-								onChangeText={field.onChangeText}
-								keyboardType={field.keyboardType}
-								multiline={field.multiline}
-								numberOfLines={field.numberOfLines}
-								isEllipsis={field.isEllipsis}
-								isMandatory={field.isMandatory}
-							/>
-						))}
-						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
-							<TouchableOpacity
-								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-								onPress={() => {
-									if (isEdit) {
-										setShowEditModal(false);
-										setEditingETF(null);
-									} else {
-										setShowAddModal(false);
-									}
-									setNewETF({
-										etfName: '',
-										symbol: '',
-										units: 0,
-										currentNav: 0,
-										investedAmount: 0,
-										notes: '',
-									});
-									setUnitsInput('');
-									setCurrentNavInput('');
-									setInvestedAmountInput('');
-								}}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>Cancel</Text>
-							</TouchableOpacity>
-							<TouchableOpacity
-								style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-								onPress={isEdit ? handleUpdateETF : handleAddETF}
-								disabled={isSubmitting}
-							>
-								<Text style={styles.buttonText}>
-									{isSubmitting
-										? 'Saving...'
-										: isEdit
-										? 'Update ETF'
-										: 'Add ETF'}
-								</Text>
-							</TouchableOpacity>
+				<View
+					style={{
+						flex: 1,
+						justifyContent: 'center',
+						backgroundColor: 'rgba(0,0,0,0.5)',
+					}}
+				>
+					<ScrollView style={{ maxHeight: '90%' }}>
+						<View style={[styles.card, { margin: 20 }]}>
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								{isEdit ? 'Edit Equity ETF' : 'Add Equity ETF'}
+							</Text>
+							<AddEditFields fields={formFields} />
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										if (isEdit) {
+											setShowEditModal(false);
+											setEditingETF(null);
+										} else {
+											setShowAddModal(false);
+										}
+										resetForm();
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={isEdit ? handleUpdateETF : handleAddETF}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting
+											? 'Saving...'
+											: isEdit
+											? 'Update ETF'
+											: 'Add ETF'}
+									</Text>
+								</TouchableOpacity>
+							</View>
 						</View>
-					</View>
-				</ScrollView>
-			</View>
-		</Modal>
-	);
+					</ScrollView>
+				</View>
+			</Modal>
+		);
+	};
 
 	return (
 		<View style={{ padding: 20 }}>

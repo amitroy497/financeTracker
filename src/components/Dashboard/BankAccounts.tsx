@@ -17,7 +17,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { EditDeleteButtons, InputComponent } from '../UI';
+import { AddEditFields, EditDeleteButtons } from '../UI';
 
 export const BankAccounts = ({
 	accounts,
@@ -101,7 +101,7 @@ export const BankAccounts = ({
 			accountType: type,
 		});
 		setShowAccountTypeDropdown(false);
-		setAccountTypeSearch(''); // Clear search when selected
+		setAccountTypeSearch('');
 	};
 
 	const handleAddAccount = async (): Promise<void> => {
@@ -411,7 +411,7 @@ export const BankAccounts = ({
 		</View>
 	);
 
-	const getModalInputFields = (isEdit: boolean) => {
+	const getModalFormFields = (isEdit: boolean) => {
 		const fields = [
 			{
 				id: 'accountName',
@@ -492,7 +492,7 @@ export const BankAccounts = ({
 	};
 
 	const renderAddEditModal = (isEdit: boolean) => {
-		const inputFields = getModalInputFields(isEdit);
+		const formFields = getModalFormFields(isEdit);
 
 		return (
 			<Modal
@@ -506,10 +506,7 @@ export const BankAccounts = ({
 					} else {
 						setShowAddModal(false);
 					}
-					setShowBankDropdown(false);
-					setShowAccountTypeDropdown(false);
-					setBankSearch('');
-					setAccountTypeSearch('');
+					resetForm();
 				}}
 			>
 				<View
@@ -577,37 +574,7 @@ export const BankAccounts = ({
 								</View>
 							)}
 
-							{inputFields.map((field) => (
-								<InputComponent
-									key={field.id}
-									label={field.label}
-									placeholder={field.placeholder}
-									value={field.value}
-									onChangeText={field.onChangeText}
-									keyboardType={field.keyboardType}
-									maxLength={field.maxLength}
-									isMandatory={field.isMandatory}
-									isSelectDropDown={field.isSelectDropDown}
-									showDropDown={field.dropdownProps?.showDropDown}
-									setShowDropDown={field.dropdownProps?.setShowDropDown}
-									dropDownName={field.dropdownProps?.dropDownName}
-									dropDownAlternativeName={
-										field.dropdownProps?.dropDownAlternativeName ||
-										'Select Account Type'
-									}
-									dropdownSearchValue={field.dropdownProps?.dropdownSearchValue}
-									setDropDownSearchValue={
-										field.dropdownProps?.setDropDownSearchValue
-									}
-									dropdownOptions={field.dropdownProps?.dropdownOptions}
-									handleDropDownSelectOption={
-										field.dropdownProps?.handleDropDownSelectOption
-									}
-									dropDownNotFoundText={
-										field.dropdownProps?.dropDownNotFoundText
-									}
-								/>
-							))}
+							<AddEditFields fields={formFields} />
 
 							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
 								<TouchableOpacity
