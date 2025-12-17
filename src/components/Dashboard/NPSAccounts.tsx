@@ -1,3 +1,4 @@
+import { NPSBanner } from '@/icons';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
@@ -16,7 +17,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { AddEditFields } from '../UI';
+import { AddDetailsButton, AddEditFields, Banner, CardsView } from '../UI';
 
 export const NPSAccounts = ({
 	accounts,
@@ -582,41 +583,31 @@ export const NPSAccounts = ({
 
 	return (
 		<View style={{ padding: 20 }}>
-			{/* Summary Card */}
-			<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
-				<View style={[styles.row, styles.spaceBetween, { marginBottom: 12 }]}>
+			<Banner
+				image={NPSBanner}
+				title='NPS Portfolio Value'
+				amount={totalCurrentValue}
+			>
+				<View style={[styles.row, styles.spaceBetween, { marginTop: 8 }]}>
 					<View>
-						<Text style={{ fontSize: 14, color: colors.gray }}>
-							NPS Portfolio Value
-						</Text>
-						<Text
-							style={{
-								fontSize: 24,
-								fontWeight: 'bold',
-								color: colors.dark,
-								marginTop: 4,
-							}}
-						>
-							{formatCurrency(totalCurrentValue)}
-						</Text>
-					</View>
-					<Text style={{ fontSize: 24 }}>👵</Text>
-				</View>
-
-				<View style={[styles.row, styles.spaceBetween]}>
-					<View>
-						<Text style={{ fontSize: 12, color: colors.gray }}>
+						<Text style={{ fontSize: 12, color: colors.platinum }}>
 							Total Contribution
 						</Text>
 						<Text
-							style={{ fontSize: 14, fontWeight: 'bold', color: colors.dark }}
+							style={{
+								fontSize: 14,
+								fontWeight: 'bold',
+								color: colors.platinum,
+							}}
 						>
 							{formatCurrency(totalContribution)}
 						</Text>
 					</View>
 
 					<View style={{ alignItems: 'flex-end' }}>
-						<Text style={{ fontSize: 12, color: colors.gray }}>Returns</Text>
+						<Text style={{ fontSize: 12, color: colors.platinum }}>
+							Returns
+						</Text>
 						<Text
 							style={{
 								fontSize: 14,
@@ -629,7 +620,7 @@ export const NPSAccounts = ({
 						</Text>
 					</View>
 				</View>
-			</View>
+			</Banner>
 
 			{/* NPS Accounts List */}
 			<Text style={[styles.subHeading, { marginTop: 24, marginBottom: 16 }]}>
@@ -650,21 +641,13 @@ export const NPSAccounts = ({
 					</Text>
 				</View>
 			) : (
-				<ScrollView
-					showsVerticalScrollIndicator={false}
-					style={{ maxHeight: 400 }}
-				>
-					{accounts.map(renderAccountCard)}
-				</ScrollView>
+				<CardsView details={accounts} renderCard={renderAccountCard} />
 			)}
 
-			{/* Add New NPS Account Button */}
-			<TouchableOpacity
-				style={[styles.button, styles.buttonPrimary, { marginTop: 16 }]}
+			<AddDetailsButton
+				label='NPS Account'
 				onPress={() => setShowAddModal(true)}
-			>
-				<Text style={styles.buttonText}>+ Add NPS Account</Text>
-			</TouchableOpacity>
+			/>
 
 			{/* Modals */}
 			{renderAddEditModal(false)}

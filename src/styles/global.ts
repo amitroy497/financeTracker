@@ -19,6 +19,9 @@ export const lightColors = {
 	textSecondary: '#6c757d',
 	border: '#dee2e6',
 	shadow: '#000000',
+	platinum: '#E5E4E2',
+	gunMetal: '#818589',
+	themWhite: '#ffffff',
 } as const;
 
 export const darkColors = {
@@ -41,6 +44,9 @@ export const darkColors = {
 	textSecondary: '#8e8e93',
 	border: '#2c2c2e',
 	shadow: '#000000',
+	platinum: '#E5E4E2',
+	gunMetal: '#818589',
+	themWhite: '#ffffff',
 } as const;
 
 export type Theme = 'light' | 'dark';
@@ -110,6 +116,13 @@ export const createStyles = (colors: ThemeColors) =>
 			elevation: 3,
 			borderWidth: 1,
 			borderColor: colors.border,
+		},
+		bannerCard: {
+			borderRadius: 12,
+			padding: 16,
+			marginVertical: 8,
+			overflow: 'hidden', // Important for rounded corners with image
+			minHeight: 120,
 		},
 		subheader: {
 			fontSize: 18,

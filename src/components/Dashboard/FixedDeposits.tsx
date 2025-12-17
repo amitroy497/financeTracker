@@ -1,5 +1,10 @@
-import { getBankIcon } from '@/assets';
-import { AddEditFields } from '@/components/UI';
+import {
+	AddDetailsButton,
+	AddEditFields,
+	Banner,
+	CardsView,
+} from '@/components/UI';
+import { FixedDepositsBanner, getBankIcon } from '@/icons';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
@@ -385,8 +390,6 @@ export const FixedDeposits = ({
 	const renderDepositCard = (deposit: FixedDeposit) => {
 		const daysToMaturity = calculateDaysToMaturity(deposit.maturityDate);
 		const isMatured = deposit.status === 'Matured' || daysToMaturity <= 0;
-
-		// NEW: Calculate progress metrics
 		const progress = calculateProgress(deposit);
 		const elapsedDays = getElapsedDays(deposit);
 		const totalDays = getTotalDays(deposit);
@@ -429,7 +432,10 @@ export const FixedDeposits = ({
 							style={[styles.row, styles.spaceBetween, { marginBottom: 4 }]}
 						>
 							<Text
+								numberOfLines={1}
+								ellipsizeMode='tail'
 								style={{
+									width: 150,
 									fontWeight: 'bold',
 									color: colors.dark,
 									fontSize: 16,
@@ -500,32 +506,28 @@ export const FixedDeposits = ({
 								</View>
 							</View>
 						)}
-
-						<View
-							style={[
-								styles.row,
-								{ justifyContent: 'space-between', marginBottom: 8 },
-							]}
-						>
+						<View style={{ gap: 4 }}>
 							<Text style={{ color: colors.gray, fontSize: 12 }}>
 								{isMatured ? 'Matured on' : 'Matures in'}{' '}
 								{isMatured ? '' : daysToMaturity + ' days'}
+							</Text>
+							<Text
+								style={{ color: colors.gray, fontSize: 10, marginBottom: 4 }}
+							>
+								📅 {formatDate(deposit.startDate)} -{' '}
+								{formatDate(deposit.maturityDate)}
 							</Text>
 							<Text
 								style={{
 									fontWeight: 'bold',
 									color: colors.dark,
 									fontSize: 18,
+									textAlign: 'right',
 								}}
 							>
 								{formatCurrency(deposit.amount)}
 							</Text>
 						</View>
-
-						<Text style={{ color: colors.gray, fontSize: 10, marginBottom: 4 }}>
-							📅 {formatDate(deposit.startDate)} -{' '}
-							{formatDate(deposit.maturityDate)}
-						</Text>
 						{deposit.description && (
 							<Text
 								style={{
@@ -767,32 +769,18 @@ export const FixedDeposits = ({
 
 	return (
 		<View style={{ padding: 20 }}>
-			<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
-				<View style={[styles.row, styles.spaceBetween]}>
-					<View>
-						<Text style={{ fontSize: 14, color: colors.gray }}>
-							Total Fixed Deposits
-						</Text>
-						<Text
-							style={{
-								fontSize: 24,
-								fontWeight: 'bold',
-								color: colors.dark,
-								marginTop: 4,
-							}}
-						>
-							{formatCurrency(totalAmount)}
-						</Text>
-					</View>
-					<Text style={{ fontSize: 24 }}>🏦</Text>
-				</View>
+			<Banner
+				image={FixedDepositsBanner}
+				title='Total Fixed Deposits'
+				amount={totalAmount}
+			>
 				<View style={[styles.row, { marginTop: 8 }]}>
-					<Text style={{ fontSize: 12, color: colors.gray }}>
+					<Text style={{ fontSize: 12, color: colors.platinum }}>
 						{activeDeposits.length} active •{' '}
 						{deposits.length - activeDeposits.length} matured
 					</Text>
 				</View>
-			</View>
+			</Banner>
 			<Text style={[styles.subHeading, { marginTop: 24, marginBottom: 16 }]}>
 				Fixed Deposits
 			</Text>
@@ -810,19 +798,12 @@ export const FixedDeposits = ({
 					</Text>
 				</View>
 			) : (
-				<ScrollView
-					showsVerticalScrollIndicator={false}
-					style={{ maxHeight: 400 }}
-				>
-					{deposits.map(renderDepositCard)}
-				</ScrollView>
+				<CardsView details={deposits} renderCard={renderDepositCard} />
 			)}
-			<TouchableOpacity
-				style={[styles.button, styles.buttonPrimary, { marginTop: 16 }]}
+			<AddDetailsButton
+				label='Fixed Deposit'
 				onPress={() => setShowAddModal(true)}
-			>
-				<Text style={styles.buttonText}>+ Add Fixed Deposit</Text>
-			</TouchableOpacity>
+			/>
 
 			{renderAddEditModal(false)}
 			{renderAddEditModal(true)}

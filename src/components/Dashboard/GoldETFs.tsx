@@ -1,3 +1,4 @@
+import { GoldETFsBanner } from '@/icons';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
@@ -13,7 +14,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { InputComponent } from '../UI';
+import { AddDetailsButton, Banner, CardsView, InputComponent } from '../UI';
 
 export const GoldETFs = ({
 	etfs,
@@ -630,39 +631,31 @@ export const GoldETFs = ({
 
 	return (
 		<View style={{ padding: 20 }}>
-			{/* Summary Card */}
-			<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
-				<View style={[styles.row, styles.spaceBetween, { marginBottom: 12 }]}>
+			<Banner
+				image={GoldETFsBanner}
+				title='Gold ETFs Value'
+				amount={totalCurrentValue}
+			>
+				<View style={[styles.row, styles.spaceBetween]}>
 					<View>
-						<Text style={{ fontSize: 14, color: colors.gray }}>
-							Gold ETFs Value
+						<Text style={{ fontSize: 12, color: colors.platinum }}>
+							Invested
 						</Text>
 						<Text
 							style={{
-								fontSize: 24,
+								fontSize: 14,
 								fontWeight: 'bold',
-								color: colors.dark,
-								marginTop: 4,
+								color: colors.platinum,
 							}}
-						>
-							{formatCurrency(totalCurrentValue)}
-						</Text>
-					</View>
-					<Text style={{ fontSize: 24 }}>🥇</Text>
-				</View>
-
-				<View style={[styles.row, styles.spaceBetween]}>
-					<View>
-						<Text style={{ fontSize: 12, color: colors.gray }}>Invested</Text>
-						<Text
-							style={{ fontSize: 14, fontWeight: 'bold', color: colors.dark }}
 						>
 							{formatCurrency(totalInvested)}
 						</Text>
 					</View>
 
 					<View style={{ alignItems: 'flex-end' }}>
-						<Text style={{ fontSize: 12, color: colors.gray }}>Returns</Text>
+						<Text style={{ fontSize: 12, color: colors.platinum }}>
+							Returns
+						</Text>
 						<Text
 							style={{
 								fontSize: 14,
@@ -675,9 +668,7 @@ export const GoldETFs = ({
 						</Text>
 					</View>
 				</View>
-			</View>
-
-			{/* Gold ETFs List */}
+			</Banner>
 			<Text style={[styles.subHeading, { marginTop: 24, marginBottom: 16 }]}>
 				Gold ETF Portfolio
 			</Text>
@@ -696,21 +687,13 @@ export const GoldETFs = ({
 					</Text>
 				</View>
 			) : (
-				<ScrollView
-					showsVerticalScrollIndicator={false}
-					style={{ maxHeight: 400 }}
-				>
-					{etfs.map(renderETFCard)}
-				</ScrollView>
+				<CardsView details={etfs} renderCard={renderETFCard} />
 			)}
 
-			{/* Add New Gold ETF Button */}
-			<TouchableOpacity
-				style={[styles.button, styles.buttonPrimary, { marginTop: 16 }]}
+			<AddDetailsButton
+				label='Gold ETF'
 				onPress={() => setShowAddModal(true)}
-			>
-				<Text style={styles.buttonText}>+ Add Gold ETF</Text>
-			</TouchableOpacity>
+			/>
 
 			{/* Modals */}
 			{renderAddEditModal(false)}

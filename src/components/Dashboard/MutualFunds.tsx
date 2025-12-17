@@ -1,3 +1,4 @@
+import { MutualFundsBanner } from '@/icons';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
@@ -13,7 +14,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { InputComponent } from '../UI';
+import { AddDetailsButton, Banner, CardsView, InputComponent } from '../UI';
 
 export const MutualFunds = ({
 	funds,
@@ -714,30 +715,16 @@ export const MutualFunds = ({
 
 	return (
 		<View style={{ padding: 20 }}>
-			{/* Summary Card */}
-			<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
-				<View style={[styles.row, styles.spaceBetween, { marginBottom: 12 }]}>
-					<View>
-						<Text style={{ fontSize: 14, color: colors.gray }}>
-							Current Value
-						</Text>
-						<Text
-							style={{
-								fontSize: 24,
-								fontWeight: 'bold',
-								color: colors.dark,
-								marginTop: 4,
-							}}
-						>
-							{formatCurrency(totalCurrentValue)}
-						</Text>
-					</View>
-					<Text style={{ fontSize: 24 }}>📊</Text>
-				</View>
-
+			<Banner
+				image={MutualFundsBanner}
+				title='Current Value'
+				amount={totalCurrentValue}
+			>
 				<View style={[styles.row, styles.spaceBetween]}>
 					<View>
-						<Text style={{ fontSize: 12, color: colors.gray }}>Invested</Text>
+						<Text style={{ fontSize: 12, color: colors.platinum }}>
+							Invested
+						</Text>
 						<Text
 							style={{ fontSize: 14, fontWeight: 'bold', color: colors.dark }}
 						>
@@ -746,7 +733,9 @@ export const MutualFunds = ({
 					</View>
 
 					<View style={{ alignItems: 'flex-end' }}>
-						<Text style={{ fontSize: 12, color: colors.gray }}>Returns</Text>
+						<Text style={{ fontSize: 12, color: colors.platinum }}>
+							Returns
+						</Text>
 						<Text
 							style={{
 								fontSize: 14,
@@ -759,9 +748,7 @@ export const MutualFunds = ({
 						</Text>
 					</View>
 				</View>
-			</View>
-
-			{/* Mutual Funds List */}
+			</Banner>
 			<Text style={[styles.subHeading, { marginTop: 24, marginBottom: 16 }]}>
 				Mutual Fund Portfolio
 			</Text>
@@ -780,20 +767,13 @@ export const MutualFunds = ({
 					</Text>
 				</View>
 			) : (
-				<ScrollView
-					showsVerticalScrollIndicator={false}
-					style={{ maxHeight: 400 }}
-				>
-					{funds.map(renderFundCard)}
-				</ScrollView>
+				<CardsView details={funds} renderCard={renderFundCard} />
 			)}
 
-			<TouchableOpacity
-				style={[styles.button, styles.buttonPrimary, { marginTop: 16 }]}
+			<AddDetailsButton
+				label='Mutual Fund'
 				onPress={() => setShowAddModal(true)}
-			>
-				<Text style={styles.buttonText}>+ Add Mutual Fund</Text>
-			</TouchableOpacity>
+			/>
 
 			{renderAddEditModal(false)}
 			{renderAddEditModal(true)}

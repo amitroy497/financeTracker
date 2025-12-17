@@ -1,6 +1,11 @@
-import { getBankIcon } from '@/assets';
-import { AddEditFields } from '@/components/UI';
+import {
+	AddDetailsButton,
+	AddEditFields,
+	Banner,
+	CardsView,
+} from '@/components/UI';
 import { BANK_LIST } from '@/constants';
+import { getBankIcon, RecurringDepositsBanner } from '@/icons';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
@@ -728,33 +733,16 @@ export const RecurringDeposits = ({
 
 	return (
 		<View style={{ padding: 20 }}>
-			<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
-				<View style={[styles.row, styles.spaceBetween]}>
-					<View>
-						<Text style={{ fontSize: 14, color: colors.gray }}>
-							Total Recurring Deposits
-						</Text>
-						<Text
-							style={{
-								fontSize: 24,
-								fontWeight: 'bold',
-								color: colors.dark,
-								marginTop: 4,
-							}}
-						>
-							{formatCurrency(totalInvested)}
-						</Text>
-					</View>
-					<Text style={{ fontSize: 24 }}>📈</Text>
-				</View>
-				<View style={[styles.row, { marginTop: 8 }]}>
-					<Text style={{ fontSize: 12, color: colors.gray }}>
-						Monthly investment: {formatCurrency(totalMonthly)} •{' '}
-						{deposits.length} RD{deposits.length !== 1 ? 's' : ''}
-					</Text>
-				</View>
-			</View>
-
+			<Banner
+				image={RecurringDepositsBanner}
+				title='Total Recurring Deposits'
+				amount={totalInvested}
+			>
+				<Text style={{ fontSize: 12, color: colors.platinum }}>
+					Monthly investment: {formatCurrency(totalMonthly)} • {deposits.length}{' '}
+					RD{deposits.length !== 1 ? 's' : ''}
+				</Text>
+			</Banner>
 			<Text style={[styles.subHeading, { marginTop: 24, marginBottom: 16 }]}>
 				Recurring Deposits
 			</Text>
@@ -775,20 +763,13 @@ export const RecurringDeposits = ({
 					</Text>
 				</View>
 			) : (
-				<ScrollView
-					showsVerticalScrollIndicator={false}
-					style={{ maxHeight: 400 }}
-				>
-					{deposits.map(renderDepositCard)}
-				</ScrollView>
+				<CardsView details={deposits} renderCard={renderDepositCard} />
 			)}
 
-			<TouchableOpacity
-				style={[styles.button, styles.buttonPrimary, { marginTop: 16 }]}
+			<AddDetailsButton
+				label='Recurring Deposit'
 				onPress={() => setShowAddModal(true)}
-			>
-				<Text style={styles.buttonText}>+ Add Recurring Deposit</Text>
-			</TouchableOpacity>
+			/>
 
 			{renderAddEditModal(false)}
 			{renderAddEditModal(true)}

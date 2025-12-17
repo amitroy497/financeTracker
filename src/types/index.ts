@@ -844,3 +844,8 @@ export type EditDeleteButtonsProps = {
 	onPressEdit: () => void;
 	onPressDelete: () => void;
 };
+
+export type AddDetailsButtonProps = {
+	label: string;
+	onPress: () => void;
+};

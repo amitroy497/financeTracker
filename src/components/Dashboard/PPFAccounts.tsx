@@ -1,3 +1,4 @@
+import { PPFBanner } from '@/icons';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
@@ -13,6 +14,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
+import { AddDetailsButton, Banner } from '../UI';
 
 export const PPFAccounts = ({
 	accounts,
@@ -219,35 +221,14 @@ export const PPFAccounts = ({
 
 	return (
 		<View style={{ padding: 20 }}>
-			{/* Summary Card */}
-			<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
-				<View style={[styles.row, styles.spaceBetween]}>
-					<View>
-						<Text style={{ fontSize: 14, color: colors.gray }}>
-							PPF Balance
-						</Text>
-						<Text
-							style={{
-								fontSize: 24,
-								fontWeight: 'bold',
-								color: colors.dark,
-								marginTop: 4,
-							}}
-						>
-							{formatCurrency(totalBalance)}
-						</Text>
-					</View>
-					<Text style={{ fontSize: 24 }}>🏛️</Text>
-				</View>
+			<Banner image={PPFBanner} title='PPF Balance' amount={totalBalance}>
 				<View style={[styles.row, { marginTop: 8 }]}>
-					<Text style={{ fontSize: 12, color: colors.gray }}>
+					<Text style={{ fontSize: 12, color: colors.platinum }}>
 						Total Deposits: {formatCurrency(totalDeposits)} • {accounts.length}{' '}
 						account{accounts.length !== 1 ? 's' : ''}
 					</Text>
 				</View>
-			</View>
-
-			{/* PPF Accounts List */}
+			</Banner>
 			<Text style={[styles.subHeading, { marginTop: 24, marginBottom: 16 }]}>
 				Public Provident Fund Accounts
 			</Text>
@@ -255,6 +236,8 @@ export const PPFAccounts = ({
 			<ScrollView
 				showsVerticalScrollIndicator={false}
 				style={{ maxHeight: 400 }}
+				contentContainerStyle={{ flexGrow: 1 }}
+				nestedScrollEnabled={true}
 			>
 				{accounts.map((account) => {
 					const yearsToMaturity = calculateYearsToMaturity(
@@ -480,13 +463,10 @@ export const PPFAccounts = ({
 				</View>
 			</Modal>
 
-			{/* Add New PPF Account Button */}
-			<TouchableOpacity
-				style={[styles.button, styles.buttonPrimary, { marginTop: 16 }]}
+			<AddDetailsButton
+				label='PPF Account'
 				onPress={() => setShowAddModal(true)}
-			>
-				<Text style={styles.buttonText}>+ Add PPF Account</Text>
-			</TouchableOpacity>
+			/>
 		</View>
 	);
 };

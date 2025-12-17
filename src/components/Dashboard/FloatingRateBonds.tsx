@@ -1,3 +1,4 @@
+import { BondsBanner } from '@/icons';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
@@ -16,7 +17,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { AddEditFields } from '../UI';
+import { AddDetailsButton, AddEditFields, Banner, CardsView } from '../UI';
 
 export const FloatingRateBonds = ({
 	bonds,
@@ -629,35 +630,18 @@ export const FloatingRateBonds = ({
 
 	return (
 		<View style={{ padding: 20 }}>
-			{/* Summary Card */}
-			<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
-				<View style={[styles.row, styles.spaceBetween]}>
-					<View>
-						<Text style={{ fontSize: 14, color: colors.gray }}>
-							Floating Rate Bonds
-						</Text>
-						<Text
-							style={{
-								fontSize: 24,
-								fontWeight: 'bold',
-								color: colors.dark,
-								marginTop: 4,
-							}}
-						>
-							{formatCurrency(totalCurrentValue)}
-						</Text>
-					</View>
-					<Text style={{ fontSize: 24 }}>📄</Text>
-				</View>
+			<Banner
+				image={BondsBanner}
+				title='Floating Rate Bonds'
+				amount={totalCurrentValue}
+			>
 				<View style={[styles.row, { marginTop: 8 }]}>
-					<Text style={{ fontSize: 12, color: colors.gray }}>
+					<Text style={{ fontSize: 12, color: colors.platinum }}>
 						Total Investment: {formatCurrency(totalInvestment)} • {bonds.length}{' '}
 						bond{bonds.length !== 1 ? 's' : ''}
 					</Text>
 				</View>
-			</View>
-
-			{/* Floating Rate Bonds List */}
+			</Banner>
 			<Text style={[styles.subHeading, { marginTop: 24, marginBottom: 16 }]}>
 				Floating Rate Saving Bonds
 			</Text>
@@ -678,21 +662,13 @@ export const FloatingRateBonds = ({
 					</Text>
 				</View>
 			) : (
-				<ScrollView
-					showsVerticalScrollIndicator={false}
-					style={{ maxHeight: 400 }}
-				>
-					{bonds.map(renderBondCard)}
-				</ScrollView>
+				<CardsView details={bonds} renderCard={renderBondCard} />
 			)}
 
-			{/* Add New FRB Button */}
-			<TouchableOpacity
-				style={[styles.button, styles.buttonPrimary, { marginTop: 16 }]}
+			<AddDetailsButton
+				label='Floating Rate Bond'
 				onPress={() => setShowAddModal(true)}
-			>
-				<Text style={styles.buttonText}>+ Add Floating Rate Bond</Text>
-			</TouchableOpacity>
+			/>
 
 			{/* Modals */}
 			{renderAddEditModal(false)}

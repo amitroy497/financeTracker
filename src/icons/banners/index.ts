@@ -1,0 +1,10 @@
+export const PPFBanner = require('./ppf-banner.png');
+export const BankAccountBanner = require('./bankAccount-banner.png');
+export const FixedDepositsBanner = require('./fixedDeposits-banner.png');
+export const RecurringDepositsBanner = require('./recurringDeposits-banner.png');
+export const BondsBanner = require('./bonds-banner.png');
+export const GoldETFsBanner = require('./goldETFs-banner.png');
+export const MutualFundsBanner = require('./mutualFunds-banner.png');
+export const EquityETFsBanner = require('./equityETFs-banner.png');
+export const StocksBanner = require('./stocks-banner.png');
+export const NPSBanner = require('./nps-banner.png');

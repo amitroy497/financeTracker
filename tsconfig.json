@@ -19,7 +19,7 @@
 			"@/hooks/*": ["src/hooks/*"],
 			"@/auth/*": ["src/auth/*"],
 			"@/screens/*": ["src/screens/*"],
-			"@/assets/*": ["src/assets/*"]
+			"@/icons/*": ["src/icons/*"]
 		}
 	},
 	"include": ["**/*.ts", "**/*.tsx"],

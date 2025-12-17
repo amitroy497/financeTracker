@@ -1,5 +1,5 @@
-import { getBankIcon } from '@/assets';
 import { BANK_LIST } from '@/constants';
+import { BankAccountBanner, getBankIcon } from '@/icons';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
@@ -17,7 +17,13 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { AddEditFields, EditDeleteButtons } from '../UI';
+import {
+	AddDetailsButton,
+	AddEditFields,
+	Banner,
+	CardsView,
+	EditDeleteButtons,
+} from '../UI';
 
 export const BankAccounts = ({
 	accounts,
@@ -329,42 +335,42 @@ export const BankAccounts = ({
 						resizeMode='contain'
 					/>
 				</View>
-				<View style={{ flex: 1, justifyContent: 'center' }}>
-					<View style={[styles.row, styles.spaceBetween]}>
-						<View style={{ flex: 1 }}>
-							<Text
-								style={{
-									fontWeight: 'bold',
-									color: colors.dark,
-									fontSize: 16,
-								}}
-							>
-								{account.accountName}
-							</Text>
-							<Text style={{ color: colors.gray, fontSize: 12 }}>
-								{account.bankName}
-							</Text>
-						</View>
-						<View
+				<View style={{ flex: 1 }}>
+					<View style={{ flex: 1 }}>
+						<Text
 							style={{
-								alignItems: 'flex-end',
-								flexDirection: 'row',
-								gap: 4,
+								fontWeight: 'bold',
+								color: colors.dark,
+								fontSize: 16,
 							}}
 						>
-							<Text
-								style={{
-									fontWeight: 'bold',
-									color: colors.dark,
-									fontSize: 16,
-								}}
-							>
-								{formatCurrency(account.balance || 0)}
-							</Text>
-							<Text style={{ color: colors.gray, fontSize: 12 }}>
-								{account.currency}
-							</Text>
-						</View>
+							{account.accountName}
+						</Text>
+						<Text style={{ color: colors.gray, fontSize: 12 }}>
+							{account.bankName}
+						</Text>
+					</View>
+					<View
+						style={[
+							styles.row,
+							{
+								gap: 4,
+								justifyContent: 'flex-end',
+							},
+						]}
+					>
+						<Text
+							style={{
+								fontWeight: 'bold',
+								color: colors.dark,
+								fontSize: 16,
+							}}
+						>
+							{formatCurrency(account.balance || 0)}
+						</Text>
+						<Text style={{ color: colors.gray, fontSize: 12 }}>
+							{account.currency}
+						</Text>
 					</View>
 
 					<View style={{ marginTop: 6 }}>
@@ -611,30 +617,16 @@ export const BankAccounts = ({
 
 	return (
 		<View style={{ padding: 20 }}>
-			<View style={[styles.card, { backgroundColor: colors.lightGray }]}>
-				<View style={[styles.row, styles.spaceBetween]}>
-					<View>
-						<Text style={{ fontSize: 14, color: colors.gray }}>
-							Total Cash Balance
-						</Text>
-						<Text
-							style={{
-								fontSize: 24,
-								fontWeight: 'bold',
-								color: colors.dark,
-								marginTop: 4,
-							}}
-						>
-							{formatCurrency(totalBalance)}
-						</Text>
-					</View>
-					<Text style={{ fontSize: 24 }}>💰</Text>
-				</View>
-				<Text style={{ fontSize: 12, color: colors.gray, marginTop: 8 }}>
+			<Banner
+				image={BankAccountBanner}
+				title='Total Cash Balance'
+				amount={totalBalance}
+			>
+				<Text style={{ fontSize: 12, color: colors.platinum, marginTop: 8 }}>
 					Across {accounts.length} bank account
 					{accounts.length !== 1 ? 's' : ''}
 				</Text>
-			</View>
+			</Banner>
 			<Text style={[styles.subHeading, { marginTop: 24, marginBottom: 16 }]}>
 				Bank Accounts
 			</Text>
@@ -652,20 +644,12 @@ export const BankAccounts = ({
 					</Text>
 				</View>
 			) : (
-				<ScrollView
-					showsVerticalScrollIndicator={false}
-					style={{ maxHeight: 400 }}
-					contentContainerStyle={{ flexGrow: 1 }}
-				>
-					{accounts.map(renderAccountCard)}
-				</ScrollView>
+				<CardsView details={accounts} renderCard={renderAccountCard} />
 			)}
-			<TouchableOpacity
-				style={[styles.button, styles.buttonPrimary, { marginTop: 16 }]}
+			<AddDetailsButton
+				label='Bank Account'
 				onPress={() => setShowAddModal(true)}
-			>
-				<Text style={styles.buttonText}>+ Add Bank Account</Text>
-			</TouchableOpacity>
+			/>
 			{renderAddEditModal(false)}
 			{renderAddEditModal(true)}
 		</View>
