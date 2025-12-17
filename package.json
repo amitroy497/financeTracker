@@ -15,9 +15,8 @@
 		"version:patch": "npm install && git add . && git commit -m \"chore: update\" && npm version patch -m \"chore(release): bump patch to %s\" && git push --follow-tags",
 		"version:minor": "npm install && git add . && git commit -m \"chore: update\" && npm version minor -m \"chore(release): bump minor to %s\" && git push --follow-tags",
 		"version:major": "npm install && git add . && git commit -m \"chore: update\" && npm version major -m \"chore(release): bump major to %s\" && git push --follow-tags",
-		"auto:patch-build": "ts-node scripts/autoPatchBuild.cts",
 		"auto:version": "node scripts/autoVersionBump.mjs",
-		"build:apk-local": "ts-node scripts/localApkBuild.cts"
+		"build:apk-local": "node scripts/localApkBuild.mjs"
 	},
 	"dependencies": {
 		"@expo/vector-icons": "^15.0.3",
