@@ -569,8 +569,8 @@ export const NPSAccounts = ({
 										{isSubmitting
 											? 'Saving...'
 											: isEdit
-											? 'Update Account'
-											: 'Add Account'}
+											? 'Update NPS'
+											: 'Add NPS'}
 									</Text>
 								</TouchableOpacity>
 							</View>

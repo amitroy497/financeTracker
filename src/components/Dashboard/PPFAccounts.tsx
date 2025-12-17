@@ -455,7 +455,7 @@ export const PPFAccounts = ({
 								disabled={isSubmitting}
 							>
 								<Text style={styles.buttonText}>
-									{isSubmitting ? 'Adding...' : 'Add PPF Account'}
+									{isSubmitting ? 'Adding...' : 'Add PPF'}
 								</Text>
 							</TouchableOpacity>
 						</View>
