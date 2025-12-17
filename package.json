@@ -1,6 +1,6 @@
 {
   "name": "roytracker",
-  "version": "1.1.57",
+  "version": "1.1.58",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
