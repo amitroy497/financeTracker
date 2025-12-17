@@ -31,7 +31,7 @@ console.log(`Parsed: major=${major}, minor=${minor}, patch=${patch}`);
 // Apply version increment logic
 patch += 1;
 
-if (patch > 9) {
+if (patch > 58) {
 	console.log(`Patch ${patch} > 9, rolling over`);
 	patch = 0;
 	minor += 1;
