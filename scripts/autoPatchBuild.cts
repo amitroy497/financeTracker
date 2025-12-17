@@ -2,16 +2,11 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
+/** TYPES */
 interface ExpoConfig {
 	version?: string;
-	android?: {
-		versionCode?: number;
-		[key: string]: any;
-	};
-	ios?: {
-		buildNumber?: string;
-		[key: string]: any;
-	};
+	android?: { versionCode?: number };
+	ios?: { buildNumber?: string };
 	[key: string]: any;
 }
 
@@ -19,14 +14,16 @@ interface AppJson {
 	expo: ExpoConfig;
 }
 
-// ---- Read app.json ----
+/** STEP 1 — Load app.json */
 const appJsonPath = path.resolve('./app.json');
-const appJsonContent = fs.readFileSync(appJsonPath, 'utf8');
-const appJson: AppJson = JSON.parse(appJsonContent);
+const appJson: AppJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
 
-// ---- STEP 1: Increment version with proper rolling logic ----
-let version = appJson.expo.version || '1.0.0';
-let [major, minor, patch] = version.split('.').map(Number);
+/** STEP 2 — Increment version with proper rolling logic */
+let [major, minor, patch] = (appJson.expo.version || '1.0.0')
+	.split('.')
+	.map(Number);
+
+console.log(`Current version: ${major}.${minor}.${patch}`);
 
 // Apply version increment logic
 patch += 1;
@@ -44,31 +41,71 @@ if (patch > 9) {
 const newVersion = `${major}.${minor}.${patch}`;
 appJson.expo.version = newVersion;
 
-// ---- STEP 2: Convert version to versionCode ----
-// major.minor.patch → major*10000 + minor*100 + patch
+console.log(`New version: ${newVersion}`);
+
+/** STEP 3 — Sync versionCode + buildNumber */
 const versionCode = major * 10000 + minor * 100 + patch;
 
-// ---- Apply to android ----
 if (!appJson.expo.android) appJson.expo.android = {};
 appJson.expo.android.versionCode = versionCode;
 
-// ---- Apply to ios ----
 if (!appJson.expo.ios) appJson.expo.ios = {};
-appJson.expo.ios.buildNumber = versionCode.toString();
+appJson.expo.ios.buildNumber = String(versionCode);
 
-// ---- Save updated app.json ----
+/** STEP 4 — Save app.json FIRST, before running npm run version:patch */
 fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, 2));
 
-console.log('✔ Updated expo.version →', newVersion);
-console.log('✔ android.versionCode →', versionCode);
-console.log('✔ ios.buildNumber →', versionCode.toString());
+console.log('✔ Updated expo.version        →', newVersion);
+console.log('✔ Updated android.versionCode →', versionCode);
+console.log('✔ Updated ios.buildNumber     →', versionCode);
 
-// ---- STEP 3: Run git version bump ----
-console.log('✔ Running npm run version:patch...');
-execSync('npm run version:patch', { stdio: 'inherit' });
+/** STEP 5 — Instead of running npm run version:patch, create our own git commit and tag */
+console.log('✔ Creating git commit and tag...');
 
-// ---- STEP 4: Run EAS preview build ----
-console.log('✔ Running EAS preview build...');
-execSync('eas build -p android --profile preview', { stdio: 'inherit' });
+try {
+	// Stage the app.json changes
+	execSync('git add app.json', { stdio: 'inherit' });
 
-console.log('🎉 Finished! Version synced with git tag + EAS build started!');
+	// Commit the version bump
+	execSync(`git commit -m "chore: bump version to ${newVersion}"`, {
+		stdio: 'inherit',
+	});
+
+	// Create a git tag
+	execSync(`git tag -a "v${newVersion}" -m "Version ${newVersion}"`, {
+		stdio: 'inherit',
+	});
+
+	console.log('✔ Git version bump completed successfully');
+} catch (error) {
+	console.warn('⚠ Git operations failed. Continuing with APK build...');
+
+	// Handle error properly
+	if (error instanceof Error) {
+		console.warn('Error:', error.message);
+	} else {
+		console.warn('Unknown error occurred');
+	}
+}
+
+/** STEP 6 — Run prebuild to generate /android */
+console.log('✔ Running expo prebuild...');
+execSync('npx expo prebuild', { stdio: 'inherit' });
+
+/** STEP 7 — Build APK (Windows compatible) */
+console.log('✔ Building APK locally...');
+
+const isWindows = process.platform === 'win32';
+
+if (isWindows) {
+	execSync('cd android && gradlew.bat assembleRelease', { stdio: 'inherit' });
+} else {
+	execSync('cd android && ./gradlew assembleRelease', { stdio: 'inherit' });
+}
+
+console.log(`
+🎉 APK build complete!
+
+Location:
+android/app/build/outputs/apk/release/app-release.apk
+`);
