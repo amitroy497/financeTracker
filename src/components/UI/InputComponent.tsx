@@ -27,7 +27,6 @@ export const InputComponent = ({
 	setDropDownSearchValue,
 	handleDropDownSelectOption,
 	dropDownNotFoundText,
-	// Date picker props
 	isDatePicker = false,
 	onPressOpen,
 	showDatePicker,

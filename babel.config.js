@@ -18,6 +18,7 @@ module.exports = function (api) {
 						'@/hooks': './src/hooks',
 						'@/auth': './src/auth',
 						'@/screens': './src/screens',
+						'@/icons': './src/icons',
 					},
 				},
 			],
