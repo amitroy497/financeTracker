@@ -273,7 +273,6 @@ export const GoldETFs = ({
 		}
 	};
 
-	// Reset form function
 	const resetForm = () => {
 		setNewETF({
 			etfName: '',
