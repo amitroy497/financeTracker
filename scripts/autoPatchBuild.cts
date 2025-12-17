@@ -26,16 +26,18 @@ let [major, minor, patch] = (appJson.expo.version || '1.0.0')
 console.log(`Current version: ${major}.${minor}.${patch}`);
 
 // Apply version increment logic
-patch += 1;
-
-if (patch > 9) {
-	patch = 0; // Reset patch to 0
-	minor += 1; // Increment minor version
+if (patch === 9) {
+	// If patch is 9, reset to 0 and increment minor
+	patch = 0;
+	minor += 1;
 
 	if (minor > 9) {
-		minor = 0; // Reset minor to 0
-		major += 1; // Increment major version
+		minor = 0;
+		major += 1;
 	}
+} else {
+	// Otherwise just increment patch normally
+	patch += 1;
 }
 
 const newVersion = `${major}.${minor}.${patch}`;
@@ -77,15 +79,9 @@ try {
 	});
 
 	console.log('✔ Git version bump completed successfully');
-} catch (error) {
+} catch (error: any) {
 	console.warn('⚠ Git operations failed. Continuing with APK build...');
-
-	// Handle error properly
-	if (error instanceof Error) {
-		console.warn('Error:', error.message);
-	} else {
-		console.warn('Unknown error occurred');
-	}
+	console.warn('Error:', error?.message || 'Unknown error');
 }
 
 /** STEP 6 — Run prebuild to generate /android */
