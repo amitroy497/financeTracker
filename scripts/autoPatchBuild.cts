@@ -24,8 +24,6 @@ console.log(`Current version: ${currentVersion}`);
 
 let [major, minor, patch] = currentVersion.split('.').map(Number);
 
-/** STEP 3 — Apply rolling logic CORRECTLY */
-// Increment patch
 patch += 1;
 
 // Check if patch needs to roll over (when it becomes 10 or more)
