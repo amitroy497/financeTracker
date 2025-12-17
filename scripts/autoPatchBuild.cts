@@ -24,12 +24,22 @@ const appJsonPath = path.resolve('./app.json');
 const appJsonContent = fs.readFileSync(appJsonPath, 'utf8');
 const appJson: AppJson = JSON.parse(appJsonContent);
 
-// ---- STEP 1: Increment expo.version (patch) ----
+// ---- STEP 1: Increment version with proper rolling logic ----
 let version = appJson.expo.version || '1.0.0';
 let [major, minor, patch] = version.split('.').map(Number);
 
-// Increment patch
+// Apply version increment logic
 patch += 1;
+
+if (patch > 9) {
+	patch = 0; // Reset patch to 0
+	minor += 1; // Increment minor version
+
+	if (minor > 9) {
+		minor = 0; // Reset minor to 0
+		major += 1; // Increment major version
+	}
+}
 
 const newVersion = `${major}.${minor}.${patch}`;
 appJson.expo.version = newVersion;
@@ -53,7 +63,7 @@ console.log('✔ Updated expo.version →', newVersion);
 console.log('✔ android.versionCode →', versionCode);
 console.log('✔ ios.buildNumber →', versionCode.toString());
 
-// ---- STEP 3: Run git version bump (your existing script) ----
+// ---- STEP 3: Run git version bump ----
 console.log('✔ Running npm run version:patch...');
 execSync('npm run version:patch', { stdio: 'inherit' });
 

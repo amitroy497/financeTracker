@@ -18,12 +18,24 @@ interface AppJson {
 const appJsonPath = path.resolve('./app.json');
 const appJson: AppJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
 
-/** STEP 2 — Increment version (patch) */
+/** STEP 2 — Increment version with proper rolling logic */
 let [major, minor, patch] = (appJson.expo.version || '1.0.0')
 	.split('.')
 	.map(Number);
 
+// Apply version increment logic
 patch += 1;
+
+if (patch > 9) {
+	patch = 0; // Reset patch to 0
+	minor += 1; // Increment minor version
+
+	if (minor > 9) {
+		minor = 0; // Reset minor to 0
+		major += 1; // Increment major version
+	}
+}
+
 const newVersion = `${major}.${minor}.${patch}`;
 appJson.expo.version = newVersion;
 
