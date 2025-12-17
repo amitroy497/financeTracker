@@ -80,6 +80,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			);
 			setAuthState((prev) => ({ ...prev, isLoading: true }));
 
+			// Pass all credentials including firstName and lastName
 			const success = await authService.register(credentials);
 
 			if (success) {
@@ -92,6 +93,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				const loginCredentials: LoginCredentials = {
 					username: credentials.username,
 					password: credentials.password,
+					// Pass firstName and lastName if needed
+					firstName: credentials.firstName,
+					lastName: credentials.lastName,
 				};
 
 				return await login(loginCredentials);
@@ -102,6 +106,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		} catch (error: any) {
 			console.error('AuthProvider: Registration error:', error);
 			setAuthState((prev) => ({ ...prev, isLoading: false }));
+			throw error;
+		}
+	};
+
+	const updateProfile = async (profileData: {
+		firstName?: string;
+		lastName?: string;
+		email?: string;
+	}): Promise<boolean> => {
+		if (!authState.user) return false;
+
+		try {
+			console.log(
+				'AuthProvider: Updating profile for:',
+				authState.user.username
+			);
+			const success = await authService.updateUserProfile(
+				authState.user.id,
+				profileData
+			);
+
+			if (success) {
+				// Update current user state
+				setAuthState((prev) => ({
+					...prev,
+					user: prev.user ? { ...prev.user, ...profileData } : null,
+				}));
+			}
+
+			return success;
+		} catch (error) {
+			console.error('AuthProvider: Error updating profile:', error);
 			throw error;
 		}
 	};
@@ -200,7 +236,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		enableBiometric,
 		changePassword,
 		changePin,
-		updateEmail, // Add this to the context value
+		updateEmail,
+		updateProfile,
 	};
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

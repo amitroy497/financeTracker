@@ -23,7 +23,9 @@ export const AuthScreen = () => {
 
 	const [mode, setMode] = useState<AuthMode>('login');
 	const [username, setUsername] = useState('');
-	const [email, setEmail] = useState(''); // Add email state
+	const [firstName, setFirstName] = useState(''); // Add firstName state
+	const [lastName, setLastName] = useState(''); // Add lastName state
+	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [pin, setPin] = useState('');
@@ -34,8 +36,6 @@ export const AuthScreen = () => {
 	const [showAdminLogin, setShowAdminLogin] = useState(false);
 	const [adminUsername, setAdminUsername] = useState('admin');
 	const [adminPassword, setAdminPassword] = useState('');
-
-	// Add state for password visibility
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 	const [showAdminPassword, setShowAdminPassword] = useState(false);
@@ -106,11 +106,19 @@ export const AuthScreen = () => {
 			return;
 		}
 
+		// Validate first and last name
+		if (!firstName.trim() || !lastName.trim()) {
+			Alert.alert('Error', 'Please enter your first and last name');
+			return;
+		}
+
 		setIsSubmitting(true);
 		try {
 			const success = await register({
 				username,
-				email: email || undefined, // Pass email to register function
+				firstName: firstName.trim(), // Add firstName
+				lastName: lastName.trim(), // Add lastName
+				email: email || undefined,
 				password,
 				pin: pin || undefined,
 				biometricEnabled: enableBio,
@@ -129,7 +137,6 @@ export const AuthScreen = () => {
 		}
 	};
 
-	// Email validation function
 	const isValidEmail = (email: string): boolean => {
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		return emailRegex.test(email);
@@ -172,7 +179,9 @@ export const AuthScreen = () => {
 
 	const resetForm = (): void => {
 		setUsername('');
-		setEmail(''); // Reset email
+		setFirstName('');
+		setLastName('');
+		setEmail('');
 		setPassword('');
 		setConfirmPassword('');
 		setPin('');
@@ -182,7 +191,6 @@ export const AuthScreen = () => {
 		setAdminUsername('admin');
 		setAdminPassword('');
 		setShowAdminLogin(false);
-		// Reset visibility states
 		setShowPassword(false);
 		setShowConfirmPassword(false);
 		setShowAdminPassword(false);
@@ -581,6 +589,20 @@ export const AuthScreen = () => {
 				) : (
 					/* REGISTER FORM */
 					<>
+						<TextInput
+							style={styles.input}
+							placeholder='First Name *'
+							value={firstName}
+							onChangeText={setFirstName}
+							placeholderTextColor={colors.gray}
+						/>
+						<TextInput
+							style={styles.input}
+							placeholder='Last Name *'
+							value={lastName}
+							onChangeText={setLastName}
+							placeholderTextColor={colors.gray}
+						/>
 						{/* Email Field (Optional) */}
 						<TextInput
 							style={styles.input}
@@ -592,11 +614,10 @@ export const AuthScreen = () => {
 							keyboardType='email-address'
 						/>
 
-						{/* Password with Eye Icon */}
 						<View style={{ position: 'relative', marginBottom: 16 }}>
 							<TextInput
 								style={styles.input}
-								placeholder='Password'
+								placeholder='Password *'
 								value={password}
 								onChangeText={setPassword}
 								placeholderTextColor={colors.gray}
@@ -618,12 +639,10 @@ export const AuthScreen = () => {
 								/>
 							</TouchableOpacity>
 						</View>
-
-						{/* Confirm Password with Eye Icon */}
 						<View style={{ position: 'relative', marginBottom: 16 }}>
 							<TextInput
 								style={styles.input}
-								placeholder='Confirm Password'
+								placeholder='Confirm Password *'
 								value={confirmPassword}
 								onChangeText={setConfirmPassword}
 								placeholderTextColor={colors.gray}
@@ -711,6 +730,11 @@ export const AuthScreen = () => {
 								{ backgroundColor: colors.lightGray, marginTop: 12 },
 							]}
 						>
+							<Text
+								style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}
+							>
+								• Fields marked with * are required
+							</Text>
 							<Text
 								style={{ color: colors.gray, fontSize: 12, marginBottom: 4 }}
 							>

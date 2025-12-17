@@ -77,10 +77,11 @@ export interface FileInfoProps {
 	onRefresh: () => void;
 }
 
-// Add these new types for authentication
 export interface User {
 	id: string;
 	username: string;
+	firstName?: string;
+	lastName?: string;
 	email?: string;
 	passwordHash: string;
 	pinHash?: string;
@@ -92,6 +93,8 @@ export interface User {
 
 export interface AuthCredentials {
 	username: string;
+	firstName?: string;
+	lastName?: string;
 	email?: string;
 	password: string;
 	pin?: string;
@@ -105,6 +108,8 @@ export interface LoginCredentials {
 	password?: string;
 	pin?: string;
 	useBiometric?: boolean;
+	firstName?: string;
+	lastName?: string;
 }
 
 export interface AuthState {
@@ -125,6 +130,12 @@ export interface AuthContextType extends AuthState {
 	) => Promise<boolean>;
 	changePin: (newPin: string) => Promise<boolean>;
 	updateEmail: (newEmail: string) => Promise<boolean>;
+	updateProfile: (profileData: {
+		// ADD THIS LINE
+		firstName?: string;
+		lastName?: string;
+		email?: string;
+	}) => Promise<boolean>; // ADD THIS LINE
 }
 
 // Add these new types for assets and dashboard
@@ -484,6 +495,8 @@ export interface UserDataExport {
 	exportDate: string;
 	userId: string;
 	username: string;
+	firstName?: string;
+	lastName?: string;
 	assets: AssetData;
 	expenses: any[];
 	savings: any[];
@@ -682,12 +695,16 @@ export interface CreateUserData {
 	username: string;
 	email?: string;
 	password: string;
+	firstName?: string;
+	lastName?: string;
 	isAdmin?: boolean;
 	biometricEnabled?: boolean;
 }
 
 export interface UpdateUserData {
 	username?: string;
+	firstName?: string; // Add this
+	lastName?: string; // Add this
 	email?: string;
 	isAdmin?: boolean;
 	biometricEnabled?: boolean;

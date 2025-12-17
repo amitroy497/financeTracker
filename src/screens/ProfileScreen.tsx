@@ -24,11 +24,12 @@ export const ProfileScreen = () => {
 		changePassword,
 		changePin,
 		biometricSupported,
+		updateProfile,
 	} = useAuth();
 
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [activeSection, setActiveSection] = useState<
-		'main' | 'email' | 'password' | 'pin' | 'biometric' | 'backup'
+		'main' | 'profile' | 'email' | 'password' | 'pin' | 'biometric' | 'backup'
 	>('main');
 	const [exportInfo, setExportInfo] = useState<{
 		lastExport?: string;
@@ -36,6 +37,9 @@ export const ProfileScreen = () => {
 		itemsCount: number;
 	} | null>(null);
 
+	// Add states for profile fields
+	const [firstName, setFirstName] = useState(user?.firstName || '');
+	const [lastName, setLastName] = useState(user?.lastName || '');
 	const [email, setEmail] = useState(user?.email || '');
 	const [currentPasswordForEmail, setCurrentPasswordForEmail] = useState('');
 
@@ -55,6 +59,14 @@ export const ProfileScreen = () => {
 		if (user && activeSection === 'backup') {
 			loadExportInfo();
 		}
+
+		// Update form fields when user changes
+		if (user) {
+			setFirstName(user.firstName || '');
+			setLastName(user.lastName || '');
+			setEmail(user.email || '');
+			setUseBiometric(user.biometricEnabled || false);
+		}
 	}, [user, activeSection]);
 
 	const loadExportInfo = async (): Promise<void> => {
@@ -66,6 +78,47 @@ export const ProfileScreen = () => {
 		} catch (error) {
 			console.error('Error loading export info:', error);
 		}
+	};
+
+	// Add new function to update profile
+	const handleUpdateProfile = async (): Promise<void> => {
+		if (!firstName.trim() || !lastName.trim()) {
+			Alert.alert('Error', 'Please enter both first and last name');
+			return;
+		}
+
+		// Email validation if provided
+		if (email && !isValidEmail(email)) {
+			Alert.alert('Error', 'Please enter a valid email address');
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			const success = await updateProfile({
+				firstName: firstName.trim(),
+				lastName: lastName.trim(),
+				email: email.trim() || undefined,
+			});
+
+			if (success) {
+				Alert.alert('Success', 'Profile updated successfully!');
+				setActiveSection('main');
+				resetForms();
+			} else {
+				Alert.alert('Error', 'Failed to update profile');
+			}
+		} catch (error: any) {
+			Alert.alert('Error', error.message || 'Failed to update profile');
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	// Email validation function
+	const isValidEmail = (email: string): boolean => {
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		return emailRegex.test(email);
 	};
 	const handleExportData = async (): Promise<void> => {
 		if (!user) return;
@@ -346,6 +399,8 @@ export const ProfileScreen = () => {
 		);
 	};
 	const resetForms = (): void => {
+		setFirstName(user?.firstName || '');
+		setLastName(user?.lastName || '');
 		setEmail(user?.email || '');
 		setCurrentPasswordForEmail('');
 		setCurrentPassword('');
@@ -785,6 +840,84 @@ export const ProfileScreen = () => {
 			</ScrollView>
 		);
 	}
+	if (activeSection === 'profile') {
+		return (
+			<ScrollView
+				style={styles.container}
+				contentContainerStyle={{ padding: 20 }}
+			>
+				<View style={{ marginBottom: 30 }}>
+					<TouchableOpacity
+						onPress={handleBackToMain}
+						style={{ marginBottom: 15 }}
+					>
+						<Text
+							style={{
+								color: colors.primary,
+								fontSize: 22,
+								fontWeight: 'bold',
+							}}
+						>
+							←
+						</Text>
+					</TouchableOpacity>
+					<Text style={styles.header}>Edit Profile</Text>
+				</View>
+
+				{/* First Name */}
+				<Text style={[styles.label, { marginBottom: 8 }]}>First Name</Text>
+				<TextInput
+					style={styles.input}
+					placeholder='First Name'
+					value={firstName}
+					onChangeText={setFirstName}
+					placeholderTextColor={colors.gray}
+				/>
+
+				{/* Last Name */}
+				<Text style={[styles.label, { marginBottom: 8, marginTop: 16 }]}>
+					Last Name
+				</Text>
+				<TextInput
+					style={styles.input}
+					placeholder='Last Name'
+					value={lastName}
+					onChangeText={setLastName}
+					placeholderTextColor={colors.gray}
+				/>
+
+				{/* Email */}
+				<Text style={[styles.label, { marginBottom: 8, marginTop: 16 }]}>
+					Email Address
+				</Text>
+				<TextInput
+					style={styles.input}
+					placeholder='Email Address (Optional)'
+					value={email}
+					onChangeText={setEmail}
+					placeholderTextColor={colors.gray}
+					autoCapitalize='none'
+					keyboardType='email-address'
+				/>
+
+				<TouchableOpacity
+					style={[
+						styles.button,
+						styles.buttonPrimary,
+						{ marginTop: 24, marginBottom: 16 },
+					]}
+					onPress={handleUpdateProfile}
+					disabled={isLoading}
+				>
+					{isLoading ? (
+						<ActivityIndicator color={colors.white} />
+					) : (
+						<Text style={styles.buttonText}>Update Profile</Text>
+					)}
+				</TouchableOpacity>
+			</ScrollView>
+		);
+	}
 	if (activeSection !== 'main') {
 		return (
 			<ScrollView
@@ -794,7 +927,7 @@ export const ProfileScreen = () => {
 				<View style={{ marginBottom: 30 }}>
 					<TouchableOpacity
 						onPress={handleBackToMain}
-						style={{ marginRight: 15 }}
+						style={{ marginBottom: 15 }}
 					>
 						<Text
 							style={{
@@ -820,42 +953,6 @@ export const ProfileScreen = () => {
 							: 'Profile Settings'}
 					</Text>
 				</View>
-				{activeSection === 'email' && (
-					<>
-						<TextInput
-							style={styles.input}
-							placeholder='New Email Address'
-							value={email}
-							onChangeText={setEmail}
-							placeholderTextColor={colors.gray}
-							autoCapitalize='none'
-							keyboardType='email-address'
-						/>
-						<TextInput
-							style={styles.input}
-							placeholder='Current Password'
-							value={currentPasswordForEmail}
-							onChangeText={setCurrentPasswordForEmail}
-							placeholderTextColor={colors.gray}
-							secureTextEntry
-						/>
-						<TouchableOpacity
-							style={[
-								styles.button,
-								styles.buttonPrimary,
-								{ marginBottom: 16 },
-							]}
-							onPress={handleUpdateEmail}
-							disabled={isLoading}
-						>
-							{isLoading ? (
-								<ActivityIndicator color={colors.white} />
-							) : (
-								<Text style={styles.buttonText}>Update Email</Text>
-							)}
-						</TouchableOpacity>
-					</>
-				)}
 
 				{/* Change Password Section */}
 				{activeSection === 'password' && (
@@ -1050,7 +1147,12 @@ export const ProfileScreen = () => {
 			contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
 		>
 			<Text style={styles.header}>👤 Profile Settings</Text>
-			<View style={[styles.card, { marginBottom: 24 }]}>
+
+			{/* User Profile Card */}
+			<TouchableOpacity
+				style={[styles.card, { marginBottom: 24 }]}
+				onPress={() => setActiveSection('profile')}
+			>
 				<View style={[styles.row, { alignItems: 'center', marginBottom: 12 }]}>
 					<Text style={{ fontSize: 24, marginRight: 12 }}>👤</Text>
 					<View style={{ flex: 1 }}>
@@ -1060,7 +1162,7 @@ export const ProfileScreen = () => {
 							<Text
 								style={{ color: colors.dark, fontSize: 18, fontWeight: '600' }}
 							>
-								{user?.username}
+								{user?.firstName} {user?.lastName}
 							</Text>
 							{user?.isAdmin && (
 								<View
@@ -1085,44 +1187,23 @@ export const ProfileScreen = () => {
 							)}
 						</View>
 						<Text style={{ color: colors.gray, fontSize: 14, marginTop: 2 }}>
+							@{user?.username}
+						</Text>
+						<Text style={{ color: colors.gray, fontSize: 12, marginTop: 2 }}>
 							{user?.email || 'No email set'}
 						</Text>
 					</View>
+					<Text style={{ color: colors.primary, fontSize: 18 }}>→</Text>
 				</View>
 				<Text style={{ color: colors.gray, fontSize: 12 }}>
 					Member since {new Date(user?.createdAt || '').toLocaleDateString()}
 				</Text>
-			</View>
+			</TouchableOpacity>
+
 			<Text style={[styles.subheader, { marginBottom: 16 }]}>
 				Security Settings
 			</Text>
 			{renderThemeSettings()}
-			<TouchableOpacity
-				style={[styles.card, { marginBottom: 12 }]}
-				onPress={() => setActiveSection('email')}
-			>
-				<View
-					style={[
-						styles.row,
-						{ justifyContent: 'space-between', alignItems: 'center' },
-					]}
-				>
-					<View style={[styles.row, { alignItems: 'center', flex: 1 }]}>
-						<Text style={{ fontSize: 20, marginRight: 12 }}>📧</Text>
-						<View style={{ flex: 1 }}>
-							<Text
-								style={{ color: colors.dark, fontSize: 16, fontWeight: '600' }}
-							>
-								Email Address
-							</Text>
-							<Text style={{ color: colors.gray, fontSize: 14 }}>
-								{user?.email || 'Not set'}
-							</Text>
-						</View>
-					</View>
-					<Text style={{ color: colors.primary }}>→</Text>
-				</View>
-			</TouchableOpacity>
 			<TouchableOpacity
 				style={[styles.card, { marginBottom: 12 }]}
 				onPress={() => setActiveSection('password')}
@@ -1149,6 +1230,7 @@ export const ProfileScreen = () => {
 					<Text style={{ color: colors.primary }}>→</Text>
 				</View>
 			</TouchableOpacity>
+
 			<TouchableOpacity
 				style={[styles.card, { marginBottom: 12 }]}
 				onPress={() => setActiveSection('pin')}
@@ -1175,6 +1257,7 @@ export const ProfileScreen = () => {
 					<Text style={{ color: colors.primary }}>→</Text>
 				</View>
 			</TouchableOpacity>
+
 			<TouchableOpacity
 				style={[styles.card, { marginBottom: 12 }]}
 				onPress={() => setActiveSection('biometric')}
@@ -1201,6 +1284,7 @@ export const ProfileScreen = () => {
 					<Text style={{ color: colors.primary }}>→</Text>
 				</View>
 			</TouchableOpacity>
+
 			{!user?.isAdmin && (
 				<TouchableOpacity
 					style={[styles.card, { marginBottom: 24 }]}
@@ -1233,6 +1317,7 @@ export const ProfileScreen = () => {
 					</View>
 				</TouchableOpacity>
 			)}
+
 			{user?.isAdmin && (
 				<View
 					style={[
@@ -1255,6 +1340,7 @@ export const ProfileScreen = () => {
 					</View>
 				</View>
 			)}
+
 			<View style={[styles.card, { marginBottom: 24 }]}>
 				<Text style={[styles.subheader, { marginBottom: 12 }]}>
 					ℹ️ App Information
@@ -1294,6 +1380,7 @@ export const ProfileScreen = () => {
 					<Text style={{ color: colors.dark, fontSize: 12 }}>1.0.0</Text>
 				</View>
 			</View>
+
 			<TouchableOpacity
 				style={[styles.button, styles.buttonDanger]}
 				onPress={() => {

@@ -106,6 +106,8 @@ const createAdminUser = async (): Promise<boolean> => {
 				Date.now().toString() +
 				Math.random().toString(36).substr(2, 9),
 			username: ADMIN_CONFIG.username,
+			firstName: 'Admin', // Add default firstName
+			lastName: 'User', // Add default lastName
 			email: ADMIN_CONFIG.email,
 			passwordHash,
 			biometricEnabled: false,
@@ -184,6 +186,8 @@ export const authService = {
 			const newUser: User = {
 				id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
 				username: credentials.username,
+				firstName: credentials.firstName || '', // Add firstName
+				lastName: credentials.lastName || '', // Add lastName
 				email: credentials.email,
 				passwordHash,
 				pinHash,
@@ -270,6 +274,8 @@ export const authService = {
 								Date.now().toString() +
 								Math.random().toString(36).substr(2, 9),
 							username: ADMIN_CONFIG.username,
+							firstName: 'Admin', // Add default firstName
+							lastName: 'User', // Add default lastName
 							email: ADMIN_CONFIG.email,
 							passwordHash: await hashData(ADMIN_CONFIG.password),
 							biometricEnabled: false,
@@ -296,6 +302,8 @@ export const authService = {
 			}
 
 			console.log('User found:', user.username);
+			console.log('User firstName:', user.firstName); // Add this log
+			console.log('User lastName:', user.lastName); // Add this log
 			console.log('User email:', user.email);
 			console.log('User isAdmin:', user.isAdmin);
 			console.log('User biometricEnabled:', user.biometricEnabled);
@@ -343,6 +351,71 @@ export const authService = {
 			return null;
 		} catch (error) {
 			console.error('=== LOGIN ERROR ===', error);
+			throw error;
+		}
+	},
+
+	// Update user profile (including firstName and lastName)
+	updateUserProfile: async (
+		userId: string,
+		profileData: {
+			firstName?: string;
+			lastName?: string;
+			email?: string;
+		}
+	): Promise<boolean> => {
+		try {
+			await initializeUsersFile();
+
+			const fileContent = await FileSystem.readAsStringAsync(USERS_FILE_PATH);
+			const data = JSON.parse(fileContent);
+
+			const userIndex = data.users.findIndex(
+				(user: User) => user.id === userId
+			);
+			if (userIndex === -1) {
+				throw new Error('User not found');
+			}
+
+			const user = data.users[userIndex];
+
+			// Update fields if provided
+			if (profileData.firstName !== undefined) {
+				user.firstName = profileData.firstName;
+			}
+
+			if (profileData.lastName !== undefined) {
+				user.lastName = profileData.lastName;
+			}
+
+			// Validate and update email if provided
+			if (profileData.email !== undefined) {
+				if (!isValidEmail(profileData.email)) {
+					throw new Error('Please enter a valid email address');
+				}
+
+				// Check if email already exists (excluding current user)
+				const existingEmail = data.users.find(
+					(u: User, index: number) =>
+						u.email === profileData.email && index !== userIndex
+				);
+				if (existingEmail) {
+					throw new Error('Email already registered to another user');
+				}
+
+				user.email = profileData.email;
+			}
+
+			// Save updated user data
+			data.users[userIndex] = user;
+			await FileSystem.writeAsStringAsync(
+				USERS_FILE_PATH,
+				JSON.stringify(data, null, 2)
+			);
+
+			return true;
+		} catch (error) {
+			console.error('Error updating user profile:', error);
 			throw error;
 		}
 	},
@@ -556,8 +629,6 @@ export const authService = {
 		}
 	},
 
-	// Add these methods to the existing authService object
-
 	// Create a new user (admin only)
 	createUser: async (
 		adminId: string,
@@ -603,6 +674,8 @@ export const authService = {
 			const newUser: User = {
 				id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
 				username: userData.username,
+				firstName: userData.firstName || '', // Add firstName
+				lastName: userData.lastName || '', // Add lastName
 				email: userData.email,
 				passwordHash,
 				biometricEnabled: userData.biometricEnabled || false,
@@ -693,10 +766,18 @@ export const authService = {
 				}
 			}
 
-			// Update user data
+			// Update user data (including firstName and lastName)
 			data.users[userIndex] = {
 				...user,
 				username: updateData.username || user.username,
+				firstName:
+					updateData.firstName !== undefined
+						? updateData.firstName
+						: user.firstName, // Add firstName update
+				lastName:
+					updateData.lastName !== undefined
+						? updateData.lastName
+						: user.lastName, // Add lastName update
 				email: updateData.email !== undefined ? updateData.email : user.email,
 				isAdmin:
 					updateData.isAdmin !== undefined ? updateData.isAdmin : user.isAdmin,
