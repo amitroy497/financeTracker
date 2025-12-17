@@ -18,33 +18,39 @@ interface AppJson {
 const appJsonPath = path.resolve('./app.json');
 const appJson: AppJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
 
+console.log('=== DEBUG START ===');
+console.log('Initial app.json version:', appJson.expo.version);
+
 /** STEP 2 — Increment version with proper rolling logic */
 let [major, minor, patch] = (appJson.expo.version || '1.0.0')
 	.split('.')
 	.map(Number);
 
-console.log(`Current version: ${major}.${minor}.${patch}`);
+console.log(`Parsed: major=${major}, minor=${minor}, patch=${patch}`);
 
 // Apply version increment logic
-if (patch >= 9) {
-	// If patch is 9 or greater, reset to 0 and increment minor
+patch += 1;
+
+if (patch > 9) {
+	console.log(`Patch ${patch} > 9, rolling over`);
 	patch = 0;
 	minor += 1;
+	console.log(`Minor incremented to ${minor}`);
 
 	if (minor > 9) {
+		console.log(`Minor ${minor} > 9, rolling over`);
 		minor = 0;
 		major += 1;
+		console.log(`Major incremented to ${major}`);
 	}
 } else {
-	// Otherwise just increment patch normally
-	patch += 1;
+	console.log(`Patch ${patch} <= 9, simple increment`);
 }
-// This would make 1.1.54 -> 1.2.0
 
 const newVersion = `${major}.${minor}.${patch}`;
 appJson.expo.version = newVersion;
 
-console.log(`New version: ${newVersion}`);
+console.log(`New version calculated: ${newVersion}`);
 
 /** STEP 3 — Sync versionCode + buildNumber */
 const versionCode = major * 10000 + minor * 100 + patch;
@@ -55,41 +61,78 @@ appJson.expo.android.versionCode = versionCode;
 if (!appJson.expo.ios) appJson.expo.ios = {};
 appJson.expo.ios.buildNumber = String(versionCode);
 
-/** STEP 4 — Save app.json FIRST, before running npm run version:patch */
+/** STEP 4 — Save app.json */
 fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, 2));
 
-console.log('✔ Updated expo.version        →', newVersion);
-console.log('✔ Updated android.versionCode →', versionCode);
-console.log('✔ Updated ios.buildNumber     →', versionCode);
+console.log('Saved app.json with new version:', newVersion);
 
-/** STEP 5 — Instead of running npm run version:patch, create our own git commit and tag */
-console.log('✔ Creating git commit and tag...');
+// Verify it was saved
+const verifyAppJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
+console.log(
+	'Verified app.json version after save:',
+	verifyAppJson.expo.version
+);
 
+/** STEP 5 — Check what npm run version:patch does */
+console.log('\n=== Checking npm run version:patch ===');
 try {
-	// Stage the app.json changes
-	execSync('git add app.json', { stdio: 'inherit' });
+	// Check package.json for version:patch script
+	const packageJsonPath = path.resolve('./package.json');
+	const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
-	// Commit the version bump
-	execSync(`git commit -m "chore: bump version to ${newVersion}"`, {
-		stdio: 'inherit',
-	});
+	if (packageJson.scripts && packageJson.scripts['version:patch']) {
+		console.log(
+			'version:patch script found:',
+			packageJson.scripts['version:patch']
+		);
 
-	// Create a git tag
-	execSync(`git tag -a "v${newVersion}" -m "Version ${newVersion}"`, {
-		stdio: 'inherit',
-	});
+		// Also check package.json version
+		console.log('Current package.json version:', packageJson.version);
 
-	console.log('✔ Git version bump completed successfully');
-} catch (error: any) {
-	console.warn('⚠ Git operations failed. Continuing with APK build...');
-	console.warn('Error:', error?.message || 'Unknown error');
+		// Update package.json version to match
+		packageJson.version = newVersion;
+		fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+		console.log('Updated package.json version to:', newVersion);
+	} else {
+		console.log('No version:patch script found in package.json');
+	}
+} catch (error) {
+	console.log('Error checking package.json:', error);
 }
 
-/** STEP 6 — Run prebuild to generate /android */
+/** STEP 6 — Run npm run version:patch */
+console.log('\n=== Running npm run version:patch ===');
+try {
+	execSync('npm run version:patch', { stdio: 'inherit' });
+} catch (error: any) {
+	console.log('Error running version:patch:', error?.message);
+}
+
+// Check what happened to app.json after version:patch
+const afterAppJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
+console.log('\n=== After npm run version:patch ===');
+console.log('App.json version after version:patch:', afterAppJson.expo.version);
+console.log(
+	'App.json android.versionCode:',
+	afterAppJson.expo.android?.versionCode
+);
+console.log('App.json ios.buildNumber:', afterAppJson.expo.ios?.buildNumber);
+
+// Check git status
+console.log('\n=== Git status ===');
+try {
+	execSync('git status', { stdio: 'inherit' });
+} catch (error) {
+	console.log('Could not check git status');
+}
+
+console.log('\n=== DEBUG END ===\n');
+
+/** STEP 7 — Run prebuild to generate /android */
 console.log('✔ Running expo prebuild...');
 execSync('npx expo prebuild', { stdio: 'inherit' });
 
-/** STEP 7 — Build APK (Windows compatible) */
+/** STEP 8 — Build APK (Windows compatible) */
 console.log('✔ Building APK locally...');
 
 const isWindows = process.platform === 'win32';
