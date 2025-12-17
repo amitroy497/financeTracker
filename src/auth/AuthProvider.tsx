@@ -128,14 +128,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			);
 
 			if (success) {
-				// Update current user state
 				setAuthState((prev) => ({
 					...prev,
 					user: prev.user ? { ...prev.user, ...profileData } : null,
 				}));
+				return true;
 			}
-
-			return success;
+			return false;
 		} catch (error) {
 			console.error('AuthProvider: Error updating profile:', error);
 			throw error;
