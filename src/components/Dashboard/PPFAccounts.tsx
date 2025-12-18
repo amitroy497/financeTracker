@@ -56,8 +56,16 @@ export const PPFAccounts = ({
 			year: string;
 			amount: string;
 			interest: string;
+			isFirstYear: boolean; // Flag to identify first year
 		}>
-	>([{ year: getCurrentFinancialYear(), amount: '', interest: '' }]);
+	>([
+		{
+			year: getCurrentFinancialYear(),
+			amount: '',
+			interest: '',
+			isFirstYear: true,
+		},
+	]);
 
 	// Calculate maturity date (15 years from start date)
 	const calculateMaturityDate = (startDate: string): string => {
@@ -76,23 +84,26 @@ export const PPFAccounts = ({
 		return `${year}-${month}-${day}`;
 	};
 
+	// Get financial year from date
+	const getFinancialYearFromDate = (date: Date): string => {
+		const year = date.getFullYear();
+		const month = date.getMonth() + 1; // January is 0
+
+		if (month >= 4) {
+			// April to December - FY is current year to next year
+			return `${year}-${(year + 1).toString().slice(-2)}`;
+		} else {
+			// January to March - FY is previous year to current year
+			return `${year - 1}-${year.toString().slice(-2)}`;
+		}
+	};
+
 	// Get suggested financial years based on start date
 	const getSuggestedFinancialYears = (startDate: string): string[] => {
 		if (!startDate) return [getCurrentFinancialYear()];
 
 		const start = new Date(startDate);
-		const startYear = start.getFullYear();
-		const startMonth = start.getMonth() + 1;
-
-		// Determine the financial year of start
-		let currentFYStartYear = startYear;
-		if (startMonth >= 4) {
-			// FY starts in April of current year
-			currentFYStartYear = startYear;
-		} else {
-			// FY started in April of previous year
-			currentFYStartYear = startYear - 1;
-		}
+		const startFinancialYear = getFinancialYearFromDate(start);
 
 		const suggestedYears: string[] = [];
 		const currentDate = new Date();
@@ -101,8 +112,11 @@ export const PPFAccounts = ({
 
 		let maxFYEndYear = currentMonth >= 4 ? currentYear + 1 : currentYear;
 
+		// Extract the start year from the financial year string
+		const startYear = parseInt(startFinancialYear.split('-')[0]);
+
 		// Generate financial years from start to current (or next)
-		for (let year = currentFYStartYear; year <= maxFYEndYear; year++) {
+		for (let year = startYear; year <= maxFYEndYear; year++) {
 			const fy = `${year}-${(year + 1).toString().slice(-2)}`;
 			suggestedYears.push(fy);
 		}
@@ -188,8 +202,13 @@ export const PPFAccounts = ({
 		setFinancialYears(updatedYears);
 	};
 
-	// Handle financial year change
+	// Handle financial year change (only for non-first years)
 	const handleFYYearChange = (index: number, year: string) => {
+		// Don't allow changing the first year
+		if (financialYears[index].isFirstYear) {
+			return;
+		}
+
 		const updatedYears = [...financialYears];
 		updatedYears[index] = { ...updatedYears[index], year };
 		setFinancialYears(updatedYears);
@@ -259,12 +278,20 @@ export const PPFAccounts = ({
 			const maturityDate = calculateMaturityDate(formattedDate);
 			updatedAccount.maturityDate = maturityDate;
 
+			// Get financial year from start date
+			const startFinancialYear = getFinancialYearFromDate(selectedDate);
+
+			// Update the first financial year based on start date
+			const updatedYears = [...financialYears];
+			updatedYears[0] = {
+				...updatedYears[0],
+				year: startFinancialYear,
+				isFirstYear: true,
+			};
+
 			// Update financial years based on new start date
 			const suggestedYears = getSuggestedFinancialYears(formattedDate);
 			if (suggestedYears.length > 0) {
-				const updatedYears = [...financialYears];
-				// Update first year to the earliest suggested year
-				updatedYears[0] = { ...updatedYears[0], year: suggestedYears[0] };
 				setFinancialYears(updatedYears);
 			}
 
@@ -298,10 +325,11 @@ export const PPFAccounts = ({
 
 		// Convert annual contributions to financialYears array
 		const fyEntries = Object.entries(annualContributions).map(
-			([year, data]: [string, any]) => ({
+			([year, data]: [string, any], index) => ({
 				year,
 				amount: data.amount?.toString() || '',
 				interest: data.interest?.toString() || '',
+				isFirstYear: index === 0, // First entry is the first year
 			})
 		);
 
@@ -311,6 +339,7 @@ export const PPFAccounts = ({
 				year: account.financialYear || getCurrentFinancialYear(),
 				amount: account.totalDeposits?.toString() || '',
 				interest: '',
+				isFirstYear: true,
 			});
 		}
 
@@ -540,7 +569,12 @@ export const PPFAccounts = ({
 		setStartDateInput('');
 		setSelectedDate(new Date());
 		setFinancialYears([
-			{ year: getCurrentFinancialYear(), amount: '', interest: '' },
+			{
+				year: getCurrentFinancialYear(),
+				amount: '',
+				interest: '',
+				isFirstYear: true,
+			},
 		]);
 	};
 
@@ -670,13 +704,13 @@ export const PPFAccounts = ({
 
 		setFinancialYears([
 			...financialYears,
-			{ year: nextYear, amount: '', interest: '' },
+			{ year: nextYear, amount: '', interest: '', isFirstYear: false },
 		]);
 	};
 
-	// Remove a financial year
+	// Remove a financial year (cannot remove first year)
 	const removeFinancialYear = (index: number) => {
-		if (financialYears.length > 1) {
+		if (financialYears.length > 1 && !financialYears[index].isFirstYear) {
 			const updatedYears = [...financialYears];
 			updatedYears.splice(index, 1);
 			setFinancialYears(updatedYears);
@@ -890,7 +924,7 @@ export const PPFAccounts = ({
 										onPressEdit={() => handleEditAccount(account)}
 										onPressDelete={() =>
 											handleDeleteAccount(
-												account.id,
+												account?.id,
 												account?.accountNumber || ''
 											)
 										}
@@ -971,6 +1005,7 @@ export const PPFAccounts = ({
 											value={fy.year}
 											onChangeText={(text) => handleFYYearChange(index, text)}
 											placeholderTextColor={colors.gray}
+											editable={!fy.isFirstYear} // First year is not editable
 										/>
 									</View>
 									<View style={{ flex: 2 }}>
@@ -995,7 +1030,7 @@ export const PPFAccounts = ({
 											keyboardType='decimal-pad'
 										/>
 									</View>
-									{financialYears.length > 1 && (
+									{financialYears.length > 1 && !fy.isFirstYear && (
 										<TouchableOpacity
 											style={{
 												width: 40,
@@ -1217,6 +1252,7 @@ export const PPFAccounts = ({
 											value={fy.year}
 											onChangeText={(text) => handleFYYearChange(index, text)}
 											placeholderTextColor={colors.gray}
+											editable={!fy.isFirstYear} // First year is not editable
 										/>
 									</View>
 									<View style={{ flex: 2 }}>
@@ -1241,7 +1277,7 @@ export const PPFAccounts = ({
 											keyboardType='decimal-pad'
 										/>
 									</View>
-									{financialYears.length > 1 && (
+									{financialYears.length > 1 && !fy.isFirstYear && (
 										<TouchableOpacity
 											style={{
 												width: 40,
@@ -1393,10 +1429,7 @@ export const PPFAccounts = ({
 					</ScrollView>
 				</View>
 			</Modal>
-
-			{/* Date Picker Component */}
 			{renderDatePicker()}
-
 			<AddDetailsButton
 				label='PPF Account'
 				onPress={() => setShowAddModal(true)}
