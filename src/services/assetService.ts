@@ -1,4 +1,5 @@
 import {
+	AccountTypes,
 	AssetData,
 	BankAccount,
 	CreateBankAccountData,
@@ -89,6 +90,14 @@ const calculateMaturityDate = (startDate: string, tenure: number): string => {
 	return maturity.toISOString().split('T')[0];
 };
 
+// Calculate PPF maturity date (15 years from start date)
+const calculatePPFMaturityDate = (startDate: string): string => {
+	const start = new Date(startDate);
+	const maturity = new Date(start);
+	maturity.setFullYear(maturity.getFullYear() + 15);
+	return maturity.toISOString().split('T')[0];
+};
+
 // Calculate current value for funds
 const calculateFundCurrentValue = (units: number, nav: number): number => {
 	return parseFloat((units * nav).toFixed(2));
@@ -112,6 +121,19 @@ const calculateYearsToMaturity = (maturityDate: string): number => {
 	const diffTime = maturity.getTime() - today.getTime();
 	const years = Math.max(0, diffTime / (1000 * 60 * 60 * 24 * 365.25));
 	return parseFloat(years.toFixed(2));
+};
+
+// Get current financial year
+const getCurrentFinancialYear = (): string => {
+	const now = new Date();
+	const year = now.getFullYear();
+	const month = now.getMonth() + 1;
+
+	if (month >= 4) {
+		return `${year}-${(year + 1).toString().slice(-2)}`;
+	} else {
+		return `${year - 1}-${year.toString().slice(-2)}`;
+	}
 };
 
 const safeParseFloat = (
@@ -152,6 +174,149 @@ const safeParseInt = (
 	const num =
 		typeof value === 'string' ? parseInt(value, 10) : Math.round(value);
 	return isNaN(num) ? defaultValue : num;
+};
+
+// Calculate PPF balance with proper compounding
+const calculatePPFBalance = (
+	totalDeposits: number,
+	interestRate: number,
+	yearsCompleted: number
+): number => {
+	if (yearsCompleted <= 0) return totalDeposits;
+
+	// PPF compounds annually
+	const rate = interestRate / 100;
+	const amount = totalDeposits * Math.pow(1 + rate, yearsCompleted);
+	return parseFloat(amount.toFixed(2));
+};
+
+// Parse annual contributions from notes or account object
+const parseAnnualContributions = (account: any) => {
+	// First check if annualContributions exists directly on the account
+	if (
+		account.annualContributions &&
+		Object.keys(account.annualContributions).length > 0
+	) {
+		return account.annualContributions;
+	}
+
+	// Then check notes
+	if (account.notes) {
+		try {
+			const notesData = JSON.parse(account.notes);
+			return notesData.annualContributions || {};
+		} catch (error) {
+			console.warn('Failed to parse notes:', error);
+		}
+	}
+
+	return {};
+};
+
+// Calculate interest for each financial year
+const calculateFYInterest = (
+	fyContributions: Record<string, { amount: number; interest: number }>,
+	interestRate: number,
+	startDate?: string
+): Record<string, { amount: number; interest: number }> => {
+	const result: Record<string, { amount: number; interest: number }> = {};
+
+	if (Object.keys(fyContributions).length === 0) {
+		// If no contributions, return empty
+		return result;
+	}
+
+	// Sort financial years chronologically
+	const sortedFYs = Object.keys(fyContributions).sort();
+
+	let cumulativeBalance = 0;
+
+	for (const fy of sortedFYs) {
+		const contribution = fyContributions[fy].amount || 0;
+		const manualInterest = fyContributions[fy].interest || 0;
+
+		// If manual interest is provided and greater than 0, use it directly
+		// This preserves user-entered interest values
+		if (manualInterest > 0) {
+			result[fy] = {
+				amount: contribution,
+				interest: manualInterest, // Keep the manual interest
+			};
+
+			// Update cumulative balance with manual interest
+			cumulativeBalance += contribution + manualInterest;
+		} else {
+			// Calculate interest if no manual interest provided or it's 0
+			// Interest on opening balance (cumulative from previous years)
+			const interestOnOpening = cumulativeBalance * (interestRate / 100);
+
+			// Interest on current year's contribution (assuming deposited throughout the year)
+			const interestOnCurrent = contribution * (interestRate / 100) * 0.5;
+
+			const totalInterest = interestOnOpening + interestOnCurrent;
+
+			result[fy] = {
+				amount: contribution,
+				interest: parseFloat(totalInterest.toFixed(2)),
+			};
+
+			// Update cumulative balance for next year
+			cumulativeBalance += contribution + totalInterest;
+		}
+	}
+
+	return result;
+};
+
+// Calculate total interest earned for PPF
+const calculatePPFTotalInterest = (
+	annualContributions: Record<string, { amount: number; interest: number }>
+): number => {
+	return Object.values(annualContributions).reduce(
+		(sum, fy) => sum + (fy.interest || 0),
+		0
+	);
+};
+
+// Calculate years completed from start date
+const calculateYearsCompleted = (startDate: string): number => {
+	const start = new Date(startDate);
+	const today = new Date();
+	const diffTime = today.getTime() - start.getTime();
+	const years = diffTime / (1000 * 60 * 60 * 24 * 365.25);
+	return Math.max(0, Math.floor(years));
+};
+
+// Get suggested financial years based on start date
+const getSuggestedFinancialYears = (startDate: string): string[] => {
+	const start = new Date(startDate);
+	const startYear = start.getFullYear();
+	const startMonth = start.getMonth() + 1;
+
+	// Determine the financial year of start
+	let currentFYStartYear = startYear;
+	if (startMonth >= 4) {
+		// FY starts in April of current year
+		currentFYStartYear = startYear;
+	} else {
+		// FY started in April of previous year
+		currentFYStartYear = startYear - 1;
+	}
+
+	const suggestedYears: string[] = [];
+	const currentDate = new Date();
+	const currentYear = currentDate.getFullYear();
+	const currentMonth = currentDate.getMonth() + 1;
+
+	let maxFYEndYear = currentMonth >= 4 ? currentYear + 1 : currentYear;
+
+	// Generate financial years from start to current (or next)
+	for (let year = currentFYStartYear; year <= maxFYEndYear; year++) {
+		const fy = `${year}-${(year + 1).toString().slice(-2)}`;
+		suggestedYears.push(fy);
+	}
+
+	return suggestedYears;
 };
 
 // Update summary when data changes
@@ -259,13 +424,62 @@ const readAssetData = async (userId: string): Promise<AssetData> => {
 		const assetDataPath = getAssetDataPath(userId);
 
 		const fileContent = await FileSystem.readAsStringAsync(assetDataPath);
-		return JSON.parse(fileContent);
+		const data = JSON.parse(fileContent);
+
+		// Ensure ppfAccounts have the new structure
+		if (data.ppfAccounts) {
+			data.ppfAccounts = data.ppfAccounts.map(
+				(account: PublicProvidentFund) => {
+					// Always ensure annualContributions exists
+					let annualContributions = account.annualContributions || {};
+
+					// If account has notes, parse annual contributions
+					if (!account.annualContributions && account.notes) {
+						try {
+							const notesData = JSON.parse(account.notes);
+							annualContributions = notesData.annualContributions || {};
+						} catch (error) {
+							console.warn('Failed to parse notes:', error);
+						}
+					}
+
+					// Recalculate current balance from contributions
+					const totalDeposits = Object.values(annualContributions).reduce(
+						(sum, fy) => sum + (fy.amount || 0),
+						0
+					);
+
+					const totalInterest = Object.values(annualContributions).reduce(
+						(sum, fy) => sum + (fy.interest || 0),
+						0
+					);
+
+					const currentBalance = totalDeposits + totalInterest;
+
+					return {
+						...account,
+						annualContributions,
+						totalDeposits,
+						currentBalance,
+						// Update notes to include the recalculated data
+						notes: JSON.stringify({
+							startDate: account.startDate,
+							annualContributions,
+							totalDeposits,
+							totalInterest,
+							allContributions: annualContributions,
+						}),
+					};
+				}
+			);
+		}
+
+		return data;
 	} catch (error) {
 		console.error('Error reading asset data:', error);
 		throw error;
 	}
 };
-
 // Write asset data file
 const writeAssetData = async (
 	userId: string,
@@ -310,7 +524,7 @@ export const assetService = {
 				bankName: accountData.bankName || 'Bank',
 				balance,
 				accountNumber: accountData.accountNumber,
-				accountType: accountData.accountType || 'Savings',
+				accountType: (accountData?.accountType || 'Savings') as AccountTypes,
 				interestRate,
 				notes: accountData.notes,
 				lastUpdated: new Date().toISOString(),
@@ -1115,7 +1329,6 @@ export const assetService = {
 		}
 	},
 
-	// Public Provident Fund CRUD Operations
 	createPPF: async (
 		userId: string,
 		ppfData: CreatePPFData
@@ -1123,28 +1336,91 @@ export const assetService = {
 		try {
 			const data = await readAssetData(userId);
 
-			const totalDeposits = safeParseFloat(ppfData.totalDeposits, 0);
-			const interestRate = safeParseFloat(ppfData.interestRate, 0);
-			const maturityDate =
-				ppfData.maturityDate ||
-				new Date(new Date().setFullYear(new Date().getFullYear() + 15))
-					.toISOString()
-					.split('T')[0];
+			const interestRate = safeParseFloat(ppfData.interestRate, 7.1);
 
-			// Calculate current balance with compound interest (simplified)
-			const years = calculateYearsToMaturity(maturityDate);
-			const currentBalance = parseFloat(
-				(totalDeposits * Math.pow(1 + interestRate / 100, years)).toFixed(2)
+			// Get start date (from data or default to today)
+			const startDate =
+				ppfData.startDate || new Date().toISOString().split('T')[0];
+
+			// Calculate maturity date (15 years from start date)
+			let maturityDate = ppfData.maturityDate;
+			if (!maturityDate) {
+				maturityDate = calculatePPFMaturityDate(startDate);
+			}
+
+			// Initialize annual contributions
+			let annualContributions: Record<
+				string,
+				{ amount: number; interest: number }
+			> = {};
+
+			// If we have financial years data in notes or direct
+			if (
+				ppfData.annualContributions &&
+				Object.keys(ppfData.annualContributions).length > 0
+			) {
+				annualContributions = ppfData.annualContributions;
+			} else if (ppfData.financialYear && ppfData.totalDeposits) {
+				// Single financial year entry (backward compatibility)
+				annualContributions[ppfData.financialYear] = {
+					amount: safeParseFloat(ppfData.totalDeposits),
+					interest: 0,
+				};
+			}
+
+			console.log(
+				'Creating PPF - Annual contributions before interest:',
+				annualContributions
 			);
+
+			// Calculate interest for each financial year (respect manual entries)
+			const calculatedContributions = calculateFYInterest(
+				annualContributions,
+				interestRate,
+				startDate
+			);
+
+			console.log(
+				'Creating PPF - Annual contributions after interest:',
+				calculatedContributions
+			);
+
+			// Calculate total deposits and total interest from all annual contributions
+			const totalDeposits = Object.values(calculatedContributions).reduce(
+				(sum, fy) => sum + (fy.amount || 0),
+				0
+			);
+
+			const totalInterest = Object.values(calculatedContributions).reduce(
+				(sum, fy) => sum + (fy.interest || 0),
+				0
+			);
+
+			// Calculate current balance (total deposits + total interest)
+			const currentBalance = parseFloat(
+				(totalDeposits + totalInterest).toFixed(2)
+			);
+
+			// Store data in notes
+			const notes = JSON.stringify({
+				startDate: startDate,
+				annualContributions: calculatedContributions,
+				totalDeposits: totalDeposits,
+				totalInterest: totalInterest,
+				allContributions: calculatedContributions,
+			});
 
 			const newPPF: PublicProvidentFund = {
 				id: generateId(),
 				accountNumber: ppfData.accountNumber || '',
+				financialYear: ppfData.financialYear || getCurrentFinancialYear(),
 				totalDeposits,
 				interestRate,
+				startDate,
 				maturityDate,
 				currentBalance,
-				notes: ppfData.notes,
+				annualContributions: calculatedContributions,
+				notes,
 				lastUpdated: new Date().toISOString(),
 			};
 
@@ -1164,6 +1440,8 @@ export const assetService = {
 		updateData: Partial<CreatePPFData>
 	): Promise<PublicProvidentFund> => {
 		try {
+			console.log('Updating PPF with data:', { ppfId, updateData });
+
 			const data = await readAssetData(userId);
 
 			const ppfIndex = data.ppfAccounts.findIndex((ppf) => ppf.id === ppfId);
@@ -1172,50 +1450,412 @@ export const assetService = {
 			}
 
 			const currentPPF = data.ppfAccounts[ppfIndex];
-			const updatedPPF = {
+
+			// Get the interest rate for calculations
+			const interestRate =
+				updateData.interestRate !== undefined
+					? safeParseFloat(updateData.interestRate)
+					: currentPPF.interestRate;
+
+			// Get the start date
+			const startDate = updateData.startDate || currentPPF.startDate;
+
+			// Use the annualContributions from updateData if provided
+			// Otherwise use existing contributions
+			let annualContributions = updateData.annualContributions
+				? updateData.annualContributions
+				: currentPPF.annualContributions || {};
+
+			console.log(
+				'Annual contributions before interest calculation:',
+				annualContributions
+			);
+			console.log('Interest rate for calculation:', interestRate);
+
+			// IMPORTANT: Recalculate interest for all contributions based on the new interest rate
+			// This ensures that when the interest rate changes, all contributions are updated
+			const recalculatedContributions = calculateFYInterest(
+				annualContributions,
+				interestRate,
+				startDate
+			);
+
+			console.log(
+				'Annual contributions after interest calculation:',
+				recalculatedContributions
+			);
+
+			// Calculate totals from recalculated contributions
+			const totalDeposits = Object.values(recalculatedContributions).reduce(
+				(sum, fy) => sum + (fy.amount || 0),
+				0
+			);
+
+			const totalInterest = Object.values(recalculatedContributions).reduce(
+				(sum, fy) => sum + (fy.interest || 0),
+				0
+			);
+
+			// Calculate current balance
+			const currentBalance = totalDeposits + totalInterest;
+
+			// Create notes with all data
+			const notes = JSON.stringify({
+				startDate: updateData.startDate || currentPPF.startDate,
+				annualContributions: recalculatedContributions,
+				totalDeposits: totalDeposits,
+				totalInterest: totalInterest,
+				allContributions: recalculatedContributions,
+			});
+
+			// Update the PPF account
+			const updatedPPF: PublicProvidentFund = {
 				...currentPPF,
-				...updateData,
+				accountNumber:
+					updateData.accountNumber !== undefined
+						? updateData.accountNumber
+						: currentPPF.accountNumber,
+				financialYear: updateData.financialYear || currentPPF.financialYear,
+				totalDeposits: totalDeposits,
+				interestRate: interestRate,
+				startDate: updateData.startDate || currentPPF.startDate,
+				maturityDate: updateData.maturityDate || currentPPF.maturityDate,
+				currentBalance: currentBalance,
+				annualContributions: recalculatedContributions, // Store recalculated contributions
+				notes: notes, // Also store in notes for backward compatibility
 				lastUpdated: new Date().toISOString(),
 			};
-
-			// Handle decimal parsing for numeric fields
-			if (updateData.totalDeposits !== undefined) {
-				updatedPPF.totalDeposits = safeParseFloat(updateData.totalDeposits);
-			}
-			if (updateData.interestRate !== undefined) {
-				updatedPPF.interestRate = safeParseFloat(updateData.interestRate);
-			}
-
-			// Recalculate current balance if relevant fields change
-			if (
-				updateData.totalDeposits !== undefined ||
-				updateData.interestRate !== undefined ||
-				updateData.maturityDate
-			) {
-				const totalDeposits =
-					updateData.totalDeposits !== undefined
-						? safeParseFloat(updateData.totalDeposits)
-						: updatedPPF.totalDeposits;
-				const interestRate =
-					updateData.interestRate !== undefined
-						? safeParseFloat(updateData.interestRate)
-						: updatedPPF.interestRate;
-				const maturityDate = updateData.maturityDate || updatedPPF.maturityDate;
-
-				const years = calculateYearsToMaturity(maturityDate);
-				updatedPPF.currentBalance = parseFloat(
-					(totalDeposits * Math.pow(1 + interestRate / 100, years)).toFixed(2)
-				);
-			}
 
 			data.ppfAccounts[ppfIndex] = updatedPPF;
 			await writeAssetData(userId, data);
 
+			console.log('PPF updated successfully:', updatedPPF);
 			return updatedPPF;
 		} catch (error) {
 			console.error('Error updating PPF account:', error);
 			throw error;
 		}
+	},
+
+	updatePPFInterestForFY: async (
+		userId: string,
+		ppfId: string,
+		fyData: {
+			financialYear: string;
+			interest: number;
+		}
+	): Promise<PublicProvidentFund> => {
+		try {
+			const data = await readAssetData(userId);
+
+			const ppfIndex = data.ppfAccounts.findIndex((ppf) => ppf.id === ppfId);
+			if (ppfIndex === -1) {
+				throw new Error('PPF account not found');
+			}
+
+			const currentPPF = data.ppfAccounts[ppfIndex];
+
+			// Parse existing annual contributions
+			const existingContributions =
+				currentPPF.annualContributions ||
+				parseAnnualContributions(currentPPF.notes);
+
+			// Update interest for the specific financial year
+			if (existingContributions[fyData.financialYear]) {
+				existingContributions[fyData.financialYear] = {
+					...existingContributions[fyData.financialYear],
+					interest: safeParseFloat(fyData.interest),
+				};
+			} else {
+				// If financial year doesn't exist, create it with 0 amount
+				existingContributions[fyData.financialYear] = {
+					amount: 0,
+					interest: safeParseFloat(fyData.interest),
+				};
+			}
+
+			// Prepare update data
+			const updateData: Partial<CreatePPFData> = {
+				annualContributions: existingContributions,
+				totalDeposits: Object.values(existingContributions).reduce(
+					(sum: number, fy: any) => sum + (fy.amount || 0),
+					0
+				),
+			};
+
+			// Use updatePPF to recalculate everything
+			return await assetService.updatePPF(userId, ppfId, updateData);
+		} catch (error) {
+			console.error('Error updating PPF interest for FY:', error);
+			throw error;
+		}
+	},
+	// Add annual contribution to existing PPF
+	addPPFAnnualContribution: async (
+		userId: string,
+		ppfId: string,
+		fyData: {
+			financialYear: string;
+			amount: number;
+		}
+	): Promise<PublicProvidentFund> => {
+		try {
+			const data = await readAssetData(userId);
+
+			const ppfIndex = data.ppfAccounts.findIndex((ppf) => ppf.id === ppfId);
+			if (ppfIndex === -1) {
+				throw new Error('PPF account not found');
+			}
+
+			const currentPPF = data.ppfAccounts[ppfIndex];
+
+			// Get existing contributions
+			const existingContributions =
+				currentPPF.annualContributions ||
+				parseAnnualContributions(currentPPF.notes);
+
+			// Add new contribution
+			existingContributions[fyData.financialYear] = {
+				amount: safeParseFloat(fyData.amount),
+				interest: existingContributions[fyData.financialYear]?.interest || 0,
+			};
+
+			// Prepare update data
+			const updateData: Partial<CreatePPFData> = {
+				annualContributions: existingContributions,
+				financialYear: fyData.financialYear,
+				totalDeposits: Object.values(existingContributions).reduce(
+					(sum: number, fy: any) => sum + (fy.amount || 0),
+					0
+				),
+			};
+
+			// Use updatePPF to recalculate everything
+			return await assetService.updatePPF(userId, ppfId, updateData);
+		} catch (error) {
+			console.error('Error adding PPF annual contribution:', error);
+			throw error;
+		}
+	},
+
+	// Add a comprehensive method to update multiple financial years at once
+	updatePPFMultipleFY: async (
+		userId: string,
+		ppfId: string,
+		contributions: Array<{
+			financialYear: string;
+			amount: number;
+		}>
+	): Promise<PublicProvidentFund> => {
+		try {
+			const data = await readAssetData(userId);
+
+			const ppfIndex = data.ppfAccounts.findIndex((ppf) => ppf.id === ppfId);
+			if (ppfIndex === -1) {
+				throw new Error('PPF account not found');
+			}
+
+			const currentPPF = data.ppfAccounts[ppfIndex];
+
+			// Parse existing annual contributions
+			const existingContributions =
+				currentPPF.annualContributions ||
+				parseAnnualContributions(currentPPF.notes);
+
+			// Update with new contributions
+			const updatedContributions = { ...existingContributions };
+
+			for (const contribution of contributions) {
+				updatedContributions[contribution.financialYear] = {
+					amount: safeParseFloat(contribution.amount),
+					interest:
+						updatedContributions[contribution.financialYear]?.interest || 0,
+				};
+			}
+
+			// Prepare update data
+			const updateData: Partial<CreatePPFData> = {
+				annualContributions: updatedContributions,
+				totalDeposits: Object.values(updatedContributions).reduce(
+					(sum: number, fy: any) => sum + (fy.amount || 0),
+					0
+				),
+			};
+
+			// Use updatePPF to recalculate everything
+			return await assetService.updatePPF(userId, ppfId, updateData);
+		} catch (error) {
+			console.error('Error updating PPF multiple FY:', error);
+			throw error;
+		}
+	},
+
+	// Get detailed PPF information
+	getPPFDetails: async (
+		userId: string,
+		ppfId: string
+	): Promise<{
+		account: PublicProvidentFund;
+		totalInterest: number;
+		projectedMaturityValue: number;
+		remainingYears: number;
+		annualBreakdown: Array<{
+			year: string;
+			openingBalance: number;
+			contribution: number;
+			interest: number;
+			closingBalance: number;
+		}>;
+	}> => {
+		try {
+			const data = await readAssetData(userId);
+
+			const ppfAccount = data.ppfAccounts.find((ppf) => ppf.id === ppfId);
+			if (!ppfAccount) {
+				throw new Error('PPF account not found');
+			}
+
+			const totalDeposits = ppfAccount.totalDeposits;
+			const interestRate = ppfAccount.interestRate;
+			const maturityDate = ppfAccount.maturityDate;
+			const annualContributions = ppfAccount.annualContributions || {};
+			const startDate =
+				ppfAccount.startDate || new Date().toISOString().split('T')[0];
+
+			// Calculate remaining years
+			const remainingYears = Math.max(
+				0,
+				calculateYearsToMaturity(maturityDate)
+			);
+
+			// Calculate projected maturity value (15 years from start)
+			const projectedMaturityValue = calculatePPFBalance(
+				totalDeposits,
+				interestRate,
+				15
+			);
+
+			// Generate annual breakdown
+			const sortedFYs = Object.keys(annualContributions).sort();
+			const annualBreakdown: Array<{
+				year: string;
+				openingBalance: number;
+				contribution: number;
+				interest: number;
+				closingBalance: number;
+			}> = [];
+
+			let openingBalance = 0;
+
+			for (const fy of sortedFYs) {
+				const contribution = annualContributions[fy].amount || 0;
+				const interest = annualContributions[fy].interest || 0;
+				const closingBalance = openingBalance + contribution + interest;
+
+				annualBreakdown.push({
+					year: fy,
+					openingBalance: parseFloat(openingBalance.toFixed(2)),
+					contribution,
+					interest,
+					closingBalance: parseFloat(closingBalance.toFixed(2)),
+				});
+
+				openingBalance = closingBalance;
+			}
+
+			// Calculate total interest
+			const totalInterest = calculatePPFTotalInterest(annualContributions);
+
+			return {
+				account: ppfAccount,
+				totalInterest,
+				projectedMaturityValue: parseFloat(projectedMaturityValue.toFixed(2)),
+				remainingYears,
+				annualBreakdown,
+			};
+		} catch (error) {
+			console.error('Error getting PPF details:', error);
+			throw error;
+		}
+	},
+
+	// Add method to get contribution summary by financial years
+	getPPFContributionSummary: async (
+		userId: string,
+		ppfId: string
+	): Promise<{
+		financialYears: string[];
+		totalContributed: number;
+		averageContribution: number;
+		yearlyBreakdown: Array<{
+			financialYear: string;
+			amount: number;
+			interest: number;
+			totalForYear: number;
+			percentageOfTotal: number;
+		}>;
+	}> => {
+		try {
+			const data = await readAssetData(userId);
+
+			const ppfAccount = data.ppfAccounts.find((ppf) => ppf.id === ppfId);
+			if (!ppfAccount) {
+				throw new Error('PPF account not found');
+			}
+
+			const annualContributions =
+				ppfAccount.annualContributions ||
+				parseAnnualContributions(ppfAccount.notes);
+
+			// Sort financial years chronologically
+			const financialYears = Object.keys(annualContributions).sort();
+
+			// Calculate total contributed
+			const totalContributed = Object.values(annualContributions).reduce(
+				(sum: number, fy: any) => sum + (fy.amount || 0),
+				0
+			);
+
+			// Calculate average contribution
+			const averageContribution =
+				financialYears.length > 0
+					? totalContributed / financialYears.length
+					: 0;
+
+			// Create yearly breakdown
+			const yearlyBreakdown = financialYears.map((fy) => {
+				const contribution = annualContributions[fy];
+				const totalForYear =
+					(contribution.amount || 0) + (contribution.interest || 0);
+				const percentageOfTotal =
+					totalContributed > 0
+						? ((contribution.amount || 0) / totalContributed) * 100
+						: 0;
+
+				return {
+					financialYear: fy,
+					amount: contribution.amount || 0,
+					interest: contribution.interest || 0,
+					totalForYear: parseFloat(totalForYear.toFixed(2)),
+					percentageOfTotal: parseFloat(percentageOfTotal.toFixed(2)),
+				};
+			});
+
+			return {
+				financialYears,
+				totalContributed: parseFloat(totalContributed.toFixed(2)),
+				averageContribution: parseFloat(averageContribution.toFixed(2)),
+				yearlyBreakdown,
+			};
+		} catch (error) {
+			console.error('Error getting PPF contribution summary:', error);
+			throw error;
+		}
+	},
+
+	// Add method to suggest financial years based on start date
+	getSuggestedFinancialYears: (startDate: string): string[] => {
+		return getSuggestedFinancialYears(startDate);
 	},
 
 	deletePPF: async (userId: string, ppfId: string): Promise<boolean> => {

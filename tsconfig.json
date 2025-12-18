@@ -22,6 +22,11 @@
 			"@/icons/*": ["src/icons/*"]
 		}
 	},
-	"include": ["**/*.ts", "**/*.tsx"],
+	"include": [
+		"**/*.ts",
+		"**/*.tsx",
+		"scripts/autoVersionBump.js",
+		"scripts/autoVersionBump.cts"
+	],
 	"exclude": ["node_modules", "dist", "build"]
 }

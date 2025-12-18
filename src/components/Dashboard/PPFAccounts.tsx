@@ -3,18 +3,20 @@ import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { CreatePPFData, PPFAccountsProps } from '@/types';
-import { formatCurrency } from '@/utils';
+import { formatCurrency, getCurrentFinancialYear } from '@/utils';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import {
 	Alert,
 	Modal,
+	Platform,
 	ScrollView,
 	Text,
 	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { AddDetailsButton, Banner } from '../UI';
+import { AddDetailsButton, Banner, EditDeleteButtons } from '../UI';
 
 export const PPFAccounts = ({
 	accounts,
@@ -24,35 +26,116 @@ export const PPFAccounts = ({
 	const { colors } = useTheme();
 	const styles = createStyles(colors);
 	const [showAddModal, setShowAddModal] = useState(false);
+	const [showEditModal, setShowEditModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+
+	// Extended PPF account data structure
 	const [newAccount, setNewAccount] = useState<CreatePPFData>({
 		accountNumber: '',
-		financialYear: '2024-25',
+		financialYear: '',
 		totalDeposits: 0,
 		interestRate: 7.1,
-		maturityDate: '2039-04-01',
+		maturityDate: '',
+		startDate: '',
+		annualContributions: {},
 	});
 
 	// Add state for input strings to allow decimal typing
-	const [totalDepositsInput, setTotalDepositsInput] = useState<string>('');
 	const [interestRateInput, setInterestRateInput] = useState<string>('7.1');
+	const [startDateInput, setStartDateInput] = useState<string>('');
 
+	// Date picker states
+	const [showDatePicker, setShowDatePicker] = useState(false);
+	const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+	const [datePickerFor, setDatePickerFor] = useState<'add' | 'edit'>('add');
+
+	// State for multiple financial years with both amount and interest
+	const [financialYears, setFinancialYears] = useState<
+		Array<{
+			year: string;
+			amount: string;
+			interest: string;
+		}>
+	>([{ year: getCurrentFinancialYear(), amount: '', interest: '' }]);
+
+	// Calculate maturity date (15 years from start date)
+	const calculateMaturityDate = (startDate: string): string => {
+		if (!startDate) return '';
+		const start = new Date(startDate);
+		const maturity = new Date(start);
+		maturity.setFullYear(maturity.getFullYear() + 15);
+		return maturity.toISOString().split('T')[0];
+	};
+
+	// Format date to YYYY-MM-DD
+	const formatDate = (date: Date): string => {
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		const day = String(date.getDate()).padStart(2, '0');
+		return `${year}-${month}-${day}`;
+	};
+
+	// Get suggested financial years based on start date
+	const getSuggestedFinancialYears = (startDate: string): string[] => {
+		if (!startDate) return [getCurrentFinancialYear()];
+
+		const start = new Date(startDate);
+		const startYear = start.getFullYear();
+		const startMonth = start.getMonth() + 1;
+
+		// Determine the financial year of start
+		let currentFYStartYear = startYear;
+		if (startMonth >= 4) {
+			// FY starts in April of current year
+			currentFYStartYear = startYear;
+		} else {
+			// FY started in April of previous year
+			currentFYStartYear = startYear - 1;
+		}
+
+		const suggestedYears: string[] = [];
+		const currentDate = new Date();
+		const currentYear = currentDate.getFullYear();
+		const currentMonth = currentDate.getMonth() + 1;
+
+		let maxFYEndYear = currentMonth >= 4 ? currentYear + 1 : currentYear;
+
+		// Generate financial years from start to current (or next)
+		for (let year = currentFYStartYear; year <= maxFYEndYear; year++) {
+			const fy = `${year}-${(year + 1).toString().slice(-2)}`;
+			suggestedYears.push(fy);
+		}
+
+		return suggestedYears;
+	};
+
+	// Calculate years to maturity
 	const calculateYearsToMaturity = (maturityDate: string): number => {
 		const today = new Date();
 		const maturity = new Date(maturityDate);
 		const diffTime = maturity.getTime() - today.getTime();
-		return Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 365.25));
+		return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 365.25)));
 	};
 
-	// Handle decimal input for total deposits
-	const handleTotalDepositsInput = (text: string) => {
+	// Calculate total interest earned till date
+	const calculateTotalInterest = (account: any): number => {
+		if (!account.currentBalance || !account.totalDeposits) return 0;
+		return parseFloat(
+			(account.currentBalance - account.totalDeposits).toFixed(2)
+		);
+	};
+
+	// Handle financial year amount change
+	const handleFYAmountChange = (index: number, amount: string) => {
+		const updatedYears = [...financialYears];
+
 		// Allow only numbers and one decimal point
-		let cleanedText = text.replace(/[^0-9.]/g, '');
+		let cleanedText = amount.replace(/[^0-9.]/g, '');
 
 		// Prevent more than one decimal point
 		const decimalCount = (cleanedText.match(/\./g) || []).length;
 		if (decimalCount > 1) {
-			// Remove extra decimal points
 			const firstDecimalIndex = cleanedText.indexOf('.');
 			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
 			const afterDecimal = cleanedText
@@ -70,21 +153,46 @@ export const PPFAccounts = ({
 			}
 		}
 
-		setTotalDepositsInput(cleanedText);
+		updatedYears[index] = { ...updatedYears[index], amount: cleanedText };
+		setFinancialYears(updatedYears);
+	};
 
-		// Parse the value and update the account data
-		let parsedValue: number;
-		if (cleanedText === '' || cleanedText === '.') {
-			parsedValue = 0;
-		} else {
-			parsedValue = parseFloat(cleanedText);
-			if (isNaN(parsedValue)) parsedValue = 0;
+	// Handle financial year interest change
+	const handleFYInterestChange = (index: number, interest: string) => {
+		const updatedYears = [...financialYears];
+
+		// Allow only numbers and one decimal point
+		let cleanedText = interest.replace(/[^0-9.]/g, '');
+
+		// Prevent more than one decimal point
+		const decimalCount = (cleanedText.match(/\./g) || []).length;
+		if (decimalCount > 1) {
+			const firstDecimalIndex = cleanedText.indexOf('.');
+			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
+			const afterDecimal = cleanedText
+				.substring(firstDecimalIndex + 1)
+				.replace(/\./g, '');
+			cleanedText = beforeDecimal + afterDecimal;
 		}
 
-		setNewAccount({
-			...newAccount,
-			totalDeposits: parsedValue,
-		});
+		// Limit to 2 decimal places
+		const decimalIndex = cleanedText.indexOf('.');
+		if (decimalIndex !== -1) {
+			const decimalPart = cleanedText.substring(decimalIndex + 1);
+			if (decimalPart.length > 2) {
+				cleanedText = cleanedText.substring(0, decimalIndex + 3);
+			}
+		}
+
+		updatedYears[index] = { ...updatedYears[index], interest: cleanedText };
+		setFinancialYears(updatedYears);
+	};
+
+	// Handle financial year change
+	const handleFYYearChange = (index: number, year: string) => {
+		const updatedYears = [...financialYears];
+		updatedYears[index] = { ...updatedYears[index], year };
+		setFinancialYears(updatedYears);
 	};
 
 	// Handle decimal input for interest rate
@@ -130,10 +238,196 @@ export const PPFAccounts = ({
 		});
 	};
 
-	// Format number for display (show empty string for 0)
-	const formatNumberForInput = (num: number): string => {
-		if (num === 0) return '';
-		return num.toString();
+	// Handle date picker change
+	const handleDateChange = (event: any, selectedDate?: Date) => {
+		if (Platform.OS === 'android') {
+			setShowDatePicker(false);
+		}
+
+		if (selectedDate) {
+			setSelectedDate(selectedDate);
+			const formattedDate = formatDate(selectedDate);
+			setStartDateInput(formattedDate);
+
+			// Update the account start date
+			const updatedAccount = {
+				...newAccount,
+				startDate: formattedDate,
+			};
+
+			// Calculate and set maturity date (15 years from start)
+			const maturityDate = calculateMaturityDate(formattedDate);
+			updatedAccount.maturityDate = maturityDate;
+
+			// Update financial years based on new start date
+			const suggestedYears = getSuggestedFinancialYears(formattedDate);
+			if (suggestedYears.length > 0) {
+				const updatedYears = [...financialYears];
+				// Update first year to the earliest suggested year
+				updatedYears[0] = { ...updatedYears[0], year: suggestedYears[0] };
+				setFinancialYears(updatedYears);
+			}
+
+			setNewAccount(updatedAccount);
+		}
+	};
+
+	// Show date picker
+	const showDatepicker = (forModal: 'add' | 'edit') => {
+		setDatePickerFor(forModal);
+		setShowDatePicker(true);
+	};
+
+	// Handle edit account
+	const handleEditAccount = (account: any) => {
+		setEditingAccountId(account.id);
+
+		// Parse annual contributions from the account object directly
+		// Check both annualContributions and notes
+		let annualContributions = account.annualContributions || {};
+
+		// If not in annualContributions, try parsing from notes
+		if (Object.keys(annualContributions).length === 0 && account.notes) {
+			try {
+				const notesData = JSON.parse(account.notes);
+				annualContributions = notesData.annualContributions || {};
+			} catch (error) {
+				console.warn('Failed to parse notes:', error);
+			}
+		}
+
+		// Convert annual contributions to financialYears array
+		const fyEntries = Object.entries(annualContributions).map(
+			([year, data]: [string, any]) => ({
+				year,
+				amount: data.amount?.toString() || '',
+				interest: data.interest?.toString() || '',
+			})
+		);
+
+		// If no financial years, create one with the account data
+		if (fyEntries.length === 0) {
+			fyEntries.push({
+				year: account.financialYear || getCurrentFinancialYear(),
+				amount: account.totalDeposits?.toString() || '',
+				interest: '',
+			});
+		}
+
+		setFinancialYears(fyEntries);
+
+		// Set initial date for date picker
+		const startDate = account.startDate
+			? new Date(account.startDate)
+			: new Date();
+		setSelectedDate(startDate);
+		setStartDateInput(account.startDate || '');
+
+		// Also set the account number correctly
+		setNewAccount({
+			accountNumber: account.accountNumber || '',
+			financialYear: account.financialYear || '',
+			totalDeposits: account.totalDeposits || 0,
+			interestRate: account.interestRate || 7.1,
+			maturityDate:
+				account.maturityDate || calculateMaturityDate(account.startDate || ''),
+			startDate: account.startDate || '',
+			annualContributions: annualContributions, // Keep the original structure
+		});
+		setInterestRateInput((account.interestRate || 7.1).toString());
+		setShowEditModal(true);
+	};
+
+	const handleUpdateAccount = async (): Promise<void> => {
+		if (!newAccount?.accountNumber?.trim()) {
+			Alert.alert('Error', 'Please enter account number');
+			return;
+		}
+
+		// Validate start date
+		if (!startDateInput) {
+			Alert.alert('Error', 'Please enter account start date');
+			return;
+		}
+
+		// Validate interest rate
+		if (newAccount?.interestRate <= 0) {
+			Alert.alert('Error', 'Interest rate must be greater than 0');
+			return;
+		}
+
+		// Validate at least one financial year has amount
+		const hasValidAmount = financialYears.some((fy) => {
+			const amount = parseFloat(fy.amount);
+			return !isNaN(amount) && amount > 0;
+		});
+
+		if (!hasValidAmount) {
+			Alert.alert(
+				'Error',
+				'Please enter at least one financial year contribution'
+			);
+			return;
+		}
+
+		// Validate financial year formats
+		const fyRegex = /^\d{4}-\d{2}$/;
+		for (const fy of financialYears) {
+			if (!fyRegex.test(fy.year)) {
+				Alert.alert(
+					'Error',
+					`Invalid financial year format for "${fy.year}". Use format: YYYY-YY`
+				);
+				return;
+			}
+		}
+
+		if (!editingAccountId) return;
+
+		setIsSubmitting(true);
+		try {
+			// Prepare annual contributions object with both amount and interest
+			const annualContributions: Record<
+				string,
+				{ amount: number; interest: number }
+			> = {};
+
+			financialYears.forEach((fy) => {
+				const amount = parseFloat(fy.amount) || 0;
+				const interest = parseFloat(fy.interest) || 0;
+
+				// Always add the entry even if amount is 0, to preserve all years
+				annualContributions[fy.year] = {
+					amount,
+					interest,
+				};
+			});
+
+			// Prepare update data - make sure annualContributions is included
+			const updateData: CreatePPFData = {
+				accountNumber: newAccount.accountNumber,
+				financialYear: financialYears[0].year, // First year as primary
+				totalDeposits: Object.values(annualContributions).reduce(
+					(sum, fy) => sum + (fy.amount || 0),
+					0
+				),
+				interestRate: newAccount.interestRate,
+				maturityDate: newAccount.maturityDate,
+				startDate: startDateInput,
+				annualContributions: annualContributions, // This is key!
+			};
+
+			await assetService.updatePPF(userId, editingAccountId, updateData);
+			setShowEditModal(false);
+			resetForm();
+			onRefresh();
+			Alert.alert('Success', 'PPF account updated successfully!');
+		} catch (error: any) {
+			console.error('Error updating PPF account:', error);
+			Alert.alert('Error', `Failed to update PPF account: ${error.message}`);
+		} finally {
+			setIsSubmitting(false);
+		}
 	};
 
 	const handleAddAccount = async (): Promise<void> => {
@@ -142,37 +436,85 @@ export const PPFAccounts = ({
 			return;
 		}
 
-		if (newAccount?.totalDeposits <= 0) {
-			Alert.alert('Error', 'Total deposits must be greater than 0');
+		// Validate start date
+		if (!startDateInput) {
+			Alert.alert('Error', 'Please enter account start date');
 			return;
 		}
 
+		// Validate interest rate
 		if (newAccount?.interestRate <= 0) {
 			Alert.alert('Error', 'Interest rate must be greater than 0');
 			return;
 		}
 
-		// Validate maturity date format
-		const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-		if (!dateRegex.test(newAccount.maturityDate)) {
-			Alert.alert('Error', 'Please enter a valid date in YYYY-MM-DD format');
+		// Validate at least one financial year has amount
+		const hasValidAmount = financialYears.some((fy) => {
+			const amount = parseFloat(fy.amount);
+			return !isNaN(amount) && amount > 0;
+		});
+
+		if (!hasValidAmount) {
+			Alert.alert(
+				'Error',
+				'Please enter at least one financial year contribution'
+			);
 			return;
+		}
+
+		// Validate financial year formats
+		const fyRegex = /^\d{4}-\d{2}$/;
+		for (const fy of financialYears) {
+			if (!fyRegex.test(fy.year)) {
+				Alert.alert(
+					'Error',
+					`Invalid financial year format for "${fy.year}". Use format: YYYY-YY`
+				);
+				return;
+			}
 		}
 
 		setIsSubmitting(true);
 		try {
-			await assetService.createPPF(userId, newAccount);
-			setShowAddModal(false);
-			// Reset all states
-			setNewAccount({
-				accountNumber: '',
-				financialYear: '2024-25',
-				totalDeposits: 0,
-				interestRate: 7.1,
-				maturityDate: '2039-04-01',
+			// Prepare annual contributions object with both amount and interest
+			const annualContributions: Record<
+				string,
+				{ amount: number; interest: number }
+			> = {};
+			let totalDeposits = 0;
+			let totalInterest = 0;
+
+			financialYears.forEach((fy) => {
+				const amount = parseFloat(fy.amount);
+				const interest = parseFloat(fy.interest);
+
+				if (!isNaN(amount) && amount > 0) {
+					annualContributions[fy.year] = {
+						amount,
+						interest: !isNaN(interest) && interest >= 0 ? interest : 0,
+					};
+					totalDeposits += amount;
+					totalInterest += !isNaN(interest) && interest >= 0 ? interest : 0;
+				}
 			});
-			setTotalDepositsInput('');
-			setInterestRateInput('7.1');
+
+			// Calculate current balance (total deposits + total interest)
+			const currentBalance = totalDeposits + totalInterest;
+
+			// Prepare data for service
+			const accountData = {
+				accountNumber: newAccount.accountNumber,
+				financialYear: financialYears[0].year, // First year as primary
+				totalDeposits,
+				interestRate: newAccount.interestRate,
+				maturityDate: newAccount.maturityDate,
+				startDate: startDateInput,
+				annualContributions,
+			};
+
+			await assetService.createPPF(userId, accountData);
+			setShowAddModal(false);
+			resetForm();
 			onRefresh();
 			Alert.alert('Success', 'PPF account added successfully!');
 		} catch (error) {
@@ -181,6 +523,25 @@ export const PPFAccounts = ({
 		} finally {
 			setIsSubmitting(false);
 		}
+	};
+
+	const resetForm = () => {
+		setEditingAccountId(null);
+		setNewAccount({
+			accountNumber: '',
+			financialYear: '',
+			totalDeposits: 0,
+			interestRate: 7.1,
+			maturityDate: '',
+			startDate: '',
+			annualContributions: {},
+		});
+		setInterestRateInput('7.1');
+		setStartDateInput('');
+		setSelectedDate(new Date());
+		setFinancialYears([
+			{ year: getCurrentFinancialYear(), amount: '', interest: '' },
+		]);
 	};
 
 	const handleDeleteAccount = async (
@@ -218,14 +579,118 @@ export const PPFAccounts = ({
 		(sum, account) => sum + account.totalDeposits,
 		0
 	);
+	const totalInterest = accounts.reduce(
+		(sum, account) => sum + calculateTotalInterest(account),
+		0
+	);
+
+	// Parse annual contributions from notes
+	const parseAnnualContributions = (notes?: string) => {
+		if (!notes) return {};
+		try {
+			const data = JSON.parse(notes);
+			return data.annualContributions || {};
+		} catch (error) {
+			return {};
+		}
+	};
+
+	// Calculate total interest from annual contributions
+	const calculateTotalInterestFromContributions = (
+		contributions: Record<string, { amount: number; interest: number }>
+	): number => {
+		return Object.values(contributions).reduce(
+			(sum, fy) => sum + (fy.interest || 0),
+			0
+		);
+	};
+
+	// Calculate total contributions and interest from all financial years
+	const calculateTotalsFromFinancialYears = () => {
+		let totalDeposits = 0;
+		let totalInterest = 0;
+
+		financialYears.forEach((fy) => {
+			const amount = parseFloat(fy.amount);
+			const interest = parseFloat(fy.interest);
+
+			if (!isNaN(amount) && amount > 0) {
+				totalDeposits += amount;
+			}
+
+			if (!isNaN(interest) && interest > 0) {
+				totalInterest += interest;
+			}
+		});
+
+		return { totalDeposits, totalInterest };
+	};
+
+	// Render date picker modal
+	const renderDatePicker = () => {
+		if (showDatePicker) {
+			return (
+				<DateTimePicker
+					testID='dateTimePicker'
+					value={selectedDate}
+					mode='date'
+					display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+					onChange={handleDateChange}
+					maximumDate={new Date()} // Can't select future dates for start date
+				/>
+			);
+		}
+		return null;
+	};
+
+	// Add a new financial year input
+	const addFinancialYear = () => {
+		const suggestedYears = getSuggestedFinancialYears(
+			startDateInput || new Date().toISOString().split('T')[0]
+		);
+		const existingYears = financialYears.map((fy) => fy.year);
+
+		// Find the next available financial year from suggestions
+		let nextYear = '';
+		for (const year of suggestedYears) {
+			if (!existingYears.includes(year)) {
+				nextYear = year;
+				break;
+			}
+		}
+
+		// If no suggested years available, use next year from the last one
+		if (!nextYear && financialYears.length > 0) {
+			const lastYear = financialYears[financialYears.length - 1].year;
+			const lastYearNum = parseInt(lastYear.split('-')[0]);
+			nextYear = `${lastYearNum + 1}-${(lastYearNum + 2).toString().slice(-2)}`;
+		} else if (!nextYear) {
+			nextYear = getCurrentFinancialYear();
+		}
+
+		setFinancialYears([
+			...financialYears,
+			{ year: nextYear, amount: '', interest: '' },
+		]);
+	};
+
+	// Remove a financial year
+	const removeFinancialYear = (index: number) => {
+		if (financialYears.length > 1) {
+			const updatedYears = [...financialYears];
+			updatedYears.splice(index, 1);
+			setFinancialYears(updatedYears);
+		}
+	};
 
 	return (
 		<View style={{ padding: 20 }}>
 			<Banner image={PPFBanner} title='PPF Balance' amount={totalBalance}>
 				<View style={[styles.row, { marginTop: 8 }]}>
 					<Text style={{ fontSize: 12, color: colors.platinum }}>
-						Total Deposits: {formatCurrency(totalDeposits)} • {accounts.length}{' '}
-						account{accounts.length !== 1 ? 's' : ''}
+						Total Deposits: {formatCurrency(totalDeposits)} • Total Interest:{' '}
+						{formatCurrency(totalInterest)} •{accounts.length} account
+						{accounts.length !== 1 ? 's' : ''}
 					</Text>
 				</View>
 			</Banner>
@@ -243,6 +708,10 @@ export const PPFAccounts = ({
 					const yearsToMaturity = calculateYearsToMaturity(
 						account.maturityDate
 					);
+					const totalInterest = calculateTotalInterest(account);
+					const annualContributions = parseAnnualContributions(account.notes);
+					const totalInterestFromContributions =
+						calculateTotalInterestFromContributions(annualContributions);
 
 					return (
 						<TouchableOpacity
@@ -253,22 +722,12 @@ export const PPFAccounts = ({
 									marginBottom: 12,
 									borderLeftWidth: 4,
 									borderLeftColor: colors.primary,
+									paddingVertical: 16,
+									paddingHorizontal: 8,
 								},
 							]}
-							onLongPress={() =>
-								handleDeleteAccount(
-									account.id,
-									account?.accountNumber as string
-								)
-							}
 						>
-							<View
-								style={[
-									styles.row,
-									styles.spaceBetween,
-									{ alignItems: 'flex-start' },
-								]}
-							>
+							<View style={[styles.row, { alignItems: 'flex-start' }]}>
 								<View style={{ flex: 1 }}>
 									<Text
 										style={{
@@ -282,9 +741,10 @@ export const PPFAccounts = ({
 									<Text
 										style={{ color: colors.gray, fontSize: 12, marginTop: 2 }}
 									>
-										{account.accountNumber} • FY {account.financialYear}
+										{account.accountNumber} • {account.interestRate}% interest
 									</Text>
 
+									{/* Main Account Info */}
 									<View
 										style={[
 											styles.row,
@@ -293,7 +753,7 @@ export const PPFAccounts = ({
 									>
 										<View>
 											<Text style={{ color: colors.gray, fontSize: 12 }}>
-												Deposits
+												Total Deposits
 											</Text>
 											<Text
 												style={{
@@ -303,6 +763,21 @@ export const PPFAccounts = ({
 												}}
 											>
 												{formatCurrency(account.totalDeposits)}
+											</Text>
+										</View>
+
+										<View style={{ alignItems: 'center' }}>
+											<Text style={{ color: colors.gray, fontSize: 12 }}>
+												Total Interest
+											</Text>
+											<Text
+												style={{
+													fontWeight: 'bold',
+													color: colors.dark,
+													fontSize: 14,
+												}}
+											>
+												{formatCurrency(totalInterest)}
 											</Text>
 										</View>
 
@@ -322,26 +797,104 @@ export const PPFAccounts = ({
 										</View>
 									</View>
 
+									{/* Annual Contributions Section */}
+									{Object.keys(annualContributions).length > 0 && (
+										<View style={{ marginTop: 12 }}>
+											<Text
+												style={{
+													color: colors.gray,
+													fontSize: 12,
+													marginBottom: 4,
+												}}
+											>
+												Annual Contributions (Amount + Interest):
+											</Text>
+											{Object.entries(annualContributions).map(
+												([fy, data]: [string, any]) => (
+													<View
+														key={fy}
+														style={[
+															styles.row,
+															{
+																justifyContent: 'space-between',
+																marginBottom: 2,
+															},
+														]}
+													>
+														<Text style={{ color: colors.gray, fontSize: 10 }}>
+															FY {fy}:
+														</Text>
+														<View style={[styles.row, { gap: 8 }]}>
+															<Text
+																style={{ color: colors.gray, fontSize: 10 }}
+															>
+																Amount: {formatCurrency(data.amount || 0)}
+															</Text>
+															<Text
+																style={{ color: colors.gray, fontSize: 10 }}
+															>
+																Interest: {formatCurrency(data.interest || 0)}
+															</Text>
+														</View>
+													</View>
+												)
+											)}
+											{totalInterestFromContributions > 0 && (
+												<View
+													style={[
+														styles.row,
+														{ justifyContent: 'space-between', marginTop: 4 },
+													]}
+												>
+													<Text
+														style={{
+															color: colors.primary,
+															fontSize: 10,
+															fontWeight: 'bold',
+														}}
+													>
+														Total Interest from Contributions:
+													</Text>
+													<Text
+														style={{
+															color: colors.primary,
+															fontSize: 10,
+															fontWeight: 'bold',
+														}}
+													>
+														{formatCurrency(totalInterestFromContributions)}
+													</Text>
+												</View>
+											)}
+										</View>
+									)}
+
+									{/* Maturity Info */}
 									<View
 										style={[
 											styles.row,
-											{ justifyContent: 'space-between', marginTop: 4 },
+											{ justifyContent: 'space-between', marginTop: 8 },
 										]}
 									>
 										<Text style={{ color: colors.gray, fontSize: 12 }}>
-											{account.interestRate}% interest
+											{yearsToMaturity} years to maturity
 										</Text>
 										<Text style={{ color: colors.gray, fontSize: 12 }}>
-											{yearsToMaturity} years to maturity
+											Matures:{' '}
+											{new Date(account.maturityDate).toLocaleDateString()}
 										</Text>
 									</View>
 
-									<Text
-										style={{ color: colors.gray, fontSize: 10, marginTop: 4 }}
-									>
-										Matures:{' '}
-										{new Date(account.maturityDate).toLocaleDateString()}
-									</Text>
+									{/* Edit and Delete Buttons */}
+									<EditDeleteButtons
+										onPressEdit={() => handleEditAccount(account)}
+										onPressDelete={() =>
+											handleDeleteAccount(
+												account.id,
+												account?.accountNumber || ''
+											)
+										}
+									/>
 								</View>
 							</View>
 						</TouchableOpacity>
@@ -356,16 +909,7 @@ export const PPFAccounts = ({
 				transparent={true}
 				onRequestClose={() => {
 					setShowAddModal(false);
-					// Reset all states
-					setNewAccount({
-						accountNumber: '',
-						financialYear: '2024-25',
-						totalDeposits: 0,
-						interestRate: 7.1,
-						maturityDate: '2039-04-01',
-					});
-					setTotalDepositsInput('');
-					setInterestRateInput('7.1');
+					resetForm();
 				}}
 			>
 				<View
@@ -375,93 +919,483 @@ export const PPFAccounts = ({
 						backgroundColor: 'rgba(0,0,0,0.5)',
 					}}
 				>
-					<View style={[styles.card, { margin: 20, maxHeight: '80%' }]}>
-						<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-							Add PPF Account
-						</Text>
+					<ScrollView
+						style={{ maxHeight: '90%' }}
+						contentContainerStyle={{ paddingVertical: 20 }}
+					>
+						<View style={[styles.card, { margin: 20 }]}>
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								Add PPF Account
+							</Text>
 
-						<TextInput
-							style={styles.input}
-							placeholder='Account Number'
-							value={newAccount.accountNumber}
-							onChangeText={(text) =>
-								setNewAccount({ ...newAccount, accountNumber: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
+							<TextInput
+								style={styles.input}
+								placeholder='Account Number *'
+								value={newAccount.accountNumber}
+								onChangeText={(text) =>
+									setNewAccount({ ...newAccount, accountNumber: text })
+								}
+								placeholderTextColor={colors.gray}
+							/>
 
-						<TextInput
-							style={styles.input}
-							placeholder='Financial Year (e.g., 2024-25)'
-							value={newAccount.financialYear}
-							onChangeText={(text) =>
-								setNewAccount({ ...newAccount, financialYear: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Total Deposits'
-							value={totalDepositsInput}
-							onChangeText={handleTotalDepositsInput}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Interest Rate (%)'
-							value={interestRateInput}
-							onChangeText={handleInterestRateInput}
-							placeholderTextColor={colors.gray}
-							keyboardType='decimal-pad'
-						/>
-
-						<TextInput
-							style={styles.input}
-							placeholder='Maturity Date (YYYY-MM-DD)'
-							value={newAccount.maturityDate}
-							onChangeText={(text) =>
-								setNewAccount({ ...newAccount, maturityDate: text })
-							}
-							placeholderTextColor={colors.gray}
-						/>
-
-						<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+							{/* Date Picker for Start Date */}
 							<TouchableOpacity
-								style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-								onPress={() => {
-									setShowAddModal(false);
-									// Reset all states
-									setNewAccount({
-										accountNumber: '',
-										financialYear: '2024-25',
-										totalDeposits: 0,
-										interestRate: 7.1,
-										maturityDate: '2039-04-01',
-									});
-									setTotalDepositsInput('');
-									setInterestRateInput('7.1');
-								}}
-								disabled={isSubmitting}
+								style={styles.input}
+								onPress={() => showDatepicker('add')}
 							>
-								<Text style={styles.buttonText}>Cancel</Text>
+								<View style={[styles.row, { justifyContent: 'space-between' }]}>
+									<Text
+										style={{
+											color: startDateInput ? colors.dark : colors.gray,
+										}}
+									>
+										{startDateInput || 'Start Date (YYYY-MM-DD) *'}
+									</Text>
+									<Text style={{ color: colors.gray }}>📅</Text>
+								</View>
 							</TouchableOpacity>
 
+							<Text style={[styles.label, { marginTop: 16, marginBottom: 8 }]}>
+								Financial Year Contributions (Amount + Interest Earned)
+							</Text>
+
+							{financialYears.map((fy, index) => (
+								<View
+									key={index}
+									style={[styles.row, { marginBottom: 12, gap: 8 }]}
+								>
+									<View style={{ flex: 1.5 }}>
+										<TextInput
+											style={styles.input}
+											placeholder='FY (2024-25)'
+											value={fy.year}
+											onChangeText={(text) => handleFYYearChange(index, text)}
+											placeholderTextColor={colors.gray}
+										/>
+									</View>
+									<View style={{ flex: 2 }}>
+										<TextInput
+											style={styles.input}
+											placeholder='Amount'
+											value={fy.amount}
+											onChangeText={(text) => handleFYAmountChange(index, text)}
+											placeholderTextColor={colors.gray}
+											keyboardType='decimal-pad'
+										/>
+									</View>
+									<View style={{ flex: 2 }}>
+										<TextInput
+											style={styles.input}
+											placeholder='Interest'
+											value={fy.interest}
+											onChangeText={(text) =>
+												handleFYInterestChange(index, text)
+											}
+											placeholderTextColor={colors.gray}
+											keyboardType='decimal-pad'
+										/>
+									</View>
+									{financialYears.length > 1 && (
+										<TouchableOpacity
+											style={{
+												width: 40,
+												height: 40,
+												justifyContent: 'center',
+												alignItems: 'center',
+												backgroundColor: colors.error,
+												borderRadius: 4,
+											}}
+											onPress={() => removeFinancialYear(index)}
+										>
+											<Text style={{ color: colors.white, fontSize: 20 }}>
+												×
+											</Text>
+										</TouchableOpacity>
+									)}
+								</View>
+							))}
+
+							{/* Display totals */}
+							{(() => {
+								const { totalDeposits, totalInterest } =
+									calculateTotalsFromFinancialYears();
+								return (
+									<View
+										style={{
+											marginBottom: 16,
+											padding: 12,
+											backgroundColor: colors.lightGray,
+											borderRadius: 8,
+										}}
+									>
+										<View
+											style={[
+												styles.row,
+												{ justifyContent: 'space-between', marginBottom: 4 },
+											]}
+										>
+											<Text style={{ color: colors.dark, fontSize: 12 }}>
+												Total Deposits:
+											</Text>
+											<Text
+												style={{
+													color: colors.dark,
+													fontSize: 12,
+													fontWeight: 'bold',
+												}}
+											>
+												{formatCurrency(totalDeposits)}
+											</Text>
+										</View>
+										<View
+											style={[
+												styles.row,
+												{ justifyContent: 'space-between', marginBottom: 4 },
+											]}
+										>
+											<Text style={{ color: colors.dark, fontSize: 12 }}>
+												Total Interest:
+											</Text>
+											<Text
+												style={{
+													color: colors.dark,
+													fontSize: 12,
+													fontWeight: 'bold',
+												}}
+											>
+												{formatCurrency(totalInterest)}
+											</Text>
+										</View>
+										<View
+											style={[styles.row, { justifyContent: 'space-between' }]}
+										>
+											<Text style={{ color: colors.primary, fontSize: 12 }}>
+												Total Balance:
+											</Text>
+											<Text
+												style={{
+													color: colors.primary,
+													fontSize: 12,
+													fontWeight: 'bold',
+												}}
+											>
+												{formatCurrency(totalDeposits + totalInterest)}
+											</Text>
+										</View>
+									</View>
+								);
+							})()}
+
 							<TouchableOpacity
-								style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-								onPress={handleAddAccount}
-								disabled={isSubmitting}
+								style={[
+									styles.button,
+									styles.buttonSecondary,
+									{ marginBottom: 16 },
+								]}
+								onPress={addFinancialYear}
 							>
 								<Text style={styles.buttonText}>
-									{isSubmitting ? 'Adding...' : 'Add PPF'}
+									+ Add Another Financial Year
 								</Text>
 							</TouchableOpacity>
+
+							<TextInput
+								style={styles.input}
+								placeholder='Interest Rate (%) *'
+								value={interestRateInput}
+								onChangeText={handleInterestRateInput}
+								placeholderTextColor={colors.gray}
+								keyboardType='decimal-pad'
+							/>
+
+							<TextInput
+								style={styles.input}
+								placeholder='Maturity Date (Auto-calculated)'
+								value={newAccount.maturityDate}
+								editable={false}
+								placeholderTextColor={colors.gray}
+							/>
+
+							<Text style={{ color: colors.gray, fontSize: 12, marginTop: 8 }}>
+								Note: Maturity date is automatically calculated as 15 years from
+								start date
+							</Text>
+
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										setShowAddModal(false);
+										resetForm();
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={handleAddAccount}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting ? 'Adding...' : 'Add PPF'}
+									</Text>
+								</TouchableOpacity>
+							</View>
 						</View>
-					</View>
+					</ScrollView>
 				</View>
 			</Modal>
+
+			{/* Edit PPF Account Modal */}
+			<Modal
+				visible={showEditModal}
+				animationType='slide'
+				transparent={true}
+				onRequestClose={() => {
+					setShowEditModal(false);
+					resetForm();
+				}}
+			>
+				<View
+					style={{
+						flex: 1,
+						justifyContent: 'center',
+						backgroundColor: 'rgba(0,0,0,0.5)',
+					}}
+				>
+					<ScrollView
+						style={{ maxHeight: '90%' }}
+						contentContainerStyle={{ paddingVertical: 20 }}
+					>
+						<View style={[styles.card, { margin: 20 }]}>
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								Edit PPF Account
+							</Text>
+
+							<TextInput
+								style={styles.input}
+								placeholder='Account Number *'
+								value={newAccount.accountNumber}
+								onChangeText={(text) =>
+									setNewAccount({ ...newAccount, accountNumber: text })
+								}
+								placeholderTextColor={colors.gray}
+							/>
+
+							{/* Date Picker for Start Date */}
+							<TouchableOpacity
+								style={styles.input}
+								onPress={() => showDatepicker('edit')}
+							>
+								<View style={[styles.row, { justifyContent: 'space-between' }]}>
+									<Text
+										style={{
+											color: startDateInput ? colors.dark : colors.gray,
+										}}
+									>
+										{startDateInput || 'Start Date (YYYY-MM-DD) *'}
+									</Text>
+									<Text style={{ color: colors.gray }}>📅</Text>
+								</View>
+							</TouchableOpacity>
+
+							<Text style={[styles.label, { marginTop: 16, marginBottom: 8 }]}>
+								Financial Year Contributions (Amount + Interest Earned)
+							</Text>
+
+							{financialYears.map((fy, index) => (
+								<View
+									key={index}
+									style={[styles.row, { marginBottom: 12, gap: 8 }]}
+								>
+									<View style={{ flex: 1.5 }}>
+										<TextInput
+											style={styles.input}
+											placeholder='FY (2024-25)'
+											value={fy.year}
+											onChangeText={(text) => handleFYYearChange(index, text)}
+											placeholderTextColor={colors.gray}
+										/>
+									</View>
+									<View style={{ flex: 2 }}>
+										<TextInput
+											style={styles.input}
+											placeholder='Amount'
+											value={fy.amount}
+											onChangeText={(text) => handleFYAmountChange(index, text)}
+											placeholderTextColor={colors.gray}
+											keyboardType='decimal-pad'
+										/>
+									</View>
+									<View style={{ flex: 2 }}>
+										<TextInput
+											style={styles.input}
+											placeholder='Interest'
+											value={fy.interest}
+											onChangeText={(text) =>
+												handleFYInterestChange(index, text)
+											}
+											placeholderTextColor={colors.gray}
+											keyboardType='decimal-pad'
+										/>
+									</View>
+									{financialYears.length > 1 && (
+										<TouchableOpacity
+											style={{
+												width: 40,
+												height: 40,
+												justifyContent: 'center',
+												alignItems: 'center',
+												backgroundColor: colors.error,
+												borderRadius: 4,
+											}}
+											onPress={() => removeFinancialYear(index)}
+										>
+											<Text style={{ color: colors.white, fontSize: 20 }}>
+												×
+											</Text>
+										</TouchableOpacity>
+									)}
+								</View>
+							))}
+
+							{/* Display totals */}
+							{(() => {
+								const { totalDeposits, totalInterest } =
+									calculateTotalsFromFinancialYears();
+								return (
+									<View
+										style={{
+											marginBottom: 16,
+											padding: 12,
+											backgroundColor: colors.lightGray,
+											borderRadius: 8,
+										}}
+									>
+										<View
+											style={[
+												styles.row,
+												{ justifyContent: 'space-between', marginBottom: 4 },
+											]}
+										>
+											<Text style={{ color: colors.dark, fontSize: 12 }}>
+												Total Deposits:
+											</Text>
+											<Text
+												style={{
+													color: colors.dark,
+													fontSize: 12,
+													fontWeight: 'bold',
+												}}
+											>
+												{formatCurrency(totalDeposits)}
+											</Text>
+										</View>
+										<View
+											style={[
+												styles.row,
+												{ justifyContent: 'space-between', marginBottom: 4 },
+											]}
+										>
+											<Text style={{ color: colors.dark, fontSize: 12 }}>
+												Total Interest:
+											</Text>
+											<Text
+												style={{
+													color: colors.dark,
+													fontSize: 12,
+													fontWeight: 'bold',
+												}}
+											>
+												{formatCurrency(totalInterest)}
+											</Text>
+										</View>
+										<View
+											style={[styles.row, { justifyContent: 'space-between' }]}
+										>
+											<Text style={{ color: colors.primary, fontSize: 12 }}>
+												Total Balance:
+											</Text>
+											<Text
+												style={{
+													color: colors.primary,
+													fontSize: 12,
+													fontWeight: 'bold',
+												}}
+											>
+												{formatCurrency(totalDeposits + totalInterest)}
+											</Text>
+										</View>
+									</View>
+								);
+							})()}
+
+							<TouchableOpacity
+								style={[
+									styles.button,
+									styles.buttonSecondary,
+									{ marginBottom: 16 },
+								]}
+								onPress={addFinancialYear}
+							>
+								<Text style={styles.buttonText}>
+									+ Add Another Financial Year
+								</Text>
+							</TouchableOpacity>
+
+							<TextInput
+								style={styles.input}
+								placeholder='Interest Rate (%) *'
+								value={interestRateInput}
+								onChangeText={handleInterestRateInput}
+								placeholderTextColor={colors.gray}
+								keyboardType='decimal-pad'
+							/>
+
+							<TextInput
+								style={styles.input}
+								placeholder='Maturity Date (Auto-calculated)'
+								value={newAccount.maturityDate}
+								editable={false}
+								placeholderTextColor={colors.gray}
+							/>
+
+							<Text style={{ color: colors.gray, fontSize: 12, marginTop: 8 }}>
+								Note: Maturity date is automatically calculated as 15 years from
+								start date
+							</Text>
+
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										setShowEditModal(false);
+										resetForm();
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={handleUpdateAccount}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting ? 'Updating...' : 'Update PPF'}
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</View>
+					</ScrollView>
+				</View>
+			</Modal>
+
+			{/* Date Picker Component */}
+			{renderDatePicker()}
 
 			<AddDetailsButton
 				label='PPF Account'

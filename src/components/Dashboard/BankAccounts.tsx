@@ -3,7 +3,12 @@ import { BankAccountBanner, getBankIcon } from '@/icons';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
-import { BankAccount, BankAccountsProps, CreateBankAccountData } from '@/types';
+import {
+	AccountTypes,
+	BankAccount,
+	BankAccountsProps,
+	CreateBankAccountData,
+} from '@/types';
 import { formatCurrency, maskAccountNumber } from '@/utils';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
@@ -57,7 +62,7 @@ export const BankAccounts = ({
 		accountName: '',
 		bankName: '',
 		accountNumber: '',
-		accountType: '',
+		accountType: 'Savings',
 		balance: 0,
 		currency: 'INR',
 	});
@@ -104,7 +109,7 @@ export const BankAccounts = ({
 		console.log('Account type selected:', type);
 		setNewAccount({
 			...newAccount,
-			accountType: type,
+			accountType: type as AccountTypes,
 		});
 		setShowAccountTypeDropdown(false);
 		setAccountTypeSearch('');

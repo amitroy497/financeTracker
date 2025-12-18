@@ -155,12 +155,14 @@ export interface AssetSummary {
 	otherAssets: number;
 }
 
+export type AccountTypes = 'Savings' | 'Current' | 'Salary';
+
 export interface BankAccount {
 	id: string;
 	accountName: string;
 	bankName: string;
 	accountNumber?: string;
-	accountType: 'Savings' | 'Current' | 'Salary';
+	accountType: AccountTypes;
 	balance: number;
 	currency?: string;
 	interestRate?: number;
@@ -168,8 +170,6 @@ export interface BankAccount {
 	lastUpdated: string;
 	createdAt?: string;
 }
-
-export type AccountTypes = 'Savings' | 'Current' | 'Salary';
 
 export interface FixedDeposit {
 	id: string;
@@ -250,7 +250,7 @@ export interface CreateBankAccountData {
 	accountName?: string;
 	bankName: string;
 	accountNumber?: string;
-	accountType: string;
+	accountType: AccountTypes;
 	balance: number;
 	currency?: string;
 	interestRate?: number;
@@ -339,10 +339,16 @@ export interface PublicProvidentFund {
 	currentBalance: number;
 	interestRate: number;
 	maturityDate: string;
+	startDate?: string;
+	annualContributions?: {
+		[financialYear: string]: {
+			amount: number;
+			interest: number;
+		};
+	};
 	notes?: string;
 	lastUpdated: string;
 }
-
 export interface FloatingRateBond {
 	id: string;
 	bondName: string;
@@ -429,14 +435,14 @@ export interface CreateEquityETFData {
 }
 
 export interface CreatePPFData {
-	accountNumber?: string;
-	financialYear?: string;
+	accountNumber: string;
+	financialYear: string;
 	totalDeposits: number;
 	interestRate: number;
 	maturityDate: string;
-	notes?: string;
+	startDate: string;
+	annualContributions: Record<string, { amount: number; interest: number }>; // Make sure this exists
 }
-
 export interface CreateFRBData {
 	bondName: string;
 	certificateNumber?: string;

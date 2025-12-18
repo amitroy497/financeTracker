@@ -158,3 +158,15 @@ export const formatStringNumber = (
 	// Round to specified decimal places
 	return parseFloat(num.toFixed(decimals));
 };
+
+export const getCurrentFinancialYear = (): string => {
+	const now = new Date();
+	const year = now.getFullYear();
+	const month = now.getMonth() + 1; // January is 0
+
+	if (month >= 4) {
+		return `${year}-${(year + 1).toString().slice(-2)}`;
+	} else {
+		return `${year - 1}-${year.toString().slice(-2)}`;
+	}
+};
