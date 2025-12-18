@@ -1,1 +1,10 @@
 export const PPFIcon = require('./ppf-icon.png');
+export const CashIcon = require('./cash-icon.png');
+export const FixedDepositsIcon = require('./fixedDeposits-icon.png');
+export const RecurringDepositsIcon = require('./recurringDeposits-icon.png');
+export const BondsIcon = require('./bonds-icon.png');
+export const EquityETFsIcon = require('./equityETFs-icon.png');
+export const GoldETFsIcon = require('./goldETFs-icon.png');
+export const MutualFundsIcon = require('./mutualFunds-icon.png');
+export const NPSIcon = require('./nps-icon.png');
+export const StocksIcon = require('./stocks-icon.png');

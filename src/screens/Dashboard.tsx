@@ -14,6 +14,18 @@ import {
 	Stocks,
 } from '@/components';
 import { useAuth } from '@/hooks';
+import {
+	BondsIcon,
+	CashIcon,
+	EquityETFsIcon,
+	FixedDepositsIcon,
+	GoldETFsIcon,
+	MutualFundsIcon,
+	NPSIcon,
+	PPFIcon,
+	RecurringDepositsIcon,
+	StocksIcon,
+} from '@/icons';
 import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
@@ -22,6 +34,7 @@ import { formatCurrency, isDataEmpty } from '@/utils';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
 	Alert,
+	Image,
 	RefreshControl,
 	ScrollView,
 	Text,
@@ -580,13 +593,23 @@ export const Dashboard = () => {
 					]}
 					onPress={() => setActiveSection('cash')}
 				>
+					<Image
+						source={CashIcon}
+						style={{
+							width: 50,
+							height: 50,
+							marginRight: 8,
+							borderRadius: 6,
+						}}
+						resizeMode='contain'
+					/>
 					<Text
 						style={[
 							styles.buttonText,
 							activeSection === 'cash' ? {} : { color: colors.dark },
 						]}
 					>
-						💰 Cash
+						Cash
 					</Text>
 				</TouchableOpacity>
 
@@ -600,13 +623,23 @@ export const Dashboard = () => {
 					]}
 					onPress={() => setActiveSection('fd')}
 				>
+					<Image
+						source={FixedDepositsIcon}
+						style={{
+							width: 50,
+							height: 50,
+							marginRight: 8,
+							borderRadius: 6,
+						}}
+						resizeMode='contain'
+					/>
 					<Text
 						style={[
 							styles.buttonText,
 							activeSection === 'fd' ? {} : { color: colors.dark },
 						]}
 					>
-						🏦 Fixed Deposits
+						Fixed Deposits
 					</Text>
 				</TouchableOpacity>
 
@@ -620,13 +653,23 @@ export const Dashboard = () => {
 					]}
 					onPress={() => setActiveSection('rd')}
 				>
+					<Image
+						source={RecurringDepositsIcon}
+						style={{
+							width: 50,
+							height: 50,
+							marginRight: 8,
+							borderRadius: 6,
+						}}
+						resizeMode='contain'
+					/>
 					<Text
 						style={[
 							styles.buttonText,
 							activeSection === 'rd' ? {} : { color: colors.dark },
 						]}
 					>
-						📈 Recurring Deposits
+						Recurring Deposits
 					</Text>
 				</TouchableOpacity>
 
@@ -640,13 +683,23 @@ export const Dashboard = () => {
 					]}
 					onPress={() => setActiveSection('mf')}
 				>
+					<Image
+						source={MutualFundsIcon}
+						style={{
+							width: 50,
+							height: 50,
+							marginRight: 8,
+							borderRadius: 6,
+						}}
+						resizeMode='contain'
+					/>
 					<Text
 						style={[
 							styles.buttonText,
 							activeSection === 'mf' ? {} : { color: colors.dark },
 						]}
 					>
-						📊 Mutual Funds
+						Mutual Funds
 					</Text>
 				</TouchableOpacity>
 
@@ -660,13 +713,23 @@ export const Dashboard = () => {
 					]}
 					onPress={() => setActiveSection('gold')}
 				>
+					<Image
+						source={GoldETFsIcon}
+						style={{
+							width: 50,
+							height: 50,
+							marginRight: 8,
+							borderRadius: 6,
+						}}
+						resizeMode='contain'
+					/>
 					<Text
 						style={[
 							styles.buttonText,
 							activeSection === 'gold' ? {} : { color: colors.dark },
 						]}
 					>
-						🥇 Gold ETFs
+						Gold ETFs
 					</Text>
 				</TouchableOpacity>
 
@@ -680,13 +743,23 @@ export const Dashboard = () => {
 					]}
 					onPress={() => setActiveSection('stocks')}
 				>
+					<Image
+						source={StocksIcon}
+						style={{
+							width: 50,
+							height: 50,
+							marginRight: 8,
+							borderRadius: 6,
+						}}
+						resizeMode='contain'
+					/>
 					<Text
 						style={[
 							styles.buttonText,
 							activeSection === 'stocks' ? {} : { color: colors.dark },
 						]}
 					>
-						📈 Stocks
+						Stocks
 					</Text>
 				</TouchableOpacity>
 
@@ -700,13 +773,23 @@ export const Dashboard = () => {
 					]}
 					onPress={() => setActiveSection('equity')}
 				>
+					<Image
+						source={EquityETFsIcon}
+						style={{
+							width: 50,
+							height: 50,
+							marginRight: 8,
+							borderRadius: 6,
+						}}
+						resizeMode='contain'
+					/>
 					<Text
 						style={[
 							styles.buttonText,
 							activeSection === 'equity' ? {} : { color: colors.dark },
 						]}
 					>
-						📊 Equity ETFs
+						Equity ETFs
 					</Text>
 				</TouchableOpacity>
 
@@ -720,13 +803,23 @@ export const Dashboard = () => {
 					]}
 					onPress={() => setActiveSection('ppf')}
 				>
+					<Image
+						source={PPFIcon}
+						style={{
+							width: 50,
+							height: 50,
+							marginRight: 8,
+							borderRadius: 6,
+						}}
+						resizeMode='contain'
+					/>
 					<Text
 						style={[
 							styles.buttonText,
 							activeSection === 'ppf' ? {} : { color: colors.dark },
 						]}
 					>
-						🏛️ PPF
+						Public Provident Fund
 					</Text>
 				</TouchableOpacity>
 
@@ -740,13 +833,23 @@ export const Dashboard = () => {
 					]}
 					onPress={() => setActiveSection('frb')}
 				>
+					<Image
+						source={BondsIcon}
+						style={{
+							width: 50,
+							height: 50,
+							marginRight: 8,
+							borderRadius: 6,
+						}}
+						resizeMode='contain'
+					/>
 					<Text
 						style={[
 							styles.buttonText,
 							activeSection === 'frb' ? {} : { color: colors.dark },
 						]}
 					>
-						📄 FRB
+						Bonds
 					</Text>
 				</TouchableOpacity>
 
@@ -759,13 +862,23 @@ export const Dashboard = () => {
 					]}
 					onPress={() => setActiveSection('nps')}
 				>
+					<Image
+						source={NPSIcon}
+						style={{
+							width: 50,
+							height: 50,
+							marginRight: 8,
+							borderRadius: 6,
+						}}
+						resizeMode='contain'
+					/>
 					<Text
 						style={[
 							styles.buttonText,
 							activeSection === 'nps' ? {} : { color: colors.dark },
 						]}
 					>
-						👵 NPS
+						National Pension Scheme
 					</Text>
 				</TouchableOpacity>
 			</ScrollView>

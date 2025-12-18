@@ -3,7 +3,11 @@ import { assetService } from '@/services/assetService';
 import { createStyles } from '@/styles';
 import { useTheme } from '@/theme';
 import { CreatePPFData, PPFAccountsProps } from '@/types';
-import { formatCurrency, getCurrentFinancialYear } from '@/utils';
+import {
+	formatCurrency,
+	getCurrentFinancialYear,
+	parseDateString,
+} from '@/utils';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import {
@@ -16,7 +20,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { AddDetailsButton, Banner, EditDeleteButtons } from '../UI';
+import { AddDetailsButton, Banner, CardsView } from '../UI';
 
 export const PPFAccounts = ({
 	accounts,
@@ -65,6 +69,7 @@ export const PPFAccounts = ({
 		maturity.setFullYear(maturity.getFullYear() + 15);
 		return maturity.toISOString().split('T')[0];
 	};
+
 	const formatDate = (date: Date): string => {
 		const year = date.getFullYear();
 		const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -119,57 +124,10 @@ export const PPFAccounts = ({
 		);
 	};
 
-	const handleFYAmountChange = (index: number, amount: string) => {
-		const updatedYears = [...financialYears];
-		let cleanedText = amount.replace(/[^0-9.]/g, '');
-		const decimalCount = (cleanedText.match(/\./g) || []).length;
-		if (decimalCount > 1) {
-			const firstDecimalIndex = cleanedText.indexOf('.');
-			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
-			const afterDecimal = cleanedText
-				.substring(firstDecimalIndex + 1)
-				.replace(/\./g, '');
-			cleanedText = beforeDecimal + afterDecimal;
-		}
-
-		const decimalIndex = cleanedText.indexOf('.');
-		if (decimalIndex !== -1) {
-			const decimalPart = cleanedText.substring(decimalIndex + 1);
-			if (decimalPart.length > 2) {
-				cleanedText = cleanedText.substring(0, decimalIndex + 3);
-			}
-		}
-
-		updatedYears[index] = { ...updatedYears[index], amount: cleanedText };
-		setFinancialYears(updatedYears);
-	};
-
-	const handleFYInterestChange = (index: number, interest: string) => {
-		const updatedYears = [...financialYears];
-		let cleanedText = interest.replace(/[^0-9.]/g, '');
-		const decimalCount = (cleanedText.match(/\./g) || []).length;
-		if (decimalCount > 1) {
-			const firstDecimalIndex = cleanedText.indexOf('.');
-			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
-			const afterDecimal = cleanedText
-				.substring(firstDecimalIndex + 1)
-				.replace(/\./g, '');
-			cleanedText = beforeDecimal + afterDecimal;
-		}
-
-		const decimalIndex = cleanedText.indexOf('.');
-		if (decimalIndex !== -1) {
-			const decimalPart = cleanedText.substring(decimalIndex + 1);
-			if (decimalPart.length > 2) {
-				cleanedText = cleanedText.substring(0, decimalIndex + 3);
-			}
-		}
-
-		updatedYears[index] = { ...updatedYears[index], interest: cleanedText };
-		setFinancialYears(updatedYears);
-	};
-
-	const handleInterestRateInput = (text: string) => {
+	const handleDecimalInput = (
+		text: string,
+		type: 'interestRate' | 'amount' | 'interest'
+	) => {
 		let cleanedText = text.replace(/[^0-9.]/g, '');
 		const decimalCount = (cleanedText.match(/\./g) || []).length;
 		if (decimalCount > 1) {
@@ -189,19 +147,40 @@ export const PPFAccounts = ({
 			}
 		}
 
-		setInterestRateInput(cleanedText);
-
 		let parsedValue: number;
 		if (cleanedText === '' || cleanedText === '.') {
-			parsedValue = 7.1;
+			parsedValue = 0;
 		} else {
 			parsedValue = parseFloat(cleanedText);
-			if (isNaN(parsedValue)) parsedValue = 7.1;
+			if (isNaN(parsedValue)) parsedValue = 0;
 		}
 
+		return { cleanedText, parsedValue };
+	};
+
+	const handleFYAmountChange = (index: number, amount: string) => {
+		const { cleanedText } = handleDecimalInput(amount, 'amount');
+		const updatedYears = [...financialYears];
+		updatedYears[index] = { ...updatedYears[index], amount: cleanedText };
+		setFinancialYears(updatedYears);
+	};
+
+	const handleFYInterestChange = (index: number, interest: string) => {
+		const { cleanedText } = handleDecimalInput(interest, 'interest');
+		const updatedYears = [...financialYears];
+		updatedYears[index] = { ...updatedYears[index], interest: cleanedText };
+		setFinancialYears(updatedYears);
+	};
+
+	const handleInterestRateInput = (text: string) => {
+		const { cleanedText, parsedValue } = handleDecimalInput(
+			text,
+			'interestRate'
+		);
+		setInterestRateInput(cleanedText);
 		setNewAccount({
 			...newAccount,
-			interestRate: parsedValue,
+			interestRate: cleanedText === '' ? 7.1 : parsedValue,
 		});
 	};
 
@@ -238,7 +217,11 @@ export const PPFAccounts = ({
 		}
 	};
 
-	const showDatepicker = (forModal: 'add' | 'edit') => {
+	const showDatepicker = () => {
+		// Make sure selectedDate is properly set before showing picker
+		if (!selectedDate) {
+			setSelectedDate(new Date());
+		}
 		setShowDatePicker(true);
 	};
 
@@ -275,12 +258,9 @@ export const PPFAccounts = ({
 		}
 
 		setFinancialYears(fyEntries);
-
-		const startDate = account.startDate
-			? new Date(account.startDate)
-			: new Date();
-		setSelectedDate(startDate);
-		setStartDateInput(account.startDate || '');
+		const startDate = parseDateString(account.startDate);
+		setSelectedDate(startDate); // Make sure this is set
+		setStartDateInput(account.startDate || formatDate(startDate)); // Format it properly
 
 		setNewAccount({
 			accountNumber: account.accountNumber || '',
@@ -288,8 +268,9 @@ export const PPFAccounts = ({
 			totalDeposits: account.totalDeposits || 0,
 			interestRate: account.interestRate || 7.1,
 			maturityDate:
-				account.maturityDate || calculateMaturityDate(account.startDate || ''),
-			startDate: account.startDate || '',
+				account.maturityDate ||
+				calculateMaturityDate(account.startDate || formatDate(startDate)),
+			startDate: account.startDate || formatDate(startDate),
 			annualContributions: annualContributions,
 		});
 		setInterestRateInput((account.interestRate || 7.1).toString());
@@ -441,11 +422,9 @@ export const PPFAccounts = ({
 				}
 			});
 
-			const currentBalance = totalDeposits + totalInterest;
-
 			const accountData = {
 				accountNumber: newAccount.accountNumber,
-				financialYear: financialYears[0].year, // First year as primary
+				financialYear: financialYears[0].year,
 				totalDeposits,
 				interestRate: newAccount.interestRate,
 				maturityDate: newAccount.maturityDate,
@@ -485,7 +464,7 @@ export const PPFAccounts = ({
 
 		setInterestRateInput('7.1');
 		setStartDateInput(formattedCurrentDate);
-		setSelectedDate(currentDate);
+		setSelectedDate(currentDate); // Make sure this is set
 		setFinancialYears([
 			{
 				year: startFinancialYear,
@@ -580,11 +559,11 @@ export const PPFAccounts = ({
 			return (
 				<DateTimePicker
 					testID='dateTimePicker'
-					value={selectedDate}
+					value={selectedDate || new Date()} // Ensure we always have a value
 					mode='date'
 					display={Platform.OS === 'ios' ? 'spinner' : 'default'}
 					onChange={handleDateChange}
-					maximumDate={new Date()}
+					maximumDate={new Date()} // Allows past dates, prevents future dates
 				/>
 			);
 		}
@@ -630,6 +609,10 @@ export const PPFAccounts = ({
 		const currentDate = new Date();
 		const formattedDate = formatDate(currentDate);
 		setStartDateInput(formattedDate);
+
+		// Set selectedDate to current date
+		setSelectedDate(currentDate);
+
 		const updatedAccount = {
 			...newAccount,
 			startDate: formattedDate,
@@ -651,6 +634,487 @@ export const PPFAccounts = ({
 		setShowAddModal(true);
 	};
 
+	const renderPPFAccountCard = (account: any) => {
+		const yearsToMaturity = calculateYearsToMaturity(account.maturityDate);
+		const totalInterest = calculateTotalInterest(account);
+		const annualContributions = parseAnnualContributions(account.notes);
+		const totalInterestFromContributions =
+			calculateTotalInterestFromContributions(annualContributions);
+
+		return (
+			<TouchableOpacity
+				key={account.id}
+				style={[
+					styles.card,
+					{
+						marginBottom: 12,
+						borderLeftWidth: 4,
+						borderLeftColor: colors.primary,
+						paddingVertical: 16,
+						paddingHorizontal: 8,
+					},
+				]}
+				onPress={() => handleEditAccount(account)}
+			>
+				<View style={[styles.row, { alignItems: 'flex-start' }]}>
+					<View style={{ flex: 1 }}>
+						<Text
+							style={{
+								fontWeight: 'bold',
+								color: colors.dark,
+								fontSize: 16,
+							}}
+						>
+							PPF Account
+						</Text>
+						<Text style={{ color: colors.gray, fontSize: 12, marginTop: 2 }}>
+							{account.accountNumber} • {account.interestRate}% interest
+						</Text>
+						<View
+							style={[
+								styles.row,
+								{ justifyContent: 'space-between', marginTop: 8 },
+							]}
+						>
+							<View>
+								<Text style={{ color: colors.gray, fontSize: 12 }}>
+									Total Deposits
+								</Text>
+								<Text
+									style={{
+										fontWeight: 'bold',
+										color: colors.dark,
+										fontSize: 14,
+									}}
+								>
+									{formatCurrency(account.totalDeposits)}
+								</Text>
+							</View>
+
+							<View style={{ alignItems: 'center' }}>
+								<Text style={{ color: colors.gray, fontSize: 12 }}>
+									Total Interest
+								</Text>
+								<Text
+									style={{
+										fontWeight: 'bold',
+										color: colors.dark,
+										fontSize: 14,
+									}}
+								>
+									{formatCurrency(totalInterest)}
+								</Text>
+							</View>
+
+							<View style={{ alignItems: 'flex-end' }}>
+								<Text style={{ color: colors.gray, fontSize: 12 }}>
+									Current Balance
+								</Text>
+								<Text
+									style={{
+										fontWeight: 'bold',
+										color: colors.dark,
+										fontSize: 14,
+									}}
+								>
+									{formatCurrency(account.currentBalance)}
+								</Text>
+							</View>
+						</View>
+
+						{/* Annual Contributions Section */}
+						{Object.keys(annualContributions).length > 0 && (
+							<View style={{ marginTop: 12 }}>
+								<Text
+									style={{
+										color: colors.gray,
+										fontSize: 12,
+										marginBottom: 4,
+									}}
+								>
+									Annual Contributions (Amount + Interest):
+								</Text>
+								{Object.entries(annualContributions).map(
+									([fy, data]: [string, any]) => (
+										<View
+											key={fy}
+											style={[
+												styles.row,
+												{
+													justifyContent: 'space-between',
+													marginBottom: 2,
+												},
+											]}
+										>
+											<Text style={{ color: colors.gray, fontSize: 10 }}>
+												FY {fy}:
+											</Text>
+											<View style={[styles.row, { gap: 8 }]}>
+												<Text style={{ color: colors.gray, fontSize: 10 }}>
+													Amount: {formatCurrency(data.amount || 0)}
+												</Text>
+												<Text style={{ color: colors.gray, fontSize: 10 }}>
+													Interest: {formatCurrency(data.interest || 0)}
+												</Text>
+											</View>
+										</View>
+									)
+								)}
+								{totalInterestFromContributions > 0 && (
+									<View
+										style={[
+											styles.row,
+											{ justifyContent: 'space-between', marginTop: 4 },
+										]}
+									>
+										<Text
+											style={{
+												color: colors.primary,
+												fontSize: 10,
+												fontWeight: 'bold',
+											}}
+										>
+											Total Interest from Contributions:
+										</Text>
+										<Text
+											style={{
+												color: colors.primary,
+												fontSize: 10,
+												fontWeight: 'bold',
+											}}
+										>
+											{formatCurrency(totalInterestFromContributions)}
+										</Text>
+									</View>
+								)}
+							</View>
+						)}
+
+						{/* Maturity Info */}
+						<View
+							style={[
+								styles.row,
+								{ justifyContent: 'space-between', marginTop: 8 },
+							]}
+						>
+							<Text style={{ color: colors.gray, fontSize: 12 }}>
+								{yearsToMaturity} years to maturity
+							</Text>
+							<Text style={{ color: colors.gray, fontSize: 12 }}>
+								Matures: {new Date(account.maturityDate).toLocaleDateString()}
+							</Text>
+						</View>
+
+						{/* Edit and Delete Buttons */}
+						<View
+							style={[
+								styles.row,
+								{ marginTop: 12, justifyContent: 'flex-end' },
+							]}
+						>
+							<TouchableOpacity
+								style={{ marginRight: 16 }}
+								onPress={() => handleEditAccount(account)}
+							>
+								<Text style={{ color: colors.primary, fontSize: 12 }}>
+									✏️ Edit
+								</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								onPress={() =>
+									handleDeleteAccount(account.id, account.accountNumber || '')
+								}
+							>
+								<Text style={{ color: colors.danger, fontSize: 12 }}>
+									🗑️ Delete
+								</Text>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</View>
+			</TouchableOpacity>
+		);
+	};
+
+	const renderFinancialYearFields = () => {
+		return financialYears.map((fy, index) => (
+			<View key={index} style={{ marginBottom: 12, gap: 8 }}>
+				<View
+					style={[
+						styles.row,
+						{
+							justifyContent: 'space-between',
+							paddingHorizontal: 16,
+						},
+					]}
+				>
+					<Text>FY {fy.year}</Text>
+					{financialYears.length > 1 && !fy.isFirstYear && (
+						<TouchableOpacity onPress={() => removeFinancialYear(index)}>
+							<Text style={{ color: colors.danger, fontSize: 12 }}>
+								🗑️ Delete
+							</Text>
+						</TouchableOpacity>
+					)}
+				</View>
+				<View
+					style={[styles.row, { justifyContent: 'space-between', gap: 10 }]}
+				>
+					<TextInput
+						style={[styles.input, { flex: 1 }]}
+						placeholder='Amount'
+						value={fy.amount}
+						onChangeText={(text) => handleFYAmountChange(index, text)}
+						placeholderTextColor={colors.gray}
+						keyboardType='decimal-pad'
+					/>
+					<TextInput
+						style={[styles.input, { flex: 1 }]}
+						placeholder='Interest'
+						value={fy.interest}
+						onChangeText={(text) => handleFYInterestChange(index, text)}
+						placeholderTextColor={colors.gray}
+						keyboardType='decimal-pad'
+					/>
+				</View>
+			</View>
+		));
+	};
+
+	const renderAddEditModal = (isEdit: boolean) => {
+		return (
+			<Modal
+				visible={isEdit ? showEditModal : showAddModal}
+				animationType='slide'
+				transparent={true}
+				onRequestClose={() => {
+					if (isEdit) {
+						setShowEditModal(false);
+						setEditingAccountId(null);
+					} else {
+						setShowAddModal(false);
+					}
+					resetForm();
+				}}
+			>
+				<View
+					style={{
+						flex: 1,
+						justifyContent: 'center',
+						backgroundColor: 'rgba(0,0,0,0.5)',
+					}}
+				>
+					<View style={[styles.card, { margin: 20, maxHeight: '90%' }]}>
+						<ScrollView
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ flexGrow: 1 }}
+						>
+							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
+								{isEdit ? 'Edit PPF Account' : 'Add PPF Account'}
+							</Text>
+
+							{/* Current Values Section */}
+							{(() => {
+								const { totalDeposits, totalInterest } =
+									calculateTotalsFromFinancialYears();
+								return (
+									<View
+										style={{
+											marginBottom: 16,
+											padding: 12,
+											backgroundColor: colors.lightGray,
+											borderRadius: 8,
+										}}
+									>
+										<Text
+											style={{
+												color: colors.gray,
+												fontSize: 12,
+												marginBottom: 4,
+											}}
+										>
+											Current Values:
+										</Text>
+										<View
+											style={[
+												styles.row,
+												{ justifyContent: 'space-between', marginBottom: 4 },
+											]}
+										>
+											<Text style={{ color: colors.dark, fontSize: 12 }}>
+												Total Deposits:
+											</Text>
+											<Text
+												style={{
+													color: colors.dark,
+													fontSize: 12,
+													fontWeight: 'bold',
+												}}
+											>
+												{formatCurrency(totalDeposits)}
+											</Text>
+										</View>
+										<View
+											style={[
+												styles.row,
+												{ justifyContent: 'space-between', marginBottom: 4 },
+											]}
+										>
+											<Text style={{ color: colors.dark, fontSize: 12 }}>
+												Total Interest:
+											</Text>
+											<Text
+												style={{
+													color: colors.dark,
+													fontSize: 12,
+													fontWeight: 'bold',
+												}}
+											>
+												{formatCurrency(totalInterest)}
+											</Text>
+										</View>
+										<View
+											style={[styles.row, { justifyContent: 'space-between' }]}
+										>
+											<Text style={{ color: colors.primary, fontSize: 12 }}>
+												Total Balance:
+											</Text>
+											<Text
+												style={{
+													color: colors.primary,
+													fontSize: 12,
+													fontWeight: 'bold',
+												}}
+											>
+												{formatCurrency(totalDeposits + totalInterest)}
+											</Text>
+										</View>
+									</View>
+								);
+							})()}
+
+							{/* Account Number Field */}
+							<Text style={[styles.label, { marginBottom: 4 }]}>
+								Account Number *
+							</Text>
+							<TextInput
+								style={styles.input}
+								placeholder='Account Number *'
+								value={newAccount.accountNumber}
+								onChangeText={(text) =>
+									setNewAccount({ ...newAccount, accountNumber: text })
+								}
+								placeholderTextColor={colors.gray}
+							/>
+
+							{/* Start Date Field - RENDER DIRECTLY */}
+							<Text style={[styles.label, { marginTop: 12, marginBottom: 4 }]}>
+								Start Date *
+							</Text>
+							<TouchableOpacity
+								style={styles.input}
+								onPress={() => {
+									// Make sure we have a valid selectedDate
+									if (!selectedDate && startDateInput) {
+										setSelectedDate(new Date(startDateInput));
+									} else if (!selectedDate) {
+										setSelectedDate(new Date());
+									}
+									setShowDatePicker(true);
+								}}
+							>
+								<View style={[styles.row, { justifyContent: 'space-between' }]}>
+									<Text
+										style={{
+											color: startDateInput ? colors.dark : colors.gray,
+										}}
+									>
+										{startDateInput || 'Select Start Date (YYYY-MM-DD)'}
+									</Text>
+									<Text style={{ color: colors.gray }}>📅</Text>
+								</View>
+							</TouchableOpacity>
+
+							{/* Rest of the fields... */}
+							<Text style={[styles.label, { marginTop: 16, marginBottom: 8 }]}>
+								Financial Year Contributions (Amount + Interest Earned)
+							</Text>
+
+							{renderFinancialYearFields()}
+
+							<TouchableOpacity
+								style={[
+									styles.button,
+									styles.buttonSecondary,
+									{ marginBottom: 16 },
+								]}
+								onPress={addFinancialYear}
+							>
+								<Text style={styles.buttonText}>
+									+ Add Another Financial Year
+								</Text>
+							</TouchableOpacity>
+
+							<TextInput
+								style={styles.input}
+								placeholder='Interest Rate (%) *'
+								value={interestRateInput}
+								onChangeText={handleInterestRateInput}
+								placeholderTextColor={colors.gray}
+								keyboardType='decimal-pad'
+							/>
+
+							<TextInput
+								style={styles.input}
+								placeholder='Maturity Date (Auto-calculated)'
+								value={newAccount.maturityDate}
+								editable={false}
+								placeholderTextColor={colors.gray}
+							/>
+
+							<Text style={{ color: colors.gray, fontSize: 12, marginTop: 8 }}>
+								Note: Maturity date is automatically calculated as 15 years from
+								start date
+							</Text>
+
+							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
+								<TouchableOpacity
+									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
+									onPress={() => {
+										if (isEdit) {
+											setShowEditModal(false);
+											setEditingAccountId(null);
+										} else {
+											setShowAddModal(false);
+										}
+										resetForm();
+									}}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>Cancel</Text>
+								</TouchableOpacity>
+
+								<TouchableOpacity
+									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
+									onPress={isEdit ? handleUpdateAccount : handleAddAccount}
+									disabled={isSubmitting}
+								>
+									<Text style={styles.buttonText}>
+										{isSubmitting
+											? 'Saving...'
+											: isEdit
+											? 'Update PPF'
+											: 'Add PPF'}
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</ScrollView>
+					</View>
+				</View>
+			</Modal>
+		);
+	};
+
 	return (
 		<View style={{ padding: 20 }}>
 			<Banner image={PPFBanner} title='PPF Balance' amount={totalBalance}>
@@ -666,686 +1130,28 @@ export const PPFAccounts = ({
 				Public Provident Fund Accounts
 			</Text>
 
-			<ScrollView
-				showsVerticalScrollIndicator={false}
-				style={{ maxHeight: 400 }}
-				contentContainerStyle={{ flexGrow: 1 }}
-				nestedScrollEnabled={true}
-			>
-				{accounts.map((account) => {
-					const yearsToMaturity = calculateYearsToMaturity(
-						account.maturityDate
-					);
-					const totalInterest = calculateTotalInterest(account);
-					const annualContributions = parseAnnualContributions(account.notes);
-					const totalInterestFromContributions =
-						calculateTotalInterestFromContributions(annualContributions);
-
-					return (
-						<TouchableOpacity
-							key={account.id}
-							style={[
-								styles.card,
-								{
-									marginBottom: 12,
-									borderLeftWidth: 4,
-									borderLeftColor: colors.primary,
-									paddingVertical: 16,
-									paddingHorizontal: 8,
-								},
-							]}
-						>
-							<View style={[styles.row, { alignItems: 'flex-start' }]}>
-								<View style={{ flex: 1 }}>
-									<Text
-										style={{
-											fontWeight: 'bold',
-											color: colors.dark,
-											fontSize: 16,
-										}}
-									>
-										PPF Account
-									</Text>
-									<Text
-										style={{ color: colors.gray, fontSize: 12, marginTop: 2 }}
-									>
-										{account.accountNumber} • {account.interestRate}% interest
-									</Text>
-									<View
-										style={[
-											styles.row,
-											{ justifyContent: 'space-between', marginTop: 8 },
-										]}
-									>
-										<View>
-											<Text style={{ color: colors.gray, fontSize: 12 }}>
-												Total Deposits
-											</Text>
-											<Text
-												style={{
-													fontWeight: 'bold',
-													color: colors.dark,
-													fontSize: 14,
-												}}
-											>
-												{formatCurrency(account.totalDeposits)}
-											</Text>
-										</View>
-
-										<View style={{ alignItems: 'center' }}>
-											<Text style={{ color: colors.gray, fontSize: 12 }}>
-												Total Interest
-											</Text>
-											<Text
-												style={{
-													fontWeight: 'bold',
-													color: colors.dark,
-													fontSize: 14,
-												}}
-											>
-												{formatCurrency(totalInterest)}
-											</Text>
-										</View>
-
-										<View style={{ alignItems: 'flex-end' }}>
-											<Text style={{ color: colors.gray, fontSize: 12 }}>
-												Current Balance
-											</Text>
-											<Text
-												style={{
-													fontWeight: 'bold',
-													color: colors.dark,
-													fontSize: 14,
-												}}
-											>
-												{formatCurrency(account.currentBalance)}
-											</Text>
-										</View>
-									</View>
-
-									{/* Annual Contributions Section */}
-									{Object.keys(annualContributions).length > 0 && (
-										<View style={{ marginTop: 12 }}>
-											<Text
-												style={{
-													color: colors.gray,
-													fontSize: 12,
-													marginBottom: 4,
-												}}
-											>
-												Annual Contributions (Amount + Interest):
-											</Text>
-											{Object.entries(annualContributions).map(
-												([fy, data]: [string, any]) => (
-													<View
-														key={fy}
-														style={[
-															styles.row,
-															{
-																justifyContent: 'space-between',
-																marginBottom: 2,
-															},
-														]}
-													>
-														<Text style={{ color: colors.gray, fontSize: 10 }}>
-															FY {fy}:
-														</Text>
-														<View style={[styles.row, { gap: 8 }]}>
-															<Text
-																style={{ color: colors.gray, fontSize: 10 }}
-															>
-																Amount: {formatCurrency(data.amount || 0)}
-															</Text>
-															<Text
-																style={{ color: colors.gray, fontSize: 10 }}
-															>
-																Interest: {formatCurrency(data.interest || 0)}
-															</Text>
-														</View>
-													</View>
-												)
-											)}
-											{totalInterestFromContributions > 0 && (
-												<View
-													style={[
-														styles.row,
-														{ justifyContent: 'space-between', marginTop: 4 },
-													]}
-												>
-													<Text
-														style={{
-															color: colors.primary,
-															fontSize: 10,
-															fontWeight: 'bold',
-														}}
-													>
-														Total Interest from Contributions:
-													</Text>
-													<Text
-														style={{
-															color: colors.primary,
-															fontSize: 10,
-															fontWeight: 'bold',
-														}}
-													>
-														{formatCurrency(totalInterestFromContributions)}
-													</Text>
-												</View>
-											)}
-										</View>
-									)}
-
-									{/* Maturity Info */}
-									<View
-										style={[
-											styles.row,
-											{ justifyContent: 'space-between', marginTop: 8 },
-										]}
-									>
-										<Text style={{ color: colors.gray, fontSize: 12 }}>
-											{yearsToMaturity} years to maturity
-										</Text>
-										<Text style={{ color: colors.gray, fontSize: 12 }}>
-											Matures:{' '}
-											{new Date(account.maturityDate).toLocaleDateString()}
-										</Text>
-									</View>
-
-									{/* Edit and Delete Buttons */}
-									<EditDeleteButtons
-										onPressEdit={() => handleEditAccount(account)}
-										onPressDelete={() =>
-											handleDeleteAccount(
-												account?.id,
-												account?.accountNumber || ''
-											)
-										}
-									/>
-								</View>
-							</View>
-						</TouchableOpacity>
-					);
-				})}
-			</ScrollView>
-
-			{/* Add New PPF Account Modal */}
-			<Modal
-				visible={showAddModal}
-				animationType='slide'
-				transparent={true}
-				onRequestClose={() => {
-					setShowAddModal(false);
-					resetForm();
-				}}
-			>
+			{accounts.length === 0 ? (
 				<View
-					style={{
-						flex: 1,
-						justifyContent: 'center',
-						backgroundColor: 'rgba(0,0,0,0.5)',
-					}}
+					style={[
+						styles.card,
+						styles.center,
+						{ minHeight: 200, marginBottom: 16 },
+					]}
 				>
-					<ScrollView
-						style={{ maxHeight: '90%' }}
-						contentContainerStyle={{ paddingVertical: 20 }}
-					>
-						<View style={[styles.card, { margin: 20 }]}>
-							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-								Add PPF Account
-							</Text>
-
-							<TextInput
-								style={styles.input}
-								placeholder='Account Number *'
-								value={newAccount.accountNumber}
-								onChangeText={(text) =>
-									setNewAccount({ ...newAccount, accountNumber: text })
-								}
-								placeholderTextColor={colors.gray}
-							/>
-
-							{/* Date Picker for Start Date */}
-							<TouchableOpacity
-								style={styles.input}
-								onPress={() => showDatepicker('add')}
-							>
-								<View style={[styles.row, { justifyContent: 'space-between' }]}>
-									<Text
-										style={{
-											color: startDateInput ? colors.dark : colors.gray,
-										}}
-									>
-										{startDateInput || 'Start Date (YYYY-MM-DD) *'}
-									</Text>
-									<Text style={{ color: colors.gray }}>📅</Text>
-								</View>
-							</TouchableOpacity>
-
-							<Text style={[styles.label, { marginTop: 16, marginBottom: 8 }]}>
-								Financial Year Contributions (Amount + Interest Earned)
-							</Text>
-
-							{financialYears.map((fy, index) => (
-								<View key={index} style={{ marginBottom: 12, gap: 8 }}>
-									<View
-										style={[
-											styles.row,
-											{
-												justifyContent: 'space-between',
-												paddingHorizontal: 16,
-											},
-										]}
-									>
-										<Text>FY {fy.year}</Text>
-										{financialYears.length > 1 && !fy.isFirstYear && (
-											<TouchableOpacity
-												onPress={() => removeFinancialYear(index)}
-											>
-												<Text style={{ color: colors.danger, fontSize: 12 }}>
-													🗑️ Delete
-												</Text>
-											</TouchableOpacity>
-										)}
-									</View>
-									<View
-										style={[
-											styles.row,
-											{ justifyContent: 'space-between', gap: 10 },
-										]}
-									>
-										<TextInput
-											style={[styles.input, { flex: 1 }]}
-											placeholder='Amount'
-											value={fy.amount}
-											onChangeText={(text) => handleFYAmountChange(index, text)}
-											placeholderTextColor={colors.gray}
-											keyboardType='decimal-pad'
-										/>
-										<TextInput
-											style={[styles.input, { flex: 1 }]}
-											placeholder='Interest'
-											value={fy.interest}
-											onChangeText={(text) =>
-												handleFYInterestChange(index, text)
-											}
-											placeholderTextColor={colors.gray}
-											keyboardType='decimal-pad'
-										/>
-									</View>
-								</View>
-							))}
-							{(() => {
-								const { totalDeposits, totalInterest } =
-									calculateTotalsFromFinancialYears();
-								return (
-									<View
-										style={{
-											marginBottom: 16,
-											padding: 12,
-											backgroundColor: colors.lightGray,
-											borderRadius: 8,
-										}}
-									>
-										<View
-											style={[
-												styles.row,
-												{ justifyContent: 'space-between', marginBottom: 4 },
-											]}
-										>
-											<Text style={{ color: colors.dark, fontSize: 12 }}>
-												Total Deposits:
-											</Text>
-											<Text
-												style={{
-													color: colors.dark,
-													fontSize: 12,
-													fontWeight: 'bold',
-												}}
-											>
-												{formatCurrency(totalDeposits)}
-											</Text>
-										</View>
-										<View
-											style={[
-												styles.row,
-												{ justifyContent: 'space-between', marginBottom: 4 },
-											]}
-										>
-											<Text style={{ color: colors.dark, fontSize: 12 }}>
-												Total Interest:
-											</Text>
-											<Text
-												style={{
-													color: colors.dark,
-													fontSize: 12,
-													fontWeight: 'bold',
-												}}
-											>
-												{formatCurrency(totalInterest)}
-											</Text>
-										</View>
-										<View
-											style={[styles.row, { justifyContent: 'space-between' }]}
-										>
-											<Text style={{ color: colors.primary, fontSize: 12 }}>
-												Total Balance:
-											</Text>
-											<Text
-												style={{
-													color: colors.primary,
-													fontSize: 12,
-													fontWeight: 'bold',
-												}}
-											>
-												{formatCurrency(totalDeposits + totalInterest)}
-											</Text>
-										</View>
-									</View>
-								);
-							})()}
-
-							<TouchableOpacity
-								style={[
-									styles.button,
-									styles.buttonSecondary,
-									{ marginBottom: 16 },
-								]}
-								onPress={addFinancialYear}
-							>
-								<Text style={styles.buttonText}>
-									+ Add Another Financial Year
-								</Text>
-							</TouchableOpacity>
-
-							<TextInput
-								style={styles.input}
-								placeholder='Interest Rate (%) *'
-								value={interestRateInput}
-								onChangeText={handleInterestRateInput}
-								placeholderTextColor={colors.gray}
-								keyboardType='decimal-pad'
-							/>
-
-							<TextInput
-								style={styles.input}
-								placeholder='Maturity Date (Auto-calculated)'
-								value={newAccount.maturityDate}
-								editable={false}
-								placeholderTextColor={colors.gray}
-							/>
-
-							<Text style={{ color: colors.gray, fontSize: 12, marginTop: 8 }}>
-								Note: Maturity date is automatically calculated as 15 years from
-								start date
-							</Text>
-
-							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
-								<TouchableOpacity
-									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-									onPress={() => {
-										setShowAddModal(false);
-										resetForm();
-									}}
-									disabled={isSubmitting}
-								>
-									<Text style={styles.buttonText}>Cancel</Text>
-								</TouchableOpacity>
-
-								<TouchableOpacity
-									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-									onPress={handleAddAccount}
-									disabled={isSubmitting}
-								>
-									<Text style={styles.buttonText}>
-										{isSubmitting ? 'Adding...' : 'Add PPF'}
-									</Text>
-								</TouchableOpacity>
-							</View>
-						</View>
-					</ScrollView>
+					<Text style={{ color: colors.gray }}>No PPF accounts found</Text>
+					<Text style={{ color: colors.gray, fontSize: 12, marginTop: 8 }}>
+						Add your first PPF account to get started
+					</Text>
 				</View>
-			</Modal>
+			) : (
+				<CardsView details={accounts} renderCard={renderPPFAccountCard} />
+			)}
 
-			{/* Edit PPF Account Modal */}
-			<Modal
-				visible={showEditModal}
-				animationType='slide'
-				transparent={true}
-				onRequestClose={() => {
-					setShowEditModal(false);
-					resetForm();
-				}}
-			>
-				<View
-					style={{
-						flex: 1,
-						justifyContent: 'center',
-						backgroundColor: 'rgba(0,0,0,0.5)',
-					}}
-				>
-					<ScrollView
-						style={{ maxHeight: '90%' }}
-						contentContainerStyle={{ paddingVertical: 20 }}
-					>
-						<View style={[styles.card, { margin: 20 }]}>
-							<Text style={[styles.subHeading, { marginBottom: 16 }]}>
-								Edit PPF Account
-							</Text>
-
-							<TextInput
-								style={styles.input}
-								placeholder='Account Number *'
-								value={newAccount.accountNumber}
-								onChangeText={(text) =>
-									setNewAccount({ ...newAccount, accountNumber: text })
-								}
-								placeholderTextColor={colors.gray}
-							/>
-
-							{/* Date Picker for Start Date */}
-							<TouchableOpacity
-								style={styles.input}
-								onPress={() => showDatepicker('edit')}
-							>
-								<View style={[styles.row, { justifyContent: 'space-between' }]}>
-									<Text
-										style={{
-											color: startDateInput ? colors.dark : colors.gray,
-										}}
-									>
-										{startDateInput || 'Start Date (YYYY-MM-DD) *'}
-									</Text>
-									<Text style={{ color: colors.gray }}>📅</Text>
-								</View>
-							</TouchableOpacity>
-
-							<Text style={[styles.label, { marginTop: 16, marginBottom: 8 }]}>
-								Financial Year Contributions (Amount + Interest Earned)
-							</Text>
-
-							{financialYears.map((fy, index) => (
-								<View key={index} style={{ marginBottom: 12, gap: 8 }}>
-									<View
-										style={[
-											styles.row,
-											{
-												justifyContent: 'space-between',
-												paddingHorizontal: 16,
-											},
-										]}
-									>
-										<Text>FY {fy.year}</Text>
-										{financialYears.length > 1 && !fy.isFirstYear && (
-											<TouchableOpacity
-												onPress={() => removeFinancialYear(index)}
-											>
-												<Text style={{ color: colors.danger, fontSize: 12 }}>
-													🗑️ Delete
-												</Text>
-											</TouchableOpacity>
-										)}
-									</View>
-									<View
-										style={[
-											styles.row,
-											{ justifyContent: 'space-between', gap: 10 },
-										]}
-									>
-										<TextInput
-											style={[styles.input, { flex: 1 }]}
-											placeholder='Amount'
-											value={fy.amount}
-											onChangeText={(text) => handleFYAmountChange(index, text)}
-											placeholderTextColor={colors.gray}
-											keyboardType='decimal-pad'
-										/>
-										<TextInput
-											style={[styles.input, { flex: 1 }]}
-											placeholder='Interest'
-											value={fy.interest}
-											onChangeText={(text) =>
-												handleFYInterestChange(index, text)
-											}
-											placeholderTextColor={colors.gray}
-											keyboardType='decimal-pad'
-										/>
-									</View>
-								</View>
-							))}
-
-							{(() => {
-								const { totalDeposits, totalInterest } =
-									calculateTotalsFromFinancialYears();
-								return (
-									<View
-										style={{
-											marginBottom: 16,
-											padding: 12,
-											backgroundColor: colors.lightGray,
-											borderRadius: 8,
-										}}
-									>
-										<View
-											style={[
-												styles.row,
-												{ justifyContent: 'space-between', marginBottom: 4 },
-											]}
-										>
-											<Text style={{ color: colors.dark, fontSize: 12 }}>
-												Total Deposits:
-											</Text>
-											<Text
-												style={{
-													color: colors.dark,
-													fontSize: 12,
-													fontWeight: 'bold',
-												}}
-											>
-												{formatCurrency(totalDeposits)}
-											</Text>
-										</View>
-										<View
-											style={[
-												styles.row,
-												{ justifyContent: 'space-between', marginBottom: 4 },
-											]}
-										>
-											<Text style={{ color: colors.dark, fontSize: 12 }}>
-												Total Interest:
-											</Text>
-											<Text
-												style={{
-													color: colors.dark,
-													fontSize: 12,
-													fontWeight: 'bold',
-												}}
-											>
-												{formatCurrency(totalInterest)}
-											</Text>
-										</View>
-										<View
-											style={[styles.row, { justifyContent: 'space-between' }]}
-										>
-											<Text style={{ color: colors.primary, fontSize: 12 }}>
-												Total Balance:
-											</Text>
-											<Text
-												style={{
-													color: colors.primary,
-													fontSize: 12,
-													fontWeight: 'bold',
-												}}
-											>
-												{formatCurrency(totalDeposits + totalInterest)}
-											</Text>
-										</View>
-									</View>
-								);
-							})()}
-
-							<TouchableOpacity
-								style={[
-									styles.button,
-									styles.buttonSecondary,
-									{ marginBottom: 16 },
-								]}
-								onPress={addFinancialYear}
-							>
-								<Text style={styles.buttonText}>
-									+ Add Another Financial Year
-								</Text>
-							</TouchableOpacity>
-
-							<TextInput
-								style={styles.input}
-								placeholder='Interest Rate (%) *'
-								value={interestRateInput}
-								onChangeText={handleInterestRateInput}
-								placeholderTextColor={colors.gray}
-								keyboardType='decimal-pad'
-							/>
-
-							<TextInput
-								style={styles.input}
-								placeholder='Maturity Date (Auto-calculated)'
-								value={newAccount.maturityDate}
-								editable={false}
-								placeholderTextColor={colors.gray}
-							/>
-
-							<Text style={{ color: colors.gray, fontSize: 12, marginTop: 8 }}>
-								Note: Maturity date is automatically calculated as 15 years from
-								start date
-							</Text>
-
-							<View style={[styles.row, { gap: 12, marginTop: 16 }]}>
-								<TouchableOpacity
-									style={[styles.button, styles.buttonSecondary, { flex: 1 }]}
-									onPress={() => {
-										setShowEditModal(false);
-										resetForm();
-									}}
-									disabled={isSubmitting}
-								>
-									<Text style={styles.buttonText}>Cancel</Text>
-								</TouchableOpacity>
-
-								<TouchableOpacity
-									style={[styles.button, styles.buttonPrimary, { flex: 1 }]}
-									onPress={handleUpdateAccount}
-									disabled={isSubmitting}
-								>
-									<Text style={styles.buttonText}>
-										{isSubmitting ? 'Updating...' : 'Update PPF'}
-									</Text>
-								</TouchableOpacity>
-							</View>
-						</View>
-					</ScrollView>
-				</View>
-			</Modal>
-			{renderDatePicker()}
 			<AddDetailsButton label='PPF Account' onPress={onPressAddPPFAccount} />
+
+			{renderAddEditModal(false)}
+			{renderAddEditModal(true)}
+			{renderDatePicker()}
 		</View>
 	);
 };

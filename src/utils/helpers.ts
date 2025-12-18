@@ -170,3 +170,14 @@ export const getCurrentFinancialYear = (): string => {
 		return `${year - 1}-${year.toString().slice(-2)}`;
 	}
 };
+
+export const parseDateString = (dateString: string): Date => {
+	if (!dateString) return new Date();
+
+	const date = new Date(dateString);
+	// Check if date is valid
+	if (isNaN(date.getTime())) {
+		return new Date();
+	}
+	return date;
+};
