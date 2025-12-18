@@ -556,21 +556,27 @@ export const PPFAccounts = ({
 
 	const resetForm = () => {
 		setEditingAccountId(null);
+
+		const currentDate = new Date();
+		const formattedCurrentDate = formatDate(currentDate);
+		const startFinancialYear = getFinancialYearFromDate(currentDate);
+
 		setNewAccount({
 			accountNumber: '',
 			financialYear: '',
 			totalDeposits: 0,
 			interestRate: 7.1,
-			maturityDate: '',
-			startDate: '',
+			maturityDate: calculateMaturityDate(formattedCurrentDate),
+			startDate: formattedCurrentDate,
 			annualContributions: {},
 		});
+
 		setInterestRateInput('7.1');
-		setStartDateInput('');
-		setSelectedDate(new Date());
+		setStartDateInput(formattedCurrentDate);
+		setSelectedDate(currentDate);
 		setFinancialYears([
 			{
-				year: getCurrentFinancialYear(),
+				year: startFinancialYear,
 				amount: '',
 				interest: '',
 				isFirstYear: true,
@@ -715,6 +721,37 @@ export const PPFAccounts = ({
 			updatedYears.splice(index, 1);
 			setFinancialYears(updatedYears);
 		}
+	};
+
+	const onPressAddPPFAccount = () => {
+		const currentDate = new Date();
+		const formattedDate = formatDate(currentDate);
+
+		// Set the start date to current date
+		setStartDateInput(formattedDate);
+
+		// Update newAccount with current date and calculate maturity date
+		const updatedAccount = {
+			...newAccount,
+			startDate: formattedDate,
+			maturityDate: calculateMaturityDate(formattedDate),
+		};
+
+		setNewAccount(updatedAccount);
+
+		// Also update financial year based on current date
+		const startFinancialYear = getFinancialYearFromDate(currentDate);
+		const updatedYears = [...financialYears];
+		updatedYears[0] = {
+			...updatedYears[0],
+			year: startFinancialYear,
+			isFirstYear: true,
+		};
+
+		setFinancialYears(updatedYears);
+
+		// Show the modal
+		setShowAddModal(true);
 	};
 
 	return (
@@ -999,6 +1036,7 @@ export const PPFAccounts = ({
 									style={[styles.row, { marginBottom: 12, gap: 8 }]}
 								>
 									<View style={{ flex: 1.5 }}>
+										{/*Financial Year */}
 										<TextInput
 											style={styles.input}
 											placeholder='FY (2024-25)'
@@ -1430,10 +1468,7 @@ export const PPFAccounts = ({
 				</View>
 			</Modal>
 			{renderDatePicker()}
-			<AddDetailsButton
-				label='PPF Account'
-				onPress={() => setShowAddModal(true)}
-			/>
+			<AddDetailsButton label='PPF Account' onPress={onPressAddPPFAccount} />
 		</View>
 	);
 };
