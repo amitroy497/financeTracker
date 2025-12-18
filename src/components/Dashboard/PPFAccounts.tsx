@@ -29,8 +29,6 @@ export const PPFAccounts = ({
 	const [showEditModal, setShowEditModal] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
-
-	// Extended PPF account data structure
 	const [newAccount, setNewAccount] = useState<CreatePPFData>({
 		accountNumber: '',
 		financialYear: '',
@@ -40,23 +38,16 @@ export const PPFAccounts = ({
 		startDate: '',
 		annualContributions: {},
 	});
-
-	// Add state for input strings to allow decimal typing
 	const [interestRateInput, setInterestRateInput] = useState<string>('7.1');
 	const [startDateInput, setStartDateInput] = useState<string>('');
-
-	// Date picker states
 	const [showDatePicker, setShowDatePicker] = useState(false);
 	const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-	const [datePickerFor, setDatePickerFor] = useState<'add' | 'edit'>('add');
-
-	// State for multiple financial years with both amount and interest
 	const [financialYears, setFinancialYears] = useState<
 		Array<{
 			year: string;
 			amount: string;
 			interest: string;
-			isFirstYear: boolean; // Flag to identify first year
+			isFirstYear: boolean;
 		}>
 	>([
 		{
@@ -67,7 +58,6 @@ export const PPFAccounts = ({
 		},
 	]);
 
-	// Calculate maturity date (15 years from start date)
 	const calculateMaturityDate = (startDate: string): string => {
 		if (!startDate) return '';
 		const start = new Date(startDate);
@@ -75,8 +65,6 @@ export const PPFAccounts = ({
 		maturity.setFullYear(maturity.getFullYear() + 15);
 		return maturity.toISOString().split('T')[0];
 	};
-
-	// Format date to YYYY-MM-DD
 	const formatDate = (date: Date): string => {
 		const year = date.getFullYear();
 		const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -84,21 +72,17 @@ export const PPFAccounts = ({
 		return `${year}-${month}-${day}`;
 	};
 
-	// Get financial year from date
 	const getFinancialYearFromDate = (date: Date): string => {
 		const year = date.getFullYear();
-		const month = date.getMonth() + 1; // January is 0
+		const month = date.getMonth() + 1;
 
 		if (month >= 4) {
-			// April to December - FY is current year to next year
 			return `${year}-${(year + 1).toString().slice(-2)}`;
 		} else {
-			// January to March - FY is previous year to current year
 			return `${year - 1}-${year.toString().slice(-2)}`;
 		}
 	};
 
-	// Get suggested financial years based on start date
 	const getSuggestedFinancialYears = (startDate: string): string[] => {
 		if (!startDate) return [getCurrentFinancialYear()];
 
@@ -111,11 +95,8 @@ export const PPFAccounts = ({
 		const currentMonth = currentDate.getMonth() + 1;
 
 		let maxFYEndYear = currentMonth >= 4 ? currentYear + 1 : currentYear;
-
-		// Extract the start year from the financial year string
 		const startYear = parseInt(startFinancialYear.split('-')[0]);
 
-		// Generate financial years from start to current (or next)
 		for (let year = startYear; year <= maxFYEndYear; year++) {
 			const fy = `${year}-${(year + 1).toString().slice(-2)}`;
 			suggestedYears.push(fy);
@@ -124,7 +105,6 @@ export const PPFAccounts = ({
 		return suggestedYears;
 	};
 
-	// Calculate years to maturity
 	const calculateYearsToMaturity = (maturityDate: string): number => {
 		const today = new Date();
 		const maturity = new Date(maturityDate);
@@ -132,7 +112,6 @@ export const PPFAccounts = ({
 		return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 365.25)));
 	};
 
-	// Calculate total interest earned till date
 	const calculateTotalInterest = (account: any): number => {
 		if (!account.currentBalance || !account.totalDeposits) return 0;
 		return parseFloat(
@@ -140,14 +119,9 @@ export const PPFAccounts = ({
 		);
 	};
 
-	// Handle financial year amount change
 	const handleFYAmountChange = (index: number, amount: string) => {
 		const updatedYears = [...financialYears];
-
-		// Allow only numbers and one decimal point
 		let cleanedText = amount.replace(/[^0-9.]/g, '');
-
-		// Prevent more than one decimal point
 		const decimalCount = (cleanedText.match(/\./g) || []).length;
 		if (decimalCount > 1) {
 			const firstDecimalIndex = cleanedText.indexOf('.');
@@ -158,7 +132,6 @@ export const PPFAccounts = ({
 			cleanedText = beforeDecimal + afterDecimal;
 		}
 
-		// Limit to 2 decimal places
 		const decimalIndex = cleanedText.indexOf('.');
 		if (decimalIndex !== -1) {
 			const decimalPart = cleanedText.substring(decimalIndex + 1);
@@ -171,14 +144,9 @@ export const PPFAccounts = ({
 		setFinancialYears(updatedYears);
 	};
 
-	// Handle financial year interest change
 	const handleFYInterestChange = (index: number, interest: string) => {
 		const updatedYears = [...financialYears];
-
-		// Allow only numbers and one decimal point
 		let cleanedText = interest.replace(/[^0-9.]/g, '');
-
-		// Prevent more than one decimal point
 		const decimalCount = (cleanedText.match(/\./g) || []).length;
 		if (decimalCount > 1) {
 			const firstDecimalIndex = cleanedText.indexOf('.');
@@ -189,7 +157,6 @@ export const PPFAccounts = ({
 			cleanedText = beforeDecimal + afterDecimal;
 		}
 
-		// Limit to 2 decimal places
 		const decimalIndex = cleanedText.indexOf('.');
 		if (decimalIndex !== -1) {
 			const decimalPart = cleanedText.substring(decimalIndex + 1);
@@ -202,27 +169,10 @@ export const PPFAccounts = ({
 		setFinancialYears(updatedYears);
 	};
 
-	// Handle financial year change (only for non-first years)
-	const handleFYYearChange = (index: number, year: string) => {
-		// Don't allow changing the first year
-		if (financialYears[index].isFirstYear) {
-			return;
-		}
-
-		const updatedYears = [...financialYears];
-		updatedYears[index] = { ...updatedYears[index], year };
-		setFinancialYears(updatedYears);
-	};
-
-	// Handle decimal input for interest rate
 	const handleInterestRateInput = (text: string) => {
-		// Allow only numbers and one decimal point
 		let cleanedText = text.replace(/[^0-9.]/g, '');
-
-		// Prevent more than one decimal point
 		const decimalCount = (cleanedText.match(/\./g) || []).length;
 		if (decimalCount > 1) {
-			// Remove extra decimal points
 			const firstDecimalIndex = cleanedText.indexOf('.');
 			const beforeDecimal = cleanedText.substring(0, firstDecimalIndex + 1);
 			const afterDecimal = cleanedText
@@ -231,7 +181,6 @@ export const PPFAccounts = ({
 			cleanedText = beforeDecimal + afterDecimal;
 		}
 
-		// Limit to 2 decimal places for interest rate
 		const decimalIndex = cleanedText.indexOf('.');
 		if (decimalIndex !== -1) {
 			const decimalPart = cleanedText.substring(decimalIndex + 1);
@@ -242,10 +191,9 @@ export const PPFAccounts = ({
 
 		setInterestRateInput(cleanedText);
 
-		// Parse the value and update the account data
 		let parsedValue: number;
 		if (cleanedText === '' || cleanedText === '.') {
-			parsedValue = 7.1; // Default value
+			parsedValue = 7.1;
 		} else {
 			parsedValue = parseFloat(cleanedText);
 			if (isNaN(parsedValue)) parsedValue = 7.1;
@@ -257,7 +205,6 @@ export const PPFAccounts = ({
 		});
 	};
 
-	// Handle date picker change
 	const handleDateChange = (event: any, selectedDate?: Date) => {
 		if (Platform.OS === 'android') {
 			setShowDatePicker(false);
@@ -267,21 +214,14 @@ export const PPFAccounts = ({
 			setSelectedDate(selectedDate);
 			const formattedDate = formatDate(selectedDate);
 			setStartDateInput(formattedDate);
-
-			// Update the account start date
 			const updatedAccount = {
 				...newAccount,
 				startDate: formattedDate,
 			};
 
-			// Calculate and set maturity date (15 years from start)
 			const maturityDate = calculateMaturityDate(formattedDate);
 			updatedAccount.maturityDate = maturityDate;
-
-			// Get financial year from start date
 			const startFinancialYear = getFinancialYearFromDate(selectedDate);
-
-			// Update the first financial year based on start date
 			const updatedYears = [...financialYears];
 			updatedYears[0] = {
 				...updatedYears[0],
@@ -289,7 +229,6 @@ export const PPFAccounts = ({
 				isFirstYear: true,
 			};
 
-			// Update financial years based on new start date
 			const suggestedYears = getSuggestedFinancialYears(formattedDate);
 			if (suggestedYears.length > 0) {
 				setFinancialYears(updatedYears);
@@ -299,21 +238,15 @@ export const PPFAccounts = ({
 		}
 	};
 
-	// Show date picker
 	const showDatepicker = (forModal: 'add' | 'edit') => {
-		setDatePickerFor(forModal);
 		setShowDatePicker(true);
 	};
 
-	// Handle edit account
 	const handleEditAccount = (account: any) => {
 		setEditingAccountId(account.id);
 
-		// Parse annual contributions from the account object directly
-		// Check both annualContributions and notes
 		let annualContributions = account.annualContributions || {};
 
-		// If not in annualContributions, try parsing from notes
 		if (Object.keys(annualContributions).length === 0 && account.notes) {
 			try {
 				const notesData = JSON.parse(account.notes);
@@ -323,17 +256,15 @@ export const PPFAccounts = ({
 			}
 		}
 
-		// Convert annual contributions to financialYears array
 		const fyEntries = Object.entries(annualContributions).map(
 			([year, data]: [string, any], index) => ({
 				year,
 				amount: data.amount?.toString() || '',
 				interest: data.interest?.toString() || '',
-				isFirstYear: index === 0, // First entry is the first year
+				isFirstYear: index === 0,
 			})
 		);
 
-		// If no financial years, create one with the account data
 		if (fyEntries.length === 0) {
 			fyEntries.push({
 				year: account.financialYear || getCurrentFinancialYear(),
@@ -345,14 +276,12 @@ export const PPFAccounts = ({
 
 		setFinancialYears(fyEntries);
 
-		// Set initial date for date picker
 		const startDate = account.startDate
 			? new Date(account.startDate)
 			: new Date();
 		setSelectedDate(startDate);
 		setStartDateInput(account.startDate || '');
 
-		// Also set the account number correctly
 		setNewAccount({
 			accountNumber: account.accountNumber || '',
 			financialYear: account.financialYear || '',
@@ -361,7 +290,7 @@ export const PPFAccounts = ({
 			maturityDate:
 				account.maturityDate || calculateMaturityDate(account.startDate || ''),
 			startDate: account.startDate || '',
-			annualContributions: annualContributions, // Keep the original structure
+			annualContributions: annualContributions,
 		});
 		setInterestRateInput((account.interestRate || 7.1).toString());
 		setShowEditModal(true);
@@ -372,20 +301,15 @@ export const PPFAccounts = ({
 			Alert.alert('Error', 'Please enter account number');
 			return;
 		}
-
-		// Validate start date
 		if (!startDateInput) {
 			Alert.alert('Error', 'Please enter account start date');
 			return;
 		}
 
-		// Validate interest rate
 		if (newAccount?.interestRate <= 0) {
 			Alert.alert('Error', 'Interest rate must be greater than 0');
 			return;
 		}
-
-		// Validate at least one financial year has amount
 		const hasValidAmount = financialYears.some((fy) => {
 			const amount = parseFloat(fy.amount);
 			return !isNaN(amount) && amount > 0;
@@ -399,7 +323,6 @@ export const PPFAccounts = ({
 			return;
 		}
 
-		// Validate financial year formats
 		const fyRegex = /^\d{4}-\d{2}$/;
 		for (const fy of financialYears) {
 			if (!fyRegex.test(fy.year)) {
@@ -415,7 +338,6 @@ export const PPFAccounts = ({
 
 		setIsSubmitting(true);
 		try {
-			// Prepare annual contributions object with both amount and interest
 			const annualContributions: Record<
 				string,
 				{ amount: number; interest: number }
@@ -424,18 +346,15 @@ export const PPFAccounts = ({
 			financialYears.forEach((fy) => {
 				const amount = parseFloat(fy.amount) || 0;
 				const interest = parseFloat(fy.interest) || 0;
-
-				// Always add the entry even if amount is 0, to preserve all years
 				annualContributions[fy.year] = {
 					amount,
 					interest,
 				};
 			});
 
-			// Prepare update data - make sure annualContributions is included
 			const updateData: CreatePPFData = {
 				accountNumber: newAccount.accountNumber,
-				financialYear: financialYears[0].year, // First year as primary
+				financialYear: financialYears[0].year,
 				totalDeposits: Object.values(annualContributions).reduce(
 					(sum, fy) => sum + (fy.amount || 0),
 					0
@@ -443,7 +362,7 @@ export const PPFAccounts = ({
 				interestRate: newAccount.interestRate,
 				maturityDate: newAccount.maturityDate,
 				startDate: startDateInput,
-				annualContributions: annualContributions, // This is key!
+				annualContributions: annualContributions,
 			};
 
 			await assetService.updatePPF(userId, editingAccountId, updateData);
@@ -465,19 +384,16 @@ export const PPFAccounts = ({
 			return;
 		}
 
-		// Validate start date
 		if (!startDateInput) {
 			Alert.alert('Error', 'Please enter account start date');
 			return;
 		}
 
-		// Validate interest rate
 		if (newAccount?.interestRate <= 0) {
 			Alert.alert('Error', 'Interest rate must be greater than 0');
 			return;
 		}
 
-		// Validate at least one financial year has amount
 		const hasValidAmount = financialYears.some((fy) => {
 			const amount = parseFloat(fy.amount);
 			return !isNaN(amount) && amount > 0;
@@ -491,7 +407,6 @@ export const PPFAccounts = ({
 			return;
 		}
 
-		// Validate financial year formats
 		const fyRegex = /^\d{4}-\d{2}$/;
 		for (const fy of financialYears) {
 			if (!fyRegex.test(fy.year)) {
@@ -505,7 +420,6 @@ export const PPFAccounts = ({
 
 		setIsSubmitting(true);
 		try {
-			// Prepare annual contributions object with both amount and interest
 			const annualContributions: Record<
 				string,
 				{ amount: number; interest: number }
@@ -527,10 +441,8 @@ export const PPFAccounts = ({
 				}
 			});
 
-			// Calculate current balance (total deposits + total interest)
 			const currentBalance = totalDeposits + totalInterest;
 
-			// Prepare data for service
 			const accountData = {
 				accountNumber: newAccount.accountNumber,
 				financialYear: financialYears[0].year, // First year as primary
@@ -624,7 +536,6 @@ export const PPFAccounts = ({
 		0
 	);
 
-	// Parse annual contributions from notes
 	const parseAnnualContributions = (notes?: string) => {
 		if (!notes) return {};
 		try {
@@ -635,7 +546,6 @@ export const PPFAccounts = ({
 		}
 	};
 
-	// Calculate total interest from annual contributions
 	const calculateTotalInterestFromContributions = (
 		contributions: Record<string, { amount: number; interest: number }>
 	): number => {
@@ -645,7 +555,6 @@ export const PPFAccounts = ({
 		);
 	};
 
-	// Calculate total contributions and interest from all financial years
 	const calculateTotalsFromFinancialYears = () => {
 		let totalDeposits = 0;
 		let totalInterest = 0;
@@ -666,7 +575,6 @@ export const PPFAccounts = ({
 		return { totalDeposits, totalInterest };
 	};
 
-	// Render date picker modal
 	const renderDatePicker = () => {
 		if (showDatePicker) {
 			return (
@@ -676,21 +584,18 @@ export const PPFAccounts = ({
 					mode='date'
 					display={Platform.OS === 'ios' ? 'spinner' : 'default'}
 					onChange={handleDateChange}
-					maximumDate={new Date()} // Can't select future dates for start date
+					maximumDate={new Date()}
 				/>
 			);
 		}
 		return null;
 	};
 
-	// Add a new financial year input
 	const addFinancialYear = () => {
 		const suggestedYears = getSuggestedFinancialYears(
 			startDateInput || new Date().toISOString().split('T')[0]
 		);
 		const existingYears = financialYears.map((fy) => fy.year);
-
-		// Find the next available financial year from suggestions
 		let nextYear = '';
 		for (const year of suggestedYears) {
 			if (!existingYears.includes(year)) {
@@ -699,7 +604,6 @@ export const PPFAccounts = ({
 			}
 		}
 
-		// If no suggested years available, use next year from the last one
 		if (!nextYear && financialYears.length > 0) {
 			const lastYear = financialYears[financialYears.length - 1].year;
 			const lastYearNum = parseInt(lastYear.split('-')[0]);
@@ -714,7 +618,6 @@ export const PPFAccounts = ({
 		]);
 	};
 
-	// Remove a financial year (cannot remove first year)
 	const removeFinancialYear = (index: number) => {
 		if (financialYears.length > 1 && !financialYears[index].isFirstYear) {
 			const updatedYears = [...financialYears];
@@ -726,11 +629,7 @@ export const PPFAccounts = ({
 	const onPressAddPPFAccount = () => {
 		const currentDate = new Date();
 		const formattedDate = formatDate(currentDate);
-
-		// Set the start date to current date
 		setStartDateInput(formattedDate);
-
-		// Update newAccount with current date and calculate maturity date
 		const updatedAccount = {
 			...newAccount,
 			startDate: formattedDate,
@@ -739,7 +638,6 @@ export const PPFAccounts = ({
 
 		setNewAccount(updatedAccount);
 
-		// Also update financial year based on current date
 		const startFinancialYear = getFinancialYearFromDate(currentDate);
 		const updatedYears = [...financialYears];
 		updatedYears[0] = {
@@ -750,7 +648,6 @@ export const PPFAccounts = ({
 
 		setFinancialYears(updatedYears);
 
-		// Show the modal
 		setShowAddModal(true);
 	};
 
@@ -814,8 +711,6 @@ export const PPFAccounts = ({
 									>
 										{account.accountNumber} • {account.interestRate}% interest
 									</Text>
-
-									{/* Main Account Info */}
 									<View
 										style={[
 											styles.row,
