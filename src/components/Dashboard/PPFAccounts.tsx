@@ -1031,34 +1031,43 @@ export const PPFAccounts = ({
 							</Text>
 
 							{financialYears.map((fy, index) => (
-								<View
-									key={index}
-									style={[styles.row, { marginBottom: 12, gap: 8 }]}
-								>
-									<View style={{ flex: 1.5 }}>
-										{/*Financial Year */}
-										<TextInput
-											style={styles.input}
-											placeholder='FY (2024-25)'
-											value={fy.year}
-											onChangeText={(text) => handleFYYearChange(index, text)}
-											placeholderTextColor={colors.gray}
-											editable={!fy.isFirstYear} // First year is not editable
-										/>
+								<View key={index} style={{ marginBottom: 12, gap: 8 }}>
+									<View
+										style={[
+											styles.row,
+											{
+												justifyContent: 'space-between',
+												paddingHorizontal: 16,
+											},
+										]}
+									>
+										<Text>FY {fy.year}</Text>
+										{financialYears.length > 1 && !fy.isFirstYear && (
+											<TouchableOpacity
+												onPress={() => removeFinancialYear(index)}
+											>
+												<Text style={{ color: colors.danger, fontSize: 12 }}>
+													🗑️ Delete
+												</Text>
+											</TouchableOpacity>
+										)}
 									</View>
-									<View style={{ flex: 2 }}>
+									<View
+										style={[
+											styles.row,
+											{ justifyContent: 'space-between', gap: 10 },
+										]}
+									>
 										<TextInput
-											style={styles.input}
+											style={[styles.input, { flex: 1 }]}
 											placeholder='Amount'
 											value={fy.amount}
 											onChangeText={(text) => handleFYAmountChange(index, text)}
 											placeholderTextColor={colors.gray}
 											keyboardType='decimal-pad'
 										/>
-									</View>
-									<View style={{ flex: 2 }}>
 										<TextInput
-											style={styles.input}
+											style={[styles.input, { flex: 1 }]}
 											placeholder='Interest'
 											value={fy.interest}
 											onChangeText={(text) =>
@@ -1068,27 +1077,8 @@ export const PPFAccounts = ({
 											keyboardType='decimal-pad'
 										/>
 									</View>
-									{financialYears.length > 1 && !fy.isFirstYear && (
-										<TouchableOpacity
-											style={{
-												width: 40,
-												height: 40,
-												justifyContent: 'center',
-												alignItems: 'center',
-												backgroundColor: colors.error,
-												borderRadius: 4,
-											}}
-											onPress={() => removeFinancialYear(index)}
-										>
-											<Text style={{ color: colors.white, fontSize: 20 }}>
-												×
-											</Text>
-										</TouchableOpacity>
-									)}
 								</View>
 							))}
-
-							{/* Display totals */}
 							{(() => {
 								const { totalDeposits, totalInterest } =
 									calculateTotalsFromFinancialYears();
@@ -1279,33 +1269,43 @@ export const PPFAccounts = ({
 							</Text>
 
 							{financialYears.map((fy, index) => (
-								<View
-									key={index}
-									style={[styles.row, { marginBottom: 12, gap: 8 }]}
-								>
-									<View style={{ flex: 1.5 }}>
-										<TextInput
-											style={styles.input}
-											placeholder='FY (2024-25)'
-											value={fy.year}
-											onChangeText={(text) => handleFYYearChange(index, text)}
-											placeholderTextColor={colors.gray}
-											editable={!fy.isFirstYear} // First year is not editable
-										/>
+								<View key={index} style={{ marginBottom: 12, gap: 8 }}>
+									<View
+										style={[
+											styles.row,
+											{
+												justifyContent: 'space-between',
+												paddingHorizontal: 16,
+											},
+										]}
+									>
+										<Text>FY {fy.year}</Text>
+										{financialYears.length > 1 && !fy.isFirstYear && (
+											<TouchableOpacity
+												onPress={() => removeFinancialYear(index)}
+											>
+												<Text style={{ color: colors.danger, fontSize: 12 }}>
+													🗑️ Delete
+												</Text>
+											</TouchableOpacity>
+										)}
 									</View>
-									<View style={{ flex: 2 }}>
+									<View
+										style={[
+											styles.row,
+											{ justifyContent: 'space-between', gap: 10 },
+										]}
+									>
 										<TextInput
-											style={styles.input}
+											style={[styles.input, { flex: 1 }]}
 											placeholder='Amount'
 											value={fy.amount}
 											onChangeText={(text) => handleFYAmountChange(index, text)}
 											placeholderTextColor={colors.gray}
 											keyboardType='decimal-pad'
 										/>
-									</View>
-									<View style={{ flex: 2 }}>
 										<TextInput
-											style={styles.input}
+											style={[styles.input, { flex: 1 }]}
 											placeholder='Interest'
 											value={fy.interest}
 											onChangeText={(text) =>
@@ -1315,27 +1315,9 @@ export const PPFAccounts = ({
 											keyboardType='decimal-pad'
 										/>
 									</View>
-									{financialYears.length > 1 && !fy.isFirstYear && (
-										<TouchableOpacity
-											style={{
-												width: 40,
-												height: 40,
-												justifyContent: 'center',
-												alignItems: 'center',
-												backgroundColor: colors.error,
-												borderRadius: 4,
-											}}
-											onPress={() => removeFinancialYear(index)}
-										>
-											<Text style={{ color: colors.white, fontSize: 20 }}>
-												×
-											</Text>
-										</TouchableOpacity>
-									)}
 								</View>
 							))}
 
-							{/* Display totals */}
 							{(() => {
 								const { totalDeposits, totalInterest } =
 									calculateTotalsFromFinancialYears();
